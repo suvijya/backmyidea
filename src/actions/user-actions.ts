@@ -8,6 +8,22 @@ import type { User } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 // ═══════════════════════════════
+// GET MY USERNAME (for client-side profile links)
+// ═══════════════════════════════
+
+export async function getMyUsername(): Promise<string | null> {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { username: true },
+  });
+
+  return user?.username ?? null;
+}
+
+// ═══════════════════════════════
 // ONBOARDING
 // ═══════════════════════════════
 

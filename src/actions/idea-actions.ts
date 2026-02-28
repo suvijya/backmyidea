@@ -9,6 +9,7 @@ import { checkIdeaQuality, checkDuplicateIdea } from "@/lib/gemini";
 import { calculateValidationScore } from "@/lib/scoring";
 import { createNotificationInternal } from "@/lib/notifications";
 import { checkAndAwardBadges, awardPoints, updateUserLevel } from "@/lib/gamification";
+import { trackDailyStat, snapshotDailyScore } from "@/lib/daily-stats";
 import { MAX_ACTIVE_IDEAS } from "@/lib/constants";
 import type { ActionResult, IdeaFeedItem, IdeaDetail, PaginatedResponse, IdeaFilters, AIQualityResult, AIDuplicateResult } from "@/types";
 import type { Idea, IdeaStatus, Prisma } from "@prisma/client";
@@ -32,24 +33,7 @@ export async function createIdea(
     return { success: false, error: "Complete onboarding first" };
   }
 
-  // Rate limit
-  const { success: withinLimit } = await ideaLimiter.limit(user.id);
-  if (!withinLimit) {
-    return { success: false, error: "Too many ideas submitted. Try again later." };
-  }
-
-  // Check max active ideas
-  const activeCount = await prisma.idea.count({
-    where: { founderId: user.id, status: "ACTIVE" },
-  });
-  if (activeCount >= MAX_ACTIVE_IDEAS) {
-    return {
-      success: false,
-      error: `You can have at most ${MAX_ACTIVE_IDEAS} active ideas. Archive one to post a new idea.`,
-    };
-  }
-
-  // targetAudience is an array — use getAll
+  // Parse and validate input BEFORE rate limiting so bad input doesn't burn tokens
   const targetAudienceRaw = formData.getAll("targetAudience") as string[];
   const tagsRaw = formData.getAll("tags") as string[];
 
@@ -64,13 +48,33 @@ export async function createIdea(
     feedbackQuestion: formData.get("feedbackQuestion") as string,
     linkUrl: formData.get("linkUrl") as string,
     tags: tagsRaw,
-    imageUrl: formData.get("imageUrl") as string,
+    imageUrl: (formData.get("imageUrl") as string) || undefined,
   };
+
+  // Read donationsEnabled separately (not part of Zod content schema)
+  const donationsEnabled = formData.get("donationsEnabled") === "true";
 
   const parsed = createIdeaSchema.safeParse(raw);
   if (!parsed.success) {
     const firstError = parsed.error.issues[0]?.message ?? "Invalid input";
     return { success: false, error: firstError };
+  }
+
+  // Rate limit (after validation so failed parses don't waste tokens)
+  const { success: withinLimit } = await ideaLimiter.limit(user.id);
+  if (!withinLimit) {
+    return { success: false, error: "Too many ideas submitted. Try again later." };
+  }
+
+  // Check max active ideas
+  const activeCount = await prisma.idea.count({
+    where: { founderId: user.id, status: "ACTIVE" },
+  });
+  if (activeCount >= MAX_ACTIVE_IDEAS) {
+    return {
+      success: false,
+      error: `You can have at most ${MAX_ACTIVE_IDEAS} active ideas. Archive one to post a new idea.`,
+    };
   }
 
   const data = parsed.data;
@@ -125,6 +129,7 @@ export async function createIdea(
       qualityScore: qualityResult?.score ?? null,
       aiChecked: qualityResult !== null,
       isDuplicate: duplicateResult?.isDuplicate ?? false,
+      donationsEnabled,
       founderId: user.id,
       status: "ACTIVE",
     },
@@ -291,6 +296,7 @@ export async function getIdeaBySlug(
   prisma.idea
     .update({ where: { id: idea.id }, data: { totalViews: { increment: 1 } } })
     .catch(console.error);
+  trackDailyStat(idea.id, "views").catch(console.error);
 
   return { success: true, data: idea };
 }
@@ -424,6 +430,9 @@ export async function recalculateScore(ideaId: string): Promise<void> {
       scoreTier: tier,
     },
   });
+
+  // Snapshot daily score for analytics charts
+  snapshotDailyScore(ideaId, totalScore).catch(console.error);
 }
 
 // ═══════════════════════════════
@@ -454,6 +463,7 @@ export async function incrementShareCount(
       where: { id: ideaId },
       data: { totalShares: { increment: 1 } },
     });
+    trackDailyStat(ideaId, "shares").catch(console.error);
     return { success: true, data: undefined };
   } catch {
     return { success: false, error: "Failed to update share count" };

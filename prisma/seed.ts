@@ -165,6 +165,7 @@ async function main() {
       validationScore: 62,
       scoreTier: "STRONG" as const,
       founderId: seedUser.id,
+      donationsEnabled: true,
     },
     {
       slug: "rentmate-flatmate-finder-india-d4e5f6",
@@ -185,6 +186,7 @@ async function main() {
       validationScore: 75,
       scoreTier: "STRONG" as const,
       founderId: seedUser2.id,
+      donationsEnabled: true,
     },
     {
       slug: "kisan-connect-farm-to-table-g7h8i9",
@@ -225,6 +227,7 @@ async function main() {
       validationScore: 82,
       scoreTier: "CROWD_FAVORITE" as const,
       founderId: seedUser2.id,
+      donationsEnabled: true,
     },
     {
       slug: "splitkhata-expense-sharing-m3n4o5",
@@ -245,6 +248,7 @@ async function main() {
       validationScore: 68,
       scoreTier: "STRONG" as const,
       founderId: seedUser.id,
+      donationsEnabled: true,
     },
     {
       slug: "dhobi-on-demand-laundry-p6q7r8",
@@ -285,6 +289,7 @@ async function main() {
       validationScore: 72,
       scoreTier: "STRONG" as const,
       founderId: seedUser.id,
+      donationsEnabled: true,
     },
     {
       slug: "content-dal-creator-saas-v2w3x4",

@@ -7,6 +7,7 @@ import { castVoteSchema } from "@/lib/validations";
 import { recalculateScore } from "./idea-actions";
 import { createNotificationInternal } from "@/lib/notifications";
 import { awardPoints, checkAndAwardBadges, updateUserLevel, updateStreak, checkEarlyBeliever } from "@/lib/gamification";
+import { trackDailyStat } from "@/lib/daily-stats";
 import { NEW_ACCOUNT_THRESHOLD_MS, NEW_ACCOUNT_VOTE_WEIGHT } from "@/lib/constants";
 import type { ActionResult } from "@/types";
 import type { Vote, VoteType } from "@prisma/client";
@@ -32,7 +33,7 @@ export async function castVote(
   const raw = {
     ideaId: formData.get("ideaId") as string,
     type: formData.get("type") as string,
-    reason: formData.get("reason") as string,
+    reason: (formData.get("reason") as string) || undefined,
   };
 
   const parsed = castVoteSchema.safeParse(raw);
@@ -130,13 +131,14 @@ export async function castVote(
     }),
   ]);
 
-  // Fire-and-forget: scoring, gamification, notifications
+  // Fire-and-forget: scoring, gamification, notifications, daily stats
   recalculateScore(ideaId).catch(console.error);
   awardPoints(user.id, "VOTE").catch(console.error);
   updateStreak(user.id).catch(console.error);
   checkAndAwardBadges(user.id).catch(console.error);
   updateUserLevel(user.id).catch(console.error);
   checkEarlyBeliever(user.id, ideaId).catch(console.error);
+  trackDailyStat(ideaId, "votes").catch(console.error);
 
   // Notify the idea founder
   if (idea.founderId !== user.id) {

@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { createIdea } from "@/actions/idea-actions";
 import {
@@ -72,10 +72,12 @@ export default function NewIdeaPage() {
   const [linkUrl, setLinkUrl] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [donationsEnabled, setDonationsEnabled] = useState(false);
 
   // AI feedback state
   const [qualityWarning, setQualityWarning] = useState<string[] | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<{ title: string; slug: string }[] | null>(null);
+  const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
 
   const toggleAudience = (aud: TargetAudience) => {
     setTargetAudience((prev) =>
@@ -122,24 +124,39 @@ export default function NewIdeaPage() {
       for (const tag of tags) {
         fd.append("tags", tag);
       }
+      fd.append("donationsEnabled", donationsEnabled ? "true" : "false");
 
       const result = await createIdea(fd);
 
       if (result.success) {
         const idea = result.data;
+        const hasQualityWarning =
+          idea.qualityResult &&
+          idea.qualityResult.score < 30 &&
+          idea.qualityResult.feedback.length > 0;
+        const hasDuplicateWarning =
+          idea.duplicateResult?.isDuplicate &&
+          idea.duplicateResult.similarIdeas.length > 0;
 
-        // Show AI feedback if applicable
-        if (idea.qualityResult && idea.qualityResult.score < 30 && idea.qualityResult.feedback.length > 0) {
-          setQualityWarning(idea.qualityResult.feedback);
+        if (hasQualityWarning || hasDuplicateWarning) {
+          // Show warnings before navigating
+          if (hasQualityWarning) {
+            setQualityWarning(idea.qualityResult!.feedback);
+          }
+          if (hasDuplicateWarning) {
+            setDuplicateWarning(
+              idea.duplicateResult!.similarIdeas.map((s) => ({
+                title: s.title,
+                slug: s.slug,
+              }))
+            );
+          }
+          setPublishedSlug(idea.slug);
+          toast.success("Idea published! Review the suggestions below.");
+        } else {
+          toast.success("Idea published!");
+          router.push(`/idea/${idea.slug}`);
         }
-        if (idea.duplicateResult?.isDuplicate && idea.duplicateResult.similarIdeas.length > 0) {
-          setDuplicateWarning(
-            idea.duplicateResult.similarIdeas.map((s) => ({ title: s.title, slug: s.slug }))
-          );
-        }
-
-        toast.success("Idea published!");
-        router.push(`/idea/${idea.slug}`);
       } else {
         toast.error(result.error);
       }
@@ -148,6 +165,95 @@ export default function NewIdeaPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
+      {/* Published with AI warnings */}
+      {publishedSlug && (qualityWarning || duplicateWarning) ? (
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-green-light">
+              <Check className="h-6 w-6 text-brand-green" />
+            </div>
+            <h1 className="font-display text-[28px] leading-tight text-deep-ink">
+              Idea Published!
+            </h1>
+            <p className="mt-1 text-[14px] text-text-secondary">
+              Your idea is live. Our AI flagged a few things to consider.
+            </p>
+          </div>
+
+          {/* Quality warnings */}
+          {qualityWarning && qualityWarning.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <h3 className="text-[14px] font-semibold text-amber-800">
+                  Quality Suggestions
+                </h3>
+              </div>
+              <ul className="space-y-1.5">
+                {qualityWarning.map((feedback, i) => (
+                  <li
+                    key={i}
+                    className="text-[13px] text-amber-700 before:mr-2 before:content-['•']"
+                  >
+                    {feedback}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-[12px] text-amber-600">
+                You can edit your idea to address these suggestions.
+              </p>
+            </div>
+          )}
+
+          {/* Duplicate warnings */}
+          {duplicateWarning && duplicateWarning.length > 0 && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-blue-600" />
+                <h3 className="text-[14px] font-semibold text-blue-800">
+                  Similar Ideas Found
+                </h3>
+              </div>
+              <p className="mb-2 text-[13px] text-blue-700">
+                We found ideas that look similar to yours. Consider how yours is
+                different:
+              </p>
+              <ul className="space-y-1.5">
+                {duplicateWarning.map((idea) => (
+                  <li key={idea.slug}>
+                    <a
+                      href={`/idea/${idea.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] font-medium text-blue-700 underline underline-offset-2 hover:text-blue-900"
+                    >
+                      {idea.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/dashboard/ideas`)}
+              className="flex-1 border-warm-border text-text-secondary"
+            >
+              Go to Dashboard
+            </Button>
+            <Button
+              onClick={() => router.push(`/idea/${publishedSlug}`)}
+              className="flex-1 gap-1.5 bg-saffron text-white hover:bg-saffron-dark"
+            >
+              <Sparkles className="h-4 w-4" />
+              View Your Idea
+            </Button>
+          </div>
+        </div>
+      ) : (
+      <>
       {/* Header */}
       <h1 className="font-display text-[28px] leading-tight text-deep-ink">
         Submit Your Idea
@@ -444,6 +550,24 @@ export default function NewIdeaPage() {
                 )}
               </div>
 
+              {/* Donations toggle */}
+              <div className="flex items-center justify-between rounded-xl border border-warm-border bg-white p-4">
+                <div>
+                  <Label htmlFor="donations" className="text-[13px] font-semibold text-deep-ink">
+                    Accept Donations
+                  </Label>
+                  <p className="text-[12px] text-text-muted">
+                    Let supporters back your idea with micro-donations
+                  </p>
+                </div>
+                <Switch
+                  id="donations"
+                  checked={donationsEnabled}
+                  onCheckedChange={setDonationsEnabled}
+                  className="data-[state=checked]:bg-saffron"
+                />
+              </div>
+
               {/* Preview summary */}
               <div className="rounded-xl border border-warm-border bg-warm-subtle/50 p-5">
                 <h3 className="text-[13px] font-bold uppercase tracking-wide text-text-muted">
@@ -512,6 +636,8 @@ export default function NewIdeaPage() {
           </Button>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

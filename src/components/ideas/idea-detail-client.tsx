@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { incrementShareCount, updateIdeaStatus } from "@/actions/idea-actions";
+import { ReportModal } from "@/components/shared/report-modal";
 import { cn } from "@/lib/utils";
 
 interface IdeaDetailClientProps {
@@ -35,6 +36,7 @@ export function IdeaDetailClient({
   const { isSignedIn } = useAuth();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const handleShare = async () => {
     const url = `${window.location.origin}/idea/${slug}`;
@@ -153,10 +155,21 @@ export function IdeaDetailClient({
 
       {/* Report (for non-owners) */}
       {isSignedIn && !isOwnIdea && (
-        <button className="flex w-full items-center justify-center gap-1.5 py-2 text-[12px] text-text-muted transition-colors hover:text-brand-red">
-          <Flag className="h-3 w-3" />
-          Report this idea
-        </button>
+        <>
+          <button
+            onClick={() => setReportOpen(true)}
+            className="flex w-full items-center justify-center gap-1.5 py-2 text-[12px] text-text-muted transition-colors hover:text-brand-red"
+          >
+            <Flag className="h-3 w-3" />
+            Report this idea
+          </button>
+          <ReportModal
+            entityType="idea"
+            entityId={ideaId}
+            open={reportOpen}
+            onOpenChange={setReportOpen}
+          />
+        </>
       )}
     </div>
   );

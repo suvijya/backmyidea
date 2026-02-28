@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { castVote } from "@/actions/vote-actions";
 import type { VoteType } from "@prisma/client";
@@ -69,6 +70,9 @@ export function VoteButtons({
 
     if (isOwnIdea || isPending) return;
 
+    // Guard: clicking the already-selected vote type is a no-op
+    if (currentVote === voteType) return;
+
     // Optimistic update
     const previousVote = currentVote;
     const previousCounts = { ...counts };
@@ -103,6 +107,7 @@ export function VoteButtons({
         // Revert on failure
         setCurrentVote(previousVote);
         setCounts(previousCounts);
+        toast.error(result.error);
       }
     });
   };

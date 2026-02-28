@@ -6,6 +6,7 @@ import { commentLimiter } from "@/lib/redis";
 import { createCommentSchema } from "@/lib/validations";
 import { createNotificationInternal } from "@/lib/notifications";
 import { awardPoints, checkAndAwardBadges, updateUserLevel } from "@/lib/gamification";
+import { trackDailyStat } from "@/lib/daily-stats";
 import type { ActionResult, CommentWithReplies, CommentWithAuthor } from "@/types";
 import type { Comment } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -89,10 +90,11 @@ export async function createComment(
     }),
   ]);
 
-  // Fire-and-forget gamification
+  // Fire-and-forget gamification + daily stats
   awardPoints(user.id, "COMMENT").catch(console.error);
   checkAndAwardBadges(user.id).catch(console.error);
   updateUserLevel(user.id).catch(console.error);
+  trackDailyStat(ideaId, "comments").catch(console.error);
 
   // Notifications (fire-and-forget)
   // Notify idea founder about new comment

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AdminAnalyticsChart } from "@/components/admin/analytics-chart";
 import type { AdminAnalytics } from "@/types";
 
 type StatCard = {
@@ -169,6 +170,13 @@ export default function AdminOverviewPage() {
               </Card>
             ))}
       </div>
+
+      {/* Daily Activity Chart */}
+      {!loading && analytics && (
+        <div className="mt-8">
+          <AdminAnalyticsChart />
+        </div>
+      )}
 
       {/* Quick Links */}
       {!loading && (

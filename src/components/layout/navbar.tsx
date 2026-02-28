@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { getMyUsername } from "@/actions/user-actions";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -47,6 +48,15 @@ export function Navbar() {
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [prismaUsername, setPrismaUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      getMyUsername().then(setPrismaUsername).catch(() => {});
+    }
+  }, [isSignedIn]);
+
+  const profileHref = prismaUsername ? `/profile/${prismaUsername}` : "/dashboard";
 
   // Don't show navbar on onboarding
   if (pathname === "/onboarding") return null;
@@ -192,7 +202,7 @@ export function Navbar() {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link
-                        href={`/profile/${user?.username ?? ""}`}
+                        href={profileHref}
                         className="flex cursor-pointer items-center gap-2.5 text-[13px] text-text-secondary"
                       >
                         <User className="h-4 w-4" />
@@ -363,7 +373,7 @@ export function Navbar() {
                         Dashboard
                       </Link>
                       <Link
-                        href={`/profile/${user?.username ?? ""}`}
+                        href={profileHref}
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-medium text-text-secondary transition-colors hover:bg-warm-hover hover:text-deep-ink"
                       >
