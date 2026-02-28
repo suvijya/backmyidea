@@ -4,8 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { commentLimiter } from "@/lib/redis";
 import { createCommentSchema } from "@/lib/validations";
-import { createNotification } from "./notification-actions";
-import { awardPoints, checkAndAwardBadges, updateUserLevel } from "./gamification-actions";
+import { createNotificationInternal } from "@/lib/notifications";
+import { awardPoints, checkAndAwardBadges, updateUserLevel } from "@/lib/gamification";
 import type { ActionResult, CommentWithReplies, CommentWithAuthor } from "@/types";
 import type { Comment } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -97,7 +97,7 @@ export async function createComment(
   // Notifications (fire-and-forget)
   // Notify idea founder about new comment
   if (idea.founderId !== user.id) {
-    createNotification({
+    createNotificationInternal({
       userId: idea.founderId,
       type: "NEW_COMMENT",
       title: "New comment on your idea",
@@ -113,7 +113,7 @@ export async function createComment(
       select: { userId: true },
     });
     if (parentComment && parentComment.userId !== user.id) {
-      createNotification({
+      createNotificationInternal({
         userId: parentComment.userId,
         type: "COMMENT_REPLY",
         title: "New reply to your comment",
@@ -307,6 +307,8 @@ export async function upvoteComment(
     // Award points to comment author (fire-and-forget)
     if (comment.userId !== user.id) {
       awardPoints(comment.userId, "COMMENT_UPVOTED").catch(console.error);
+      updateUserLevel(comment.userId).catch(console.error);
+      checkAndAwardBadges(comment.userId).catch(console.error);
     }
   }
 

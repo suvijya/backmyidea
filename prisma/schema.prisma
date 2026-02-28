@@ -165,13 +165,16 @@ model User {
   lastActiveAt  DateTime  @default(now())
 
   // Relations
-  ideas          Idea[]
-  votes          Vote[]
-  comments       Comment[]
-  commentUpvotes CommentUpvote[]
-  badges         UserBadge[]
-  notifications  Notification[]
-  reports        Report[]
+  ideas              Idea[]
+  votes              Vote[]
+  comments           Comment[]
+  commentUpvotes     CommentUpvote[]
+  badges             UserBadge[]
+  notifications      Notification[]
+  reports            Report[]
+  donations          Donation[]
+  investorProfile    InvestorProfile?
+  investorRequests   InvestorRequest[]
 
   @@index([username])
   @@index([clerkId])
@@ -215,6 +218,11 @@ model Idea {
   scoreTier        ScoreTier       @default(EARLY_DAYS)
   qualityScore     Int?
 
+  // Donations (Phase 2)
+  donationsEnabled Boolean         @default(false)
+  totalDonations   Int             @default(0)  // in paise
+  donorCount       Int             @default(0)
+
   // AI flags
   aiChecked        Boolean         @default(false)
   isDuplicate      Boolean         @default(false)
@@ -232,6 +240,9 @@ model Idea {
   comments         Comment[]
   reports          Report[]
   dailyStats       IdeaDailyStat[]
+  donations        Donation[]
+  watchlistItems   WatchlistItem[]
+  investorInterests InvestorInterest[]
 
   @@index([slug])
   @@index([status, validationScore(sort: Desc)])
@@ -387,4 +398,156 @@ model IdeaDailyStat {
 
   @@unique([ideaId, date])
   @@index([date])
+}
+
+// ═══════════════════════════════
+// DONATIONS (Phase 2 — Razorpay)
+// ═══════════════════════════════
+
+model Donation {
+  id                 String         @id @default(cuid())
+  amountPaise        Int            // amount in paise
+  status             DonationStatus @default(PENDING)
+  isAnonymous        Boolean        @default(false)
+  message            String?        @db.VarChar(200)
+
+  // Razorpay fields
+  razorpayOrderId    String?        @unique
+  razorpayPaymentId  String?        @unique
+  razorpaySignature  String?
+
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  completedAt        DateTime?
+
+  // Relations
+  donorId            String
+  ideaId             String
+  donor              User           @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  idea               Idea           @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@index([ideaId, status])
+  @@index([donorId])
+  @@index([razorpayOrderId])
+}
+
+// ═══════════════════════════════
+// INVESTOR (Phase 3)
+// ═══════════════════════════════
+
+enum InvestorRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum InvestorStagePreference {
+  PRE_SEED
+  SEED
+  SERIES_A
+  ANY
+}
+
+enum WatchlistStatus {
+  WATCHING
+  INTERESTED
+  IN_DISCUSSION
+  FUNDED
+  PASSED
+}
+
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model InvestorProfile {
+  id                 String                  @id @default(cuid())
+  firmName           String?                 @db.VarChar(200)
+  linkedinUrl        String
+  investmentThesis   String                  @db.VarChar(500)
+  sectorInterests    Category[]
+  stagePreference    InvestorStagePreference @default(ANY)
+  ticketSizeMin      Int?                    // in INR (lakhs)
+  ticketSizeMax      Int?                    // in INR (lakhs)
+  portfolioCompanies String?                 @db.VarChar(500)
+  website            String?
+
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  // Relations
+  userId             String                  @unique
+  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  watchlistItems     WatchlistItem[]
+  interests          InvestorInterest[]
+
+  @@index([userId])
+}
+
+model InvestorRequest {
+  id                 String                  @id @default(cuid())
+  status             InvestorRequestStatus   @default(PENDING)
+  firmName           String?                 @db.VarChar(200)
+  linkedinUrl        String
+  investmentThesis   String                  @db.VarChar(500)
+  sectorInterests    Category[]
+  stagePreference    InvestorStagePreference @default(ANY)
+  ticketSizeMin      Int?
+  ticketSizeMax      Int?
+  portfolioCompanies String?                 @db.VarChar(500)
+  website            String?
+
+  // Admin review
+  reviewedAt         DateTime?
+  reviewNote         String?                 @db.VarChar(300)
+
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  // Relations
+  userId             String
+  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model WatchlistItem {
+  id        String          @id @default(cuid())
+  status    WatchlistStatus @default(WATCHING)
+  notes     String?         @db.VarChar(500)
+
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  // Relations
+  investorId String
+  ideaId     String
+  investor   InvestorProfile @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  idea       Idea            @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([investorId, ideaId])
+  @@index([investorId, status])
+  @@index([ideaId])
+}
+
+model InvestorInterest {
+  id        String         @id @default(cuid())
+  status    InterestStatus @default(PENDING)
+  message   String?        @db.VarChar(500)
+
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  // Relations
+  investorId String
+  ideaId     String
+  investor   InvestorProfile @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  idea       Idea            @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([investorId, ideaId])
+  @@index([ideaId, status])
+  @@index([investorId])
 }

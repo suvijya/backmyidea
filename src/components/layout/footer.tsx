@@ -58,7 +58,7 @@ export function Footer() {
                   strokeWidth={2.5}
                 />
               </div>
-              <span className="text-[15px] font-bold text-deep-ink">
+              <span className="font-display text-[18px] text-deep-ink">
                 BackMyIdea
               </span>
             </Link>

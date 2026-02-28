@@ -175,6 +175,46 @@ export const searchSchema = z.object({
 });
 
 // ═══════════════════════════════
+// INVESTOR SCHEMAS
+// ═══════════════════════════════
+
+const InvestorStagePreferenceEnum = z.enum([
+  "PRE_SEED", "SEED", "SERIES_A", "ANY",
+]);
+
+const WatchlistStatusEnum = z.enum([
+  "WATCHING", "INTERESTED", "IN_DISCUSSION", "FUNDED", "PASSED",
+]);
+
+export const investorRequestSchema = z.object({
+  firmName: z.string().max(200).optional().or(z.literal("")),
+  linkedinUrl: z.string().url("Valid LinkedIn URL is required"),
+  investmentThesis: z
+    .string()
+    .min(20, "Investment thesis must be at least 20 characters")
+    .max(500, "Investment thesis must be at most 500 characters"),
+  sectorInterests: z
+    .array(CategoryEnum)
+    .min(1, "Select at least one sector of interest"),
+  stagePreference: InvestorStagePreferenceEnum,
+  ticketSizeMin: z.coerce.number().min(0).optional(),
+  ticketSizeMax: z.coerce.number().min(0).optional(),
+  portfolioCompanies: z.string().max(500).optional().or(z.literal("")),
+  website: z.string().url("Invalid URL").optional().or(z.literal("")),
+});
+
+export const watchlistSchema = z.object({
+  ideaId: z.string().min(1, "Idea ID is required"),
+  status: WatchlistStatusEnum.optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export const expressInterestSchema = z.object({
+  ideaId: z.string().min(1, "Idea ID is required"),
+  message: z.string().max(500).optional(),
+});
+
+// ═══════════════════════════════
 // TYPE INFERENCE
 // ═══════════════════════════════
 
@@ -186,3 +226,6 @@ export type CastVoteInput = z.infer<typeof castVoteSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 export type CreateReportInput = z.infer<typeof createReportSchema>;
 export type SearchInput = z.infer<typeof searchSchema>;
+export type InvestorRequestInput = z.infer<typeof investorRequestSchema>;
+export type WatchlistInput = z.infer<typeof watchlistSchema>;
+export type ExpressInterestInput = z.infer<typeof expressInterestSchema>;

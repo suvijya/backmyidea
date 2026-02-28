@@ -7,6 +7,7 @@ import {
   Flag,
   Lightbulb,
   Users,
+  BadgeDollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,11 @@ const NAV_ITEMS = [
     label: "Users",
     href: "/admin/users",
     icon: Users,
+  },
+  {
+    label: "Investors",
+    href: "/admin/investors",
+    icon: BadgeDollarSign,
   },
 ] as const;
 

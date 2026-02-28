@@ -206,6 +206,16 @@ export async function getUserProfile(
 export async function getDashboardStats(
   userId: string
 ): Promise<DashboardStats> {
+  // Auth check — only the user themselves can see their dashboard stats
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    throw new Error("Not authenticated");
+  }
+  const currentUser = await prisma.user.findUnique({ where: { clerkId }, select: { id: true, isAdmin: true } });
+  if (!currentUser || (currentUser.id !== userId && !currentUser.isAdmin)) {
+    throw new Error("Not authorized");
+  }
+
   const ideas = await prisma.idea.findMany({
     where: { founderId: userId, status: { not: "REMOVED" } },
     select: {
@@ -240,6 +250,16 @@ export async function getDashboardStats(
 export async function getDashboardIdeas(
   userId: string
 ): Promise<DashboardIdea[]> {
+  // Auth check — only the user themselves can see their dashboard ideas
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    throw new Error("Not authenticated");
+  }
+  const currentUser = await prisma.user.findUnique({ where: { clerkId }, select: { id: true, isAdmin: true } });
+  if (!currentUser || (currentUser.id !== userId && !currentUser.isAdmin)) {
+    throw new Error("Not authorized");
+  }
+
   const ideas = await prisma.idea.findMany({
     where: { founderId: userId, status: { not: "REMOVED" } },
     select: {

@@ -2,13 +2,13 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { ideaLimiter } from "@/lib/redis";
+import { ideaLimiter, shareLimiter } from "@/lib/redis";
 import { createIdeaSchema, updateIdeaSchema } from "@/lib/validations";
 import { generateSlug } from "@/lib/utils";
 import { checkIdeaQuality, checkDuplicateIdea } from "@/lib/gemini";
 import { calculateValidationScore } from "@/lib/scoring";
-import { createNotification } from "./notification-actions";
-import { checkAndAwardBadges, awardPoints, updateUserLevel } from "./gamification-actions";
+import { createNotificationInternal } from "@/lib/notifications";
+import { checkAndAwardBadges, awardPoints, updateUserLevel } from "@/lib/gamification";
 import { MAX_ACTIVE_IDEAS } from "@/lib/constants";
 import type { ActionResult, IdeaFeedItem, IdeaDetail, PaginatedResponse, IdeaFilters, AIQualityResult, AIDuplicateResult } from "@/types";
 import type { Idea, IdeaStatus, Prisma } from "@prisma/client";
@@ -433,6 +433,22 @@ export async function recalculateScore(ideaId: string): Promise<void> {
 export async function incrementShareCount(
   ideaId: string
 ): Promise<ActionResult> {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const user = await prisma.user.findUnique({ where: { clerkId } });
+  if (!user) {
+    return { success: false, error: "User not found" };
+  }
+
+  // Rate limit
+  const { success: withinLimit } = await shareLimiter.limit(user.id);
+  if (!withinLimit) {
+    return { success: false, error: "Too many shares. Try again later." };
+  }
+
   try {
     await prisma.idea.update({
       where: { id: ideaId },
@@ -451,8 +467,20 @@ export async function incrementShareCount(
 export async function getIdeasByUser(
   userId: string
 ): Promise<IdeaFeedItem[]> {
+  // Determine if current user is the owner — if not, only show ACTIVE ideas
+  const { userId: clerkId } = await auth();
+  let isOwner = false;
+  if (clerkId) {
+    const currentUser = await prisma.user.findUnique({ where: { clerkId }, select: { id: true, isAdmin: true } });
+    isOwner = currentUser?.id === userId || currentUser?.isAdmin === true;
+  }
+
+  const statusFilter: Prisma.IdeaWhereInput["status"] = isOwner
+    ? { not: "REMOVED" }
+    : "ACTIVE";
+
   const ideas = await prisma.idea.findMany({
-    where: { founderId: userId, status: { not: "REMOVED" } },
+    where: { founderId: userId, status: statusFilter },
     include: {
       founder: {
         select: { id: true, name: true, username: true, image: true },

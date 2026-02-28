@@ -1,4 +1,7 @@
-"use server";
+// NOTE: This file intentionally does NOT have "use server" — these functions
+// are internal helpers called only from other server-side code. Keeping them
+// out of the server actions boundary prevents malicious clients from invoking
+// them directly.
 
 import { prisma } from "@/lib/prisma";
 import {
@@ -6,7 +9,7 @@ import {
   LEVEL_THRESHOLDS,
   MIN_VOTES_FOR_STREAK,
 } from "@/lib/constants";
-import { createNotification } from "./notification-actions";
+import { createNotificationInternal } from "@/lib/notifications";
 import type { UserLevel } from "@prisma/client";
 
 // ═══════════════════════════════
@@ -47,7 +50,7 @@ export async function updateUserLevel(userId: string): Promise<void> {
     });
 
     // Notify about level up
-    createNotification({
+    createNotificationInternal({
       userId,
       type: "BADGE_EARNED",
       title: "Level Up!",
@@ -230,7 +233,7 @@ export async function checkAndAwardBadges(userId: string): Promise<void> {
       });
 
     // Notify
-    createNotification({
+    createNotificationInternal({
       userId,
       type: "BADGE_EARNED",
       title: "Badge Earned!",

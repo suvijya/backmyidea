@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { voteLimiter } from "@/lib/redis";
 import { castVoteSchema } from "@/lib/validations";
 import { recalculateScore } from "./idea-actions";
-import { createNotification } from "./notification-actions";
-import { awardPoints, checkAndAwardBadges, updateUserLevel, updateStreak } from "./gamification-actions";
+import { createNotificationInternal } from "@/lib/notifications";
+import { awardPoints, checkAndAwardBadges, updateUserLevel, updateStreak, checkEarlyBeliever } from "@/lib/gamification";
 import { NEW_ACCOUNT_THRESHOLD_MS, NEW_ACCOUNT_VOTE_WEIGHT } from "@/lib/constants";
 import type { ActionResult } from "@/types";
 import type { Vote, VoteType } from "@prisma/client";
@@ -136,10 +136,11 @@ export async function castVote(
   updateStreak(user.id).catch(console.error);
   checkAndAwardBadges(user.id).catch(console.error);
   updateUserLevel(user.id).catch(console.error);
+  checkEarlyBeliever(user.id, ideaId).catch(console.error);
 
   // Notify the idea founder
   if (idea.founderId !== user.id) {
-    createNotification({
+    createNotificationInternal({
       userId: idea.founderId,
       type: "NEW_VOTE",
       title: "New vote on your idea",

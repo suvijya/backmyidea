@@ -62,3 +62,13 @@ export const donateLimiter = new Ratelimit({
   prefix: "rl:donate",
   analytics: true,
 });
+
+export const shareLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(
+    RATE_LIMITS.share.limit,
+    RATE_LIMITS.share.window
+  ),
+  prefix: "rl:share",
+  analytics: true,
+});

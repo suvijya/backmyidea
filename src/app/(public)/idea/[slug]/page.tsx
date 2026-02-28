@@ -13,6 +13,7 @@ import {
   Users,
   ArrowLeft,
   Flag,
+  CheckCircle2,
 } from "lucide-react";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
@@ -22,6 +23,9 @@ import { VoteBreakdown } from "@/components/voting/vote-breakdown";
 import { ScoreRing } from "@/components/ideas/score-ring";
 import { CommentList } from "@/components/comments/comment-list";
 import { IdeaDetailClient } from "@/components/ideas/idea-detail-client";
+import { DonationSection } from "@/components/payments/donation-section";
+import { ExpressInterestButton } from "@/components/investor/express-interest-button";
+import { getPublicDonors } from "@/actions/payment-actions";
 import {
   CATEGORY_LABELS,
   CATEGORY_EMOJIS,
@@ -90,6 +94,34 @@ export default async function IdeaDetailPage({
 
   const isOwnIdea = currentUserId === idea.founderId;
   const showScore = idea.totalVotes >= MIN_VOTES_FOR_SCORE;
+
+  // Check if current user is an approved investor (for express interest button)
+  let isInvestor = false;
+  let hasExpressedInterest = false;
+  if (currentUserId && !isOwnIdea) {
+    const investorProfile = await prisma.investorProfile.findUnique({
+      where: { userId: currentUserId },
+      select: { id: true },
+    });
+    if (investorProfile) {
+      isInvestor = true;
+      const existingInterest = await prisma.investorInterest.findUnique({
+        where: {
+          investorId_ideaId: {
+            investorId: investorProfile.id,
+            ideaId: idea.id,
+          },
+        },
+        select: { id: true },
+      });
+      hasExpressedInterest = !!existingInterest;
+    }
+  }
+
+  // Fetch public donors for the supporter wall (only if donations enabled)
+  const publicDonors = idea.donationsEnabled
+    ? await getPublicDonors(idea.id, 10)
+    : [];
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-6 lg:px-8">
@@ -351,6 +383,79 @@ export default async function IdeaDetailPage({
                 </div>
               </div>
             </div>
+
+            {/* Express Interest (investors only) */}
+            {isInvestor && !isOwnIdea && !hasExpressedInterest && (
+              <ExpressInterestButton ideaId={idea.id} ideaTitle={idea.title} />
+            )}
+            {isInvestor && !isOwnIdea && hasExpressedInterest && (
+              <div className="flex items-center gap-2 rounded-xl border border-brand-green/20 bg-brand-green-light px-4 py-3">
+                <CheckCircle2 className="h-4 w-4 text-brand-green" />
+                <span className="text-[13px] font-medium text-brand-green">Interest expressed</span>
+              </div>
+            )}
+
+            {/* Donations */}
+            {idea.donationsEnabled && !isOwnIdea && (
+              <DonationSection
+                ideaId={idea.id}
+                ideaTitle={idea.title}
+                founderName={idea.founder.name ?? "Founder"}
+                totalDonations={idea.totalDonations}
+                donorCount={idea.donorCount}
+              />
+            )}
+
+            {/* Supporter Wall */}
+            {idea.donationsEnabled && publicDonors.length > 0 && (
+              <div className="rounded-[16px] border border-warm-border bg-white p-5 shadow-card">
+                <h3 className="text-[14px] font-semibold text-deep-ink">
+                  Supporters
+                </h3>
+                <div className="mt-3 space-y-3">
+                  {publicDonors.map((donation) => (
+                    <div
+                      key={donation.id}
+                      className="flex items-start gap-2.5"
+                    >
+                      <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-warm-subtle">
+                        {!donation.isAnonymous && donation.donor.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={donation.donor.image}
+                            alt={donation.donor.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-text-muted">
+                            {donation.isAnonymous
+                              ? "?"
+                              : donation.donor.name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="truncate text-[13px] font-medium text-deep-ink">
+                            {donation.isAnonymous
+                              ? "Anonymous"
+                              : donation.donor.name}
+                          </span>
+                          <span className="shrink-0 font-data text-[12px] font-semibold text-saffron">
+                            {`\u20B9${(donation.amountPaise / 100).toLocaleString("en-IN")}`}
+                          </span>
+                        </div>
+                        {donation.message && (
+                          <p className="mt-0.5 text-[12px] leading-relaxed text-text-muted line-clamp-2">
+                            {donation.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <IdeaDetailClient ideaId={idea.id} slug={idea.slug} isOwnIdea={isOwnIdea} />

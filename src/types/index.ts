@@ -9,6 +9,10 @@ import type {
   Notification,
   Report,
   IdeaDailyStat,
+  InvestorProfile,
+  InvestorRequest,
+  WatchlistItem,
+  InvestorInterest,
   UserRole,
   UserLevel,
   Category,
@@ -22,6 +26,10 @@ import type {
   ReportReason,
   ReportStatus,
   DonationStatus,
+  InvestorRequestStatus,
+  InvestorStagePreference,
+  WatchlistStatus,
+  InterestStatus,
 } from "@prisma/client";
 
 // Re-export Prisma types for convenience
@@ -36,6 +44,10 @@ export type {
   Notification,
   Report,
   IdeaDailyStat,
+  InvestorProfile,
+  InvestorRequest,
+  WatchlistItem,
+  InvestorInterest,
   UserRole,
   UserLevel,
   Category,
@@ -49,6 +61,10 @@ export type {
   ReportReason,
   ReportStatus,
   DonationStatus,
+  InvestorRequestStatus,
+  InvestorStagePreference,
+  WatchlistStatus,
+  InterestStatus,
 };
 
 // ═══════════════════════════════
@@ -273,3 +289,42 @@ export type DashboardIdea = Pick<
   | "scoreTier"
   | "createdAt"
 >;
+
+// ═══════════════════════════════
+// INVESTOR TYPES
+// ═══════════════════════════════
+
+/** Investor request with user info (for admin) */
+export type InvestorRequestWithUser = InvestorRequest & {
+  user: Pick<User, "id" | "name" | "username" | "image" | "email">;
+};
+
+/** Investor profile with user info */
+export type InvestorProfileWithUser = InvestorProfile & {
+  user: Pick<User, "id" | "name" | "username" | "image">;
+};
+
+/** Idea in investor deal flow */
+export type InvestorDealFlowItem = Idea & {
+  founder: Pick<User, "id" | "name" | "username" | "image" | "bio" | "city">;
+  _count: {
+    votes: number;
+    comments: number;
+    watchlistItems: number;
+  };
+};
+
+/** Watchlist item with idea details */
+export type WatchlistItemWithIdea = WatchlistItem & {
+  idea: Idea & {
+    founder: Pick<User, "id" | "name" | "username" | "image">;
+  };
+};
+
+/** Interest with idea and investor */
+export type InterestWithDetails = InvestorInterest & {
+  idea: Pick<Idea, "id" | "slug" | "title" | "pitch">;
+  investor: InvestorProfile & {
+    user: Pick<User, "id" | "name" | "username" | "image">;
+  };
+};

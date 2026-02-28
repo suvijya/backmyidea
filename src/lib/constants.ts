@@ -1,4 +1,4 @@
-import type { Category, IdeaStage, ScoreTier, TargetAudience, UserLevel, VoteType, BadgeCategory } from "@prisma/client";
+import type { Category, IdeaStage, ScoreTier, TargetAudience, UserLevel, VoteType, BadgeCategory, InvestorStagePreference, WatchlistStatus, InvestorRequestStatus } from "@prisma/client";
 
 // ═══════════════════════════════
 // APP
@@ -189,6 +189,7 @@ export const RATE_LIMITS = {
   idea: { limit: 5, window: "1 h" as const },
   ai: { limit: 14, window: "1 m" as const },
   donate: { limit: 10, window: "1 h" as const },
+  share: { limit: 30, window: "1 h" as const },
 } as const;
 
 // ═══════════════════════════════
@@ -204,3 +205,28 @@ export const NEW_ACCOUNT_VOTE_WEIGHT = 0.5;
 // ═══════════════════════════════
 
 export const NOTIFICATION_POLL_INTERVAL_MS = 30_000; // 30 seconds
+
+// ═══════════════════════════════
+// INVESTOR
+// ═══════════════════════════════
+
+export const INVESTOR_STAGE_LABELS: Record<InvestorStagePreference, string> = {
+  PRE_SEED: "Pre-Seed",
+  SEED: "Seed",
+  SERIES_A: "Series A",
+  ANY: "Any Stage",
+};
+
+export const WATCHLIST_STATUS_LABELS: Record<WatchlistStatus, string> = {
+  WATCHING: "Watching",
+  INTERESTED: "Interested",
+  IN_DISCUSSION: "In Discussion",
+  FUNDED: "Funded",
+  PASSED: "Passed",
+};
+
+export const INVESTOR_REQUEST_STATUS_LABELS: Record<InvestorRequestStatus, string> = {
+  PENDING: "Pending Review",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};

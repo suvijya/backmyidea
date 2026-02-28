@@ -1,33 +1,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
-import type { NotificationType } from "@prisma/client";
 import type { ActionResult, NotificationItem } from "@/types";
 import { auth } from "@clerk/nextjs/server";
 import { NOTIFICATIONS_PAGE_SIZE } from "@/lib/constants";
 
-// ═══════════════════════════════
-// CREATE NOTIFICATION (fire-and-forget)
-// ═══════════════════════════════
-
-export async function createNotification(params: {
-  userId: string;
-  type: NotificationType;
-  title: string;
-  body: string;
-  data?: Record<string, string>;
-}): Promise<void> {
-  await prisma.notification.create({
-    data: {
-      userId: params.userId,
-      type: params.type,
-      title: params.title,
-      body: params.body,
-      data: params.data ?? Prisma.JsonNull,
-    },
-  });
-}
+// NOTE: createNotification has been moved to src/lib/notifications.ts
+// (as createNotificationInternal) to prevent client-side invocation.
+// Import from "@/lib/notifications" for internal server-side use.
 
 // ═══════════════════════════════
 // GET NOTIFICATIONS (paginated)
