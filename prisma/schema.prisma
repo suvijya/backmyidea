@@ -1,0 +1,390 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ═══════════════════════════════
+// ENUMS
+// ═══════════════════════════════
+
+enum UserRole {
+  FOUNDER
+  EXPLORER
+  BOTH
+}
+
+enum UserLevel {
+  NEWBIE
+  EXPLORER_LEVEL
+  VALIDATOR
+  TASTEMAKER
+  ORACLE
+}
+
+enum Category {
+  FINTECH
+  HEALTHTECH
+  EDTECH
+  FOOD
+  D2C
+  SAAS
+  SOCIAL
+  ENTERTAINMENT
+  AGRITECH
+  LOGISTICS
+  AI_ML
+  SUSTAINABILITY
+  REAL_ESTATE
+  TRAVEL
+  FITNESS
+  OTHER
+}
+
+enum IdeaStage {
+  JUST_AN_IDEA
+  BUILDING
+  PROTOTYPE
+  LAUNCHED
+}
+
+enum IdeaStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  REMOVED
+}
+
+enum TargetAudience {
+  STUDENTS
+  WORKING_PROFESSIONALS
+  HOMEMAKERS
+  SMALL_BUSINESSES
+  TIER_1_CITIES
+  TIER_2_3_CITIES
+  EVERYONE
+}
+
+enum ScoreTier {
+  EARLY_DAYS
+  GETTING_NOTICED
+  INTERESTED
+  STRONG
+  CROWD_FAVORITE
+}
+
+enum VoteType {
+  USE_THIS
+  MAYBE
+  NOT_FOR_ME
+}
+
+enum BadgeCategory {
+  VOTING
+  COMMENTING
+  FOUNDING
+  STREAK
+  MILESTONE
+  SPECIAL
+}
+
+enum NotificationType {
+  NEW_VOTE
+  NEW_COMMENT
+  COMMENT_REPLY
+  SCORE_MILESTONE
+  VOTES_MILESTONE
+  IDEA_TRENDING
+  BADGE_EARNED
+  SYSTEM
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE
+  STOLEN_IDEA
+  FAKE
+  HARASSMENT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  ACTION_TAKEN
+  DISMISSED
+}
+
+enum DonationStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ═══════════════════════════════
+// USER MODEL (Clerk — no auth adapter tables)
+// ═══════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  name          String
+  email         String?   @unique
+  image         String?
+
+  // Profile
+  username      String?   @unique @db.VarChar(30)
+  bio           String?   @db.VarChar(300)
+  city          String?   @db.VarChar(100)
+  state         String?   @db.VarChar(100)
+  college       String?   @db.VarChar(200)
+  company       String?   @db.VarChar(200)
+  linkedinUrl   String?
+  role          UserRole  @default(EXPLORER)
+  onboarded     Boolean   @default(false)
+
+  // Gamification
+  points        Int       @default(0)
+  level         UserLevel @default(NEWBIE)
+  lastVoteDate  DateTime?
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+
+  // Admin
+  isAdmin       Boolean   @default(false)
+  isBanned      Boolean   @default(false)
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastActiveAt  DateTime  @default(now())
+
+  // Relations
+  ideas          Idea[]
+  votes          Vote[]
+  comments       Comment[]
+  commentUpvotes CommentUpvote[]
+  badges         UserBadge[]
+  notifications  Notification[]
+  reports        Report[]
+
+  @@index([username])
+  @@index([clerkId])
+  @@index([points(sort: Desc)])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════
+// CORE MODELS
+// ═══════════════════════════════
+
+model Idea {
+  id               String          @id @default(cuid())
+  slug             String          @unique @db.VarChar(120)
+  title            String          @db.VarChar(60)
+  pitch            String          @db.VarChar(140)
+  problem          String          @db.VarChar(500)
+  solution         String          @db.VarChar(500)
+  category         Category
+  stage            IdeaStage
+  targetAudience   TargetAudience[]
+  status           IdeaStatus      @default(ACTIVE)
+
+  // Optional
+  imageUrl         String?
+  linkUrl          String?
+  feedbackQuestion String?         @db.VarChar(200)
+  tags             String[]        @default([])
+
+  // Cached counts
+  totalViews       Int             @default(0)
+  totalVotes       Int             @default(0)
+  totalComments    Int             @default(0)
+  totalShares      Int             @default(0)
+  useThisCount     Int             @default(0)
+  maybeCount       Int             @default(0)
+  notForMeCount    Int             @default(0)
+
+  // Score
+  validationScore  Int             @default(0)
+  scoreTier        ScoreTier       @default(EARLY_DAYS)
+  qualityScore     Int?
+
+  // AI flags
+  aiChecked        Boolean         @default(false)
+  isDuplicate      Boolean         @default(false)
+  isSpam           Boolean         @default(false)
+
+  // Timestamps
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  editedAt         DateTime?
+
+  // Relations
+  founderId        String
+  founder          User            @relation(fields: [founderId], references: [id])
+  votes            Vote[]
+  comments         Comment[]
+  reports          Report[]
+  dailyStats       IdeaDailyStat[]
+
+  @@index([slug])
+  @@index([status, validationScore(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([status, totalVotes(sort: Desc)])
+  @@index([category, status])
+  @@index([founderId])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  type      VoteType
+  reason    String?  @db.VarChar(200)
+  ipHash    String?
+  weight    Float    @default(1.0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  ideaId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ideaId])
+  @@index([ideaId, createdAt])
+  @@index([userId])
+}
+
+model Comment {
+  id           String   @id @default(cuid())
+  content      String   @db.VarChar(500)
+  isPinned     Boolean  @default(false)
+  isHidden     Boolean  @default(false)
+  isVoteReason Boolean  @default(false)
+  upvoteCount  Int      @default(0)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userId       String
+  ideaId       String
+  parentId     String?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idea         Idea          @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  parent       Comment?      @relation("Replies", fields: [parentId], references: [id])
+  replies      Comment[]     @relation("Replies")
+  upvotes      CommentUpvote[]
+
+  @@index([ideaId, isPinned(sort: Desc), createdAt(sort: Desc)])
+  @@index([parentId])
+}
+
+model CommentUpvote {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId    String
+  commentId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+}
+
+// ═══════════════════════════════
+// GAMIFICATION
+// ═══════════════════════════════
+
+model Badge {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  slug        String        @unique
+  description String
+  icon        String
+  category    BadgeCategory
+
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  earnedAt DateTime @default(now())
+
+  userId   String
+  badgeId  String
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge    Badge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+}
+
+// ═══════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════
+
+model Notification {
+  id     String           @id @default(cuid())
+  type   NotificationType
+  title  String
+  body   String
+  data   Json?
+  isRead Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+}
+
+// ═══════════════════════════════
+// MODERATION
+// ═══════════════════════════════
+
+model Report {
+  id         String       @id @default(cuid())
+  reason     ReportReason
+  details    String?      @db.VarChar(300)
+  status     ReportStatus @default(PENDING)
+  entityType String       // "idea" | "comment" | "user"
+  entityId   String
+
+  createdAt  DateTime     @default(now())
+  resolvedAt DateTime?
+
+  userId     String
+  ideaId     String?
+  user       User  @relation(fields: [userId], references: [id])
+  idea       Idea? @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([ideaId])
+}
+
+// ═══════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════
+
+model IdeaDailyStat {
+  id       String   @id @default(cuid())
+  date     DateTime @db.Date
+  views    Int      @default(0)
+  votes    Int      @default(0)
+  comments Int      @default(0)
+  shares   Int      @default(0)
+  score    Int      @default(0)
+
+  ideaId   String
+  idea     Idea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([ideaId, date])
+  @@index([date])
+}
