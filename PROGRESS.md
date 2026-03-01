@@ -26,6 +26,7 @@
 17. [Database Schema Summary](#17-database-schema-summary)
 18. [API Route Map](#18-api-route-map)
 19. [Current Status & What's Next](#19-current-status--whats-next)
+20. [Production Readiness Audit](#20-production-readiness-audit)
 
 ---
 
@@ -894,3 +895,86 @@ UserRole, UserLevel, Category (16 sectors), IdeaStage, IdeaStatus, TargetAudienc
 - Investor-to-founder messaging system
 - Mobile PWA support
 - Internationalization (Hindi, regional languages)
+
+---
+
+## 20. Production Readiness Audit
+
+> **Status: RED -- Not Production Ready**
+> Conducted March 2026. The feature set is complete and architecture is sound, but operational infrastructure is missing.
+
+### What IS Solid
+
+| Area | Details |
+|---|---|
+| Razorpay HMAC verification | Correctly uses `crypto.timingSafeEqual` in `src/lib/razorpay.ts` |
+| Clerk webhook security | Uses `req.text()` + Svix signature verification in `src/app/api/webhooks/clerk/route.ts` |
+| No XSS from raw HTML | Zero `dangerouslySetInnerHTML` usage across entire codebase |
+| Core rate limiters | Vote (50/hr), comment (10/hr), idea (5/hr), share (30/hr), donate (10/hr) all wired in |
+| Zod validation | Thorough schemas with proper constraints on all main forms in `src/lib/validations.ts` |
+| Atomic transactions | Vote + count updates use `prisma.$transaction()` everywhere |
+| Server-only secrets | `"server-only"` imports on `razorpay.ts`, `gemini.ts`, `clerk.ts` prevent client bundle inclusion |
+
+### Critical Issues (Must Fix Before Launch)
+
+| # | Issue | Details | Files |
+|---|---|---|---|
+| 1 | **Zero tests** | No test files exist anywhere. No `*.test.ts`, `*.spec.ts`, or `__tests__/` directories. Deploying blind with no way to catch regressions. | -- |
+| 2 | **No env validation** | Environment variables consumed raw from `process.env` with no runtime validation. Missing or mistyped env var = cryptic runtime crash. No `t3-env` or similar. | -- |
+| 3 | **No error tracking** | No Sentry, LogRocket, or any crash reporting service. Errors in production happen silently. | -- |
+| 4 | **No security headers** | `next.config.ts` has no `headers()` configuration. Missing: `Content-Security-Policy`, `X-Frame-Options`, `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`. | `next.config.ts` |
+| 5 | **AI routes unvalidated + unrate-limited** | `aiLimiter` is defined in `src/lib/redis.ts:46` but **never imported or used anywhere**. Both `/api/ai/quality-check` and `/api/ai/duplicate-check` use TypeScript `as` type assertions instead of Zod validation. Risks: prompt injection, Gemini quota exhaustion, malformed data crashes. | `src/app/api/ai/quality-check/route.ts:21`, `src/app/api/ai/duplicate-check/route.ts:21`, `src/lib/redis.ts:46` |
+| 6 | **No `global-error.tsx`** | Root layout crash = white screen in production. Error boundaries exist only inside route groups `(auth)`, `(public)`, `(dashboard)`, `admin`. | `src/app/` (missing file) |
+| 7 | **No `not-found.tsx`** | No custom 404 page anywhere. Users see generic Next.js 404. | `src/app/` (missing file) |
+
+### Medium Issues (Should Fix Before Launch)
+
+| # | Issue | Details | Files |
+|---|---|---|---|
+| 8 | **`upvoteComment` has no rate limiter** | Can be spammed at high frequency causing excessive DB transactions. | `src/actions/comment-actions.ts:262` |
+| 9 | **Middleware doesn't check onboarding status** | Only verifies Clerk authentication, not whether user completed onboarding. Relies entirely on each handler calling `requireUser()`. Un-onboarded users can reach dashboard pages that forget the check. | `src/middleware.ts:12-15` |
+| 10 | **Missing DB indexes** | `Comment.userId` (profile page queries), `CommentUpvote.commentId`, `UserBadge.userId`, `Report.userId` all lack standalone indexes. Will cause full table scans at scale. | `prisma/schema.prisma` |
+| 11 | **Admin API routes use unsafe type casts** | Multiple admin routes cast `searchParams.get("status")` directly as Prisma enums (`as ReportStatus`, `as IdeaStatus`) instead of Zod validation. Produces 500 errors instead of clean 400s. | `src/app/api/admin/reports/route.ts:20`, `src/app/api/admin/ideas/route.ts:21-22`, `src/app/api/admin/users/route.ts:21`, `src/app/api/admin/investors/route.ts:20` |
+| 12 | **`imageUrl` missing `.url()` validation** | `createIdeaSchema` accepts arbitrary strings for `imageUrl` field instead of validating as URL. | `src/lib/validations.ts:125` |
+
+### Missing Rate Limiters (Low Priority)
+
+These actions lack rate limiting but are lower risk due to auth requirements or founder-only access:
+
+| Action | File | Risk Level |
+|---|---|---|
+| `completeOnboarding` | `src/actions/user-actions.ts:30` | Low |
+| `updateProfile` | `src/actions/user-actions.ts:120` | Low |
+| `togglePinComment` | `src/actions/comment-actions.ts:185` | Low (founder-only) |
+| `toggleHideComment` | `src/actions/comment-actions.ts:224` | Low (founder-only) |
+| `toggleDonations` | `src/actions/payment-actions.ts:13` | Low (founder-only) |
+| `submitInvestorRequest` | `src/actions/investor-actions.ts:20` | Low |
+| `expressInterest` | `src/actions/investor-actions.ts:434` | Low |
+| `markNotificationRead` | `src/actions/notification-actions.ts:78` | Low |
+| `markAllNotificationsRead` | `src/actions/notification-actions.ts:114` | Low |
+
+### Missing Error/Loading Pages
+
+| File | Status | Impact |
+|---|---|---|
+| `src/app/global-error.tsx` | **Missing** | Root layout errors show white screen |
+| `src/app/not-found.tsx` | **Missing** | No custom 404 page |
+| `src/app/error.tsx` | **Missing** | Routes outside route groups have no error boundary |
+| `src/app/loading.tsx` | **Missing** | No root-level loading state |
+| Route-group `error.tsx` | Present | `(auth)`, `(public)`, `(dashboard)`, `admin` all have error boundaries |
+| Route-group `loading.tsx` | Present | `(auth)`, `(public)`, `(dashboard)`, `admin` all have loading states |
+
+### Recommended Fix Priority
+
+```
+1. Security headers in next.config.ts
+2. Env validation (t3-env or custom Zod)
+3. AI route fixes (wire aiLimiter + add Zod validation)
+4. global-error.tsx + not-found.tsx + root error.tsx
+5. Error tracking (Sentry)
+6. Missing DB indexes
+7. upvoteComment rate limiter
+8. Admin route Zod validation
+9. At minimum: integration tests for payment flow + voting
+10. imageUrl .url() validation
+```
