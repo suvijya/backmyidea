@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/clerk";
 import type { Prisma } from "@prisma/client";
+import { z } from "zod";
+
+const querySchema = z.object({
+  search: z.string().default(""),
+  filter: z.enum(["all", "banned", "admin", "onboarded"]).default("all"),
+  cursor: z.string().optional(),
+});
 
 function isRedirectError(error: unknown): boolean {
   return (
@@ -17,9 +24,17 @@ export async function GET(req: Request) {
     await requireAdmin();
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get("search") ?? "";
-    const filter = searchParams.get("filter") ?? "all"; // all | banned | admin | onboarded
-    const cursor = searchParams.get("cursor") ?? undefined;
+    const parseResult = querySchema.safeParse({
+      search: searchParams.get("search") || undefined,
+      filter: searchParams.get("filter") || undefined,
+      cursor: searchParams.get("cursor") || undefined,
+    });
+
+    if (!parseResult.success) {
+      return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+    }
+
+    const { search, filter, cursor } = parseResult.data;
     const take = 50;
 
     const where: Prisma.UserWhereInput = {};

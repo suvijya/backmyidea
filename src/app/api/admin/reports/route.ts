@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/clerk";
 import type { ReportStatus } from "@prisma/client";
+import { z } from "zod";
+
+const querySchema = z.object({
+  status: z.enum(["PENDING", "REVIEWED", "ACTION_TAKEN", "DISMISSED"]).default("PENDING"),
+  cursor: z.string().optional(),
+});
 
 function isRedirectError(error: unknown): boolean {
   return (
@@ -17,8 +23,16 @@ export async function GET(req: Request) {
     await requireAdmin();
 
     const { searchParams } = new URL(req.url);
-    const status = (searchParams.get("status") ?? "PENDING") as ReportStatus;
-    const cursor = searchParams.get("cursor") ?? undefined;
+    const parseResult = querySchema.safeParse({
+      status: searchParams.get("status") || undefined,
+      cursor: searchParams.get("cursor") || undefined,
+    });
+
+    if (!parseResult.success) {
+      return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+    }
+
+    const { status, cursor } = parseResult.data;
 
     const reports = await prisma.report.findMany({
       where: { status },

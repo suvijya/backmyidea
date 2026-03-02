@@ -131,22 +131,22 @@ enum DonationStatus {
 // ═══════════════════════════════
 
 model User {
-  id            String    @id @default(cuid())
-  clerkId       String    @unique
-  name          String
-  email         String?   @unique
-  image         String?
+  id      String  @id @default(cuid())
+  clerkId String  @unique
+  name    String
+  email   String? @unique
+  image   String?
 
   // Profile
-  username      String?   @unique @db.VarChar(30)
-  bio           String?   @db.VarChar(300)
-  city          String?   @db.VarChar(100)
-  state         String?   @db.VarChar(100)
-  college       String?   @db.VarChar(200)
-  company       String?   @db.VarChar(200)
-  linkedinUrl   String?
-  role          UserRole  @default(EXPLORER)
-  onboarded     Boolean   @default(false)
+  username    String?  @unique @db.VarChar(30)
+  bio         String?  @db.VarChar(300)
+  city        String?  @db.VarChar(100)
+  state       String?  @db.VarChar(100)
+  college     String?  @db.VarChar(200)
+  company     String?  @db.VarChar(200)
+  linkedinUrl String?
+  role        UserRole @default(EXPLORER)
+  onboarded   Boolean  @default(false)
 
   // Gamification
   points        Int       @default(0)
@@ -156,25 +156,25 @@ model User {
   longestStreak Int       @default(0)
 
   // Admin
-  isAdmin       Boolean   @default(false)
-  isBanned      Boolean   @default(false)
+  isAdmin  Boolean @default(false)
+  isBanned Boolean @default(false)
 
   // Timestamps
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastActiveAt  DateTime  @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastActiveAt DateTime @default(now())
 
   // Relations
-  ideas              Idea[]
-  votes              Vote[]
-  comments           Comment[]
-  commentUpvotes     CommentUpvote[]
-  badges             UserBadge[]
-  notifications      Notification[]
-  reports            Report[]
-  donations          Donation[]
-  investorProfile    InvestorProfile?
-  investorRequests   InvestorRequest[]
+  ideas            Idea[]
+  votes            Vote[]
+  comments         Comment[]
+  commentUpvotes   CommentUpvote[]
+  badges           UserBadge[]
+  notifications    Notification[]
+  reports          Report[]
+  donations        Donation[]
+  investorProfile  InvestorProfile?
+  investorRequests InvestorRequest[]
 
   @@index([username])
   @@index([clerkId])
@@ -187,61 +187,61 @@ model User {
 // ═══════════════════════════════
 
 model Idea {
-  id               String          @id @default(cuid())
-  slug             String          @unique @db.VarChar(120)
-  title            String          @db.VarChar(60)
-  pitch            String          @db.VarChar(140)
-  problem          String          @db.VarChar(500)
-  solution         String          @db.VarChar(500)
-  category         Category
-  stage            IdeaStage
-  targetAudience   TargetAudience[]
-  status           IdeaStatus      @default(ACTIVE)
+  id             String           @id @default(cuid())
+  slug           String           @unique @db.VarChar(120)
+  title          String           @db.VarChar(60)
+  pitch          String           @db.VarChar(140)
+  problem        String           @db.VarChar(500)
+  solution       String           @db.VarChar(500)
+  category       Category
+  stage          IdeaStage
+  targetAudience TargetAudience[]
+  status         IdeaStatus       @default(ACTIVE)
 
   // Optional
   imageUrl         String?
   linkUrl          String?
-  feedbackQuestion String?         @db.VarChar(200)
-  tags             String[]        @default([])
+  feedbackQuestion String?  @db.VarChar(200)
+  tags             String[] @default([])
 
   // Cached counts
-  totalViews       Int             @default(0)
-  totalVotes       Int             @default(0)
-  totalComments    Int             @default(0)
-  totalShares      Int             @default(0)
-  useThisCount     Int             @default(0)
-  maybeCount       Int             @default(0)
-  notForMeCount    Int             @default(0)
+  totalViews    Int @default(0)
+  totalVotes    Int @default(0)
+  totalComments Int @default(0)
+  totalShares   Int @default(0)
+  useThisCount  Int @default(0)
+  maybeCount    Int @default(0)
+  notForMeCount Int @default(0)
 
   // Score
-  validationScore  Int             @default(0)
-  scoreTier        ScoreTier       @default(EARLY_DAYS)
-  qualityScore     Int?
+  validationScore Int       @default(0)
+  scoreTier       ScoreTier @default(EARLY_DAYS)
+  qualityScore    Int?
 
   // Donations (Phase 2)
-  donationsEnabled Boolean         @default(false)
-  totalDonations   Int             @default(0)  // in paise
-  donorCount       Int             @default(0)
+  donationsEnabled Boolean @default(false)
+  totalDonations   Int     @default(0) // in paise
+  donorCount       Int     @default(0)
 
   // AI flags
-  aiChecked        Boolean         @default(false)
-  isDuplicate      Boolean         @default(false)
-  isSpam           Boolean         @default(false)
+  aiChecked   Boolean @default(false)
+  isDuplicate Boolean @default(false)
+  isSpam      Boolean @default(false)
 
   // Timestamps
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  editedAt         DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  editedAt  DateTime?
 
   // Relations
-  founderId        String
-  founder          User            @relation(fields: [founderId], references: [id])
-  votes            Vote[]
-  comments         Comment[]
-  reports          Report[]
-  dailyStats       IdeaDailyStat[]
-  donations        Donation[]
-  watchlistItems   WatchlistItem[]
+  founderId         String
+  founder           User               @relation(fields: [founderId], references: [id])
+  votes             Vote[]
+  comments          Comment[]
+  reports           Report[]
+  dailyStats        IdeaDailyStat[]
+  donations         Donation[]
+  watchlistItems    WatchlistItem[]
   investorInterests InvestorInterest[]
 
   @@index([slug])
@@ -253,19 +253,19 @@ model Idea {
 }
 
 model Vote {
-  id        String   @id @default(cuid())
-  type      VoteType
-  reason    String?  @db.VarChar(200)
-  ipHash    String?
-  weight    Float    @default(1.0)
+  id     String   @id @default(cuid())
+  type   VoteType
+  reason String?  @db.VarChar(200)
+  ipHash String?
+  weight Float    @default(1.0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userId    String
-  ideaId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  userId String
+  ideaId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
 
   @@unique([userId, ideaId])
   @@index([ideaId, createdAt])
@@ -273,28 +273,29 @@ model Vote {
 }
 
 model Comment {
-  id           String   @id @default(cuid())
-  content      String   @db.VarChar(500)
-  isPinned     Boolean  @default(false)
-  isHidden     Boolean  @default(false)
-  isVoteReason Boolean  @default(false)
-  upvoteCount  Int      @default(0)
+  id           String  @id @default(cuid())
+  content      String  @db.VarChar(500)
+  isPinned     Boolean @default(false)
+  isHidden     Boolean @default(false)
+  isVoteReason Boolean @default(false)
+  upvoteCount  Int     @default(0)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  userId       String
-  ideaId       String
-  parentId     String?
+  userId   String
+  ideaId   String
+  parentId String?
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  idea         Idea          @relation(fields: [ideaId], references: [id], onDelete: Cascade)
-  parent       Comment?      @relation("Replies", fields: [parentId], references: [id])
-  replies      Comment[]     @relation("Replies")
-  upvotes      CommentUpvote[]
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idea    Idea            @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  parent  Comment?        @relation("Replies", fields: [parentId], references: [id])
+  replies Comment[]       @relation("Replies")
+  upvotes CommentUpvote[]
 
   @@index([ideaId, isPinned(sort: Desc), createdAt(sort: Desc)])
   @@index([parentId])
+  @@index([userId])
 }
 
 model CommentUpvote {
@@ -307,6 +308,7 @@ model CommentUpvote {
   comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, commentId])
+  @@index([commentId])
 }
 
 // ═══════════════════════════════
@@ -321,19 +323,20 @@ model Badge {
   icon        String
   category    BadgeCategory
 
-  users       UserBadge[]
+  users UserBadge[]
 }
 
 model UserBadge {
   id       String   @id @default(cuid())
   earnedAt DateTime @default(now())
 
-  userId   String
-  badgeId  String
-  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge    Badge @relation(fields: [badgeId], references: [id])
+  userId  String
+  badgeId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge   Badge  @relation(fields: [badgeId], references: [id])
 
   @@unique([userId, badgeId])
+  @@index([userId])
 }
 
 // ═══════════════════════════════
@@ -351,7 +354,7 @@ model Notification {
   createdAt DateTime @default(now())
 
   userId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead, createdAt(sort: Desc)])
 }
@@ -365,19 +368,20 @@ model Report {
   reason     ReportReason
   details    String?      @db.VarChar(300)
   status     ReportStatus @default(PENDING)
-  entityType String       // "idea" | "comment" | "user"
+  entityType String // "idea" | "comment" | "user"
   entityId   String
 
-  createdAt  DateTime     @default(now())
+  createdAt  DateTime  @default(now())
   resolvedAt DateTime?
 
-  userId     String
-  ideaId     String?
-  user       User  @relation(fields: [userId], references: [id])
-  idea       Idea? @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  userId String
+  ideaId String?
+  user   User    @relation(fields: [userId], references: [id])
+  idea   Idea?   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
   @@index([ideaId])
+  @@index([userId])
 }
 
 // ═══════════════════════════════
@@ -393,8 +397,8 @@ model IdeaDailyStat {
   shares   Int      @default(0)
   score    Int      @default(0)
 
-  ideaId   String
-  idea     Idea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId String
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
 
   @@unique([ideaId, date])
   @@index([date])
@@ -405,26 +409,26 @@ model IdeaDailyStat {
 // ═══════════════════════════════
 
 model Donation {
-  id                 String         @id @default(cuid())
-  amountPaise        Int            // amount in paise
-  status             DonationStatus @default(PENDING)
-  isAnonymous        Boolean        @default(false)
-  message            String?        @db.VarChar(200)
+  id          String         @id @default(cuid())
+  amountPaise Int // amount in paise
+  status      DonationStatus @default(PENDING)
+  isAnonymous Boolean        @default(false)
+  message     String?        @db.VarChar(200)
 
   // Razorpay fields
-  razorpayOrderId    String?        @unique
-  razorpayPaymentId  String?        @unique
-  razorpaySignature  String?
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
 
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  completedAt        DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
 
   // Relations
-  donorId            String
-  ideaId             String
-  donor              User           @relation(fields: [donorId], references: [id], onDelete: Cascade)
-  idea               Idea           @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  donorId String
+  ideaId  String
+  donor   User   @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  idea    Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
 
   @@index([ideaId, status])
   @@index([donorId])
@@ -469,19 +473,19 @@ model InvestorProfile {
   investmentThesis   String                  @db.VarChar(500)
   sectorInterests    Category[]
   stagePreference    InvestorStagePreference @default(ANY)
-  ticketSizeMin      Int?                    // in INR (lakhs)
-  ticketSizeMax      Int?                    // in INR (lakhs)
+  ticketSizeMin      Int? // in INR (lakhs)
+  ticketSizeMax      Int? // in INR (lakhs)
   portfolioCompanies String?                 @db.VarChar(500)
   website            String?
 
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  userId             String                  @unique
-  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  watchlistItems     WatchlistItem[]
-  interests          InvestorInterest[]
+  userId         String             @unique
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  watchlistItems WatchlistItem[]
+  interests      InvestorInterest[]
 
   @@index([userId])
 }
@@ -500,27 +504,27 @@ model InvestorRequest {
   website            String?
 
   // Admin review
-  reviewedAt         DateTime?
-  reviewNote         String?                 @db.VarChar(300)
+  reviewedAt DateTime?
+  reviewNote String?   @db.VarChar(300)
 
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  userId             String
-  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
   @@index([userId])
 }
 
 model WatchlistItem {
-  id        String          @id @default(cuid())
-  status    WatchlistStatus @default(WATCHING)
-  notes     String?         @db.VarChar(500)
+  id     String          @id @default(cuid())
+  status WatchlistStatus @default(WATCHING)
+  notes  String?         @db.VarChar(500)
 
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   investorId String
@@ -534,12 +538,12 @@ model WatchlistItem {
 }
 
 model InvestorInterest {
-  id        String         @id @default(cuid())
-  status    InterestStatus @default(PENDING)
-  message   String?        @db.VarChar(500)
+  id      String         @id @default(cuid())
+  status  InterestStatus @default(PENDING)
+  message String?        @db.VarChar(500)
 
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   investorId String

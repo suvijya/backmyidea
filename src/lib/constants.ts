@@ -186,6 +186,7 @@ export const BADGE_CATEGORY_LABELS: Record<BadgeCategory, string> = {
 export const RATE_LIMITS = {
   vote: { limit: 50, window: "1 h" as const },
   comment: { limit: 10, window: "1 h" as const },
+  upvote: { limit: 50, window: "1 h" as const },
   idea: { limit: 5, window: "1 h" as const },
   ai: { limit: 14, window: "1 m" as const },
   donate: { limit: 10, window: "1 h" as const },

@@ -33,6 +33,16 @@ export const commentLimiter = new Ratelimit({
   analytics: true,
 });
 
+export const upvoteLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(
+    RATE_LIMITS.upvote.limit,
+    RATE_LIMITS.upvote.window
+  ),
+  prefix: "rl:upvote",
+  analytics: true,
+});
+
 export const ideaLimiter = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(

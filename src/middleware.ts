@@ -9,9 +9,25 @@ const isProtectedRoute = createRouteMatcher([
   "/investor(.*)",
 ]);
 
+const isOnboardingRoute = createRouteMatcher([
+  "/onboarding(.*)"
+]);
+
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     await auth.protect();
+    
+    // Check onboarding status via cookie if not on the onboarding page
+    if (!isOnboardingRoute(req)) {
+      const onboardedCookie = req.cookies.get("onboarded");
+      if (!onboardedCookie) {
+        // Only redirect if it's not an API route (API routes handle their own auth)
+        if (!req.nextUrl.pathname.startsWith("/api/")) {
+          const url = new URL("/onboarding", req.url);
+          return NextResponse.redirect(url);
+        }
+      }
+    }
   }
 
   // Forward the current URL so server components can read it via headers()

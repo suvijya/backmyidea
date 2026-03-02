@@ -2,7 +2,6 @@
 
 import { useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -58,7 +57,6 @@ const ROLES: { value: UserRole; title: string; desc: string; emoji: string }[] =
 
 export function OnboardingForm() {
   const router = useRouter();
-  const { user } = useUser();
   const [isPending, startTransition] = useTransition();
 
   const [step, setStep] = useState(0);

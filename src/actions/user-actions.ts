@@ -1,11 +1,12 @@
 "use server";
 
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { onboardingSchema, updateProfileSchema } from "@/lib/validations";
 import type { ActionResult, UserProfile, DashboardStats, DashboardIdea } from "@/types";
 import type { User } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 // ═══════════════════════════════
 // GET MY USERNAME (for client-side profile links)
@@ -108,6 +109,26 @@ export async function completeOnboarding(
       },
     });
   }
+
+  // Update Clerk metadata so middleware can check it efficiently in future sessions
+  try {
+    const client = await clerkClient();
+    await client.users.updateUser(clerkId, {
+      publicMetadata: { onboarded: true }
+    });
+  } catch (err) {
+    console.error("Failed to update Clerk publicMetadata:", err);
+  }
+
+  // Set a secure HTTP-only cookie to be checked by edge middleware
+  const cookieStore = await cookies();
+  cookieStore.set("onboarded", "true", {
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
 
   revalidatePath("/dashboard");
   return { success: true, data: updatedUser };

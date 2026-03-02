@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { usernameSchema } from "@/lib/validations";
 
 export async function GET(req: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { available: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const username = searchParams.get("username");
 

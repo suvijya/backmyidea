@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { commentLimiter } from "@/lib/redis";
+import { commentLimiter, upvoteLimiter } from "@/lib/redis";
 import { createCommentSchema } from "@/lib/validations";
 import { createNotificationInternal } from "@/lib/notifications";
 import { awardPoints, checkAndAwardBadges, updateUserLevel } from "@/lib/gamification";
@@ -270,6 +270,12 @@ export async function upvoteComment(
   const user = await prisma.user.findUnique({ where: { clerkId } });
   if (!user || !user.onboarded) {
     return { success: false, error: "Complete onboarding first" };
+  }
+
+  // Rate limit
+  const { success: withinLimit } = await upvoteLimiter.limit(user.id);
+  if (!withinLimit) {
+    return { success: false, error: "Too many upvotes. Try again later." };
   }
 
   const comment = await prisma.comment.findUnique({

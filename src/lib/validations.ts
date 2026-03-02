@@ -16,7 +16,7 @@ import {
 // ENUMS (mirroring Prisma for client-side validation)
 // ═══════════════════════════════
 
-const CategoryEnum = z.enum([
+export const CategoryEnum = z.enum([
   "FINTECH", "HEALTHTECH", "EDTECH", "FOOD", "D2C", "SAAS",
   "SOCIAL", "ENTERTAINMENT", "AGRITECH", "LOGISTICS", "AI_ML",
   "SUSTAINABILITY", "REAL_ESTATE", "TRAVEL", "FITNESS", "OTHER",
@@ -122,7 +122,7 @@ export const createIdeaSchema = z.object({
     .array(z.string().max(30))
     .max(MAX_TAGS, `Maximum ${MAX_TAGS} tags allowed`)
     .optional(),
-  imageUrl: z.string().optional().or(z.literal("")),
+  imageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
 });
 
 export const updateIdeaSchema = createIdeaSchema.partial();

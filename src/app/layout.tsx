@@ -18,6 +18,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
+  manifest: "/manifest.json",
   title: {
     default: "BackMyIdea — Validate Your Startup Idea Before You Build",
     template: "%s | BackMyIdea",

@@ -195,14 +195,16 @@ async function removeReportedContent(
       // For user reports, "remove content" means ban the user + remove their ideas
       const user = await prisma.user.findUnique({ where: { id: entityId } });
       if (user && !user.isBanned && !user.isAdmin) {
-        await prisma.user.update({
-          where: { id: entityId },
-          data: { isBanned: true },
-        });
-        await prisma.idea.updateMany({
-          where: { founderId: entityId, status: "ACTIVE" },
-          data: { status: "REMOVED" },
-        });
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: entityId },
+            data: { isBanned: true },
+          }),
+          prisma.idea.updateMany({
+            where: { founderId: entityId, status: "ACTIVE" },
+            data: { status: "REMOVED" },
+          }),
+        ]);
       }
       break;
     }
@@ -243,16 +245,16 @@ async function banReportedUser(
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || user.isAdmin || user.isBanned) return;
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { isBanned: true },
-  });
-
-  // Remove all their active ideas
-  await prisma.idea.updateMany({
-    where: { founderId: userId, status: "ACTIVE" },
-    data: { status: "REMOVED" },
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { isBanned: true },
+    }),
+    prisma.idea.updateMany({
+      where: { founderId: userId, status: "ACTIVE" },
+      data: { status: "REMOVED" },
+    }),
+  ]);
 }
 
 // ═══════════════════════════════

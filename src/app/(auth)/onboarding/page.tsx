@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
   // Check if user is already onboarded in Prisma
   const user = await getCurrentUser();
   if (user?.onboarded) {
-    redirect("/explore");
+    redirect("/api/sync-onboarding");
   }
 
   return <OnboardingForm />;

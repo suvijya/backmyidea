@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/clerk";
-import type { IdeaStatus, Prisma } from "@prisma/client";
+import type { Prisma, IdeaStatus } from "@prisma/client";
+import { z } from "zod";
+
+const querySchema = z.object({
+  search: z.string().default(""),
+  status: z.enum(["all", "ACTIVE", "DRAFT", "ARCHIVED", "REMOVED"]).default("all"),
+  cursor: z.string().optional(),
+});
 
 function isRedirectError(error: unknown): boolean {
   return (
@@ -17,9 +24,17 @@ export async function GET(req: Request) {
     await requireAdmin();
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get("search") ?? "";
-    const statusFilter = searchParams.get("status") ?? "all";
-    const cursor = searchParams.get("cursor") ?? undefined;
+    const parseResult = querySchema.safeParse({
+      search: searchParams.get("search") ?? undefined,
+      status: searchParams.get("status") ?? undefined,
+      cursor: searchParams.get("cursor") ?? undefined,
+    });
+
+    if (!parseResult.success) {
+      return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+    }
+
+    const { search, status: statusFilter, cursor } = parseResult.data;
     const take = 50;
 
     const where: Prisma.IdeaWhereInput = {};
@@ -32,7 +47,7 @@ export async function GET(req: Request) {
     }
 
     if (statusFilter !== "all") {
-      where.status = statusFilter as IdeaStatus;
+      where.status = statusFilter;
     }
 
     const ideas = await prisma.idea.findMany({
