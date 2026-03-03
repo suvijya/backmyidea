@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/clerk";
+import { requireUser } from "@/lib/clerk";
 import type { Prisma, IdeaStatus } from "@prisma/client";
 import { z } from "zod";
 
 const querySchema = z.object({
   search: z.string().default(""),
-  status: z.enum(["all", "ACTIVE", "DRAFT", "ARCHIVED", "REMOVED"]).default("all"),
+  status: z.enum(["all", "ACTIVE", "PENDING", "REJECTED", "DRAFT", "ARCHIVED", "REMOVED"]).default("all"),
   cursor: z.string().optional(),
 });
 
@@ -21,7 +21,10 @@ function isRedirectError(error: unknown): boolean {
 
 export async function GET(req: Request) {
   try {
-    await requireAdmin();
+    const user = await requireUser();
+    if (!user.isAdmin && !user.isEmployee) {
+      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const parseResult = querySchema.safeParse({
@@ -84,12 +87,15 @@ export async function GET(req: Request) {
 
 const patchSchema = z.object({
   ideaId: z.string().min(1),
-  status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED", "REMOVED"]),
+  status: z.enum(["ACTIVE", "PENDING", "REJECTED", "DRAFT", "ARCHIVED", "REMOVED"]),
 });
 
 export async function PATCH(req: Request) {
   try {
-    await requireAdmin();
+    const user = await requireUser();
+    if (!user.isAdmin && !user.isEmployee) {
+      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    }
 
     const json = await req.json();
     const parseResult = patchSchema.safeParse(json);

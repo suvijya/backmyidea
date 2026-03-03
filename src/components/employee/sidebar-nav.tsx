@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Flag,
   Lightbulb,
+  Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,11 @@ const NAV_ITEMS = [
     label: "Pending Ideas",
     href: "/employee",
     icon: Lightbulb,
+  },
+  {
+    label: "All Ideas",
+    href: "/employee/ideas",
+    icon: Archive,
   },
   {
     label: "Reports",
@@ -27,9 +33,8 @@ export function EmployeeSidebarNav() {
   return (
     <nav className="space-y-1">
       {NAV_ITEMS.map((item) => {
-        const isActive =
-          pathname === item.href ||
-          (item.href !== "/employee" && pathname.startsWith(item.href));
+        // Special match for exact path
+        const isActive = pathname === item.href;
 
         return (
           <Link

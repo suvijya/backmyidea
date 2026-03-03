@@ -997,3 +997,5 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
 - **Idea Access Security**: Updated the `getIdeaBySlug` action to restrict access to `PENDING` or `REJECTED` ideas. Non-authorized users can no longer access unpublished idea URLs. If an Idea is active, anyone can view it. If not, only the Founder, an Employee, or an Admin can view it.
 - **Role Consistency in Pages**: Confirmed that the database accurately queries for both `isEmployee` and `isAdmin` flags across relevant API endpoints to prevent unauthorized access.
 
+
+- **Employee "All Ideas" Access**: Extracted the Idea management table (`AdminIdeasPage`) into a reusable `IdeasClient` component. Added a new `/employee/ideas` route so that Employees can now browse, search, and change the status of *any* published idea (e.g., Delete, Archive, Restore) exactly like Admins do. The backend `/api/admin/ideas` route was updated to securely accept `isEmployee` flags as well.
