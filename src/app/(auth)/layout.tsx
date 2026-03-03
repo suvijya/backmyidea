@@ -14,7 +14,7 @@ export default function AuthLayout({
           <Lightbulb className="h-5 w-5 text-white" strokeWidth={2.5} />
         </div>
         <span className="text-xl font-bold tracking-tight text-deep-ink">
-          BackMyIdea
+          Piqd
         </span>
       </Link>
 

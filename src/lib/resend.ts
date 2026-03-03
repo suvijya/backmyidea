@@ -23,7 +23,7 @@ function getResend(): Resend | null {
   return _resend;
 }
 
-const FROM_EMAIL = `${APP_NAME} <noreply@backmyidea.in>`;
+const FROM_EMAIL = `${APP_NAME} <noreply@piqd.in>`;
 
 // ═══════════════════════════════
 // DONOR CONFIRMATION EMAIL

@@ -20,8 +20,8 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   manifest: "/manifest.json",
   title: {
-    default: "BackMyIdea — Validate Your Startup Idea Before You Build",
-    template: "%s | BackMyIdea",
+    default: "Piqd — Validate Your Startup Idea Before You Build",
+    template: "%s | Piqd",
   },
   description:
     "Post your startup idea. 10,000+ real people vote. Get a validation score, honest feedback, and a path to your first investor. India's startup validation platform.",
@@ -34,8 +34,8 @@ export const metadata: Metadata = {
     "startup feedback",
     "investor deal flow",
   ],
-  authors: [{ name: "BackMyIdea" }],
-  creator: "BackMyIdea",
+  authors: [{ name: "Piqd" }],
+  creator: "Piqd",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
   ),
@@ -43,14 +43,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: "/",
-    title: "BackMyIdea — Validate Your Startup Idea Before You Build",
+    title: "Piqd — Validate Your Startup Idea Before You Build",
     description:
       "Post your startup idea. Real people vote. Get a validation score and honest feedback.",
-    siteName: "BackMyIdea",
+    siteName: "Piqd",
   },
   twitter: {
     card: "summary_large_image",
-    title: "BackMyIdea — Validate Your Startup Idea",
+    title: "Piqd — Validate Your Startup Idea",
     description:
       "Post your startup idea. Real people vote. Get a validation score and honest feedback.",
   },

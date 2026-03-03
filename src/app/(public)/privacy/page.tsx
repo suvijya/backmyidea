@@ -75,10 +75,10 @@ export default function PrivacyPage() {
           You can update or delete your profile information at any time from your
           dashboard settings. To request complete account deletion, contact us at{" "}
           <a
-            href="mailto:privacy@backmyidea.in"
+            href="mailto:privacy@piqd.in"
             className="font-medium text-saffron hover:text-saffron-dark"
           >
-            privacy@backmyidea.in
+            privacy@piqd.in
           </a>
           .
         </p>
@@ -93,10 +93,10 @@ export default function PrivacyPage() {
         <p>
           For privacy-related questions, reach out to{" "}
           <a
-            href="mailto:privacy@backmyidea.in"
+            href="mailto:privacy@piqd.in"
             className="font-medium text-saffron hover:text-saffron-dark"
           >
-            privacy@backmyidea.in
+            privacy@piqd.in
           </a>
           .
         </p>

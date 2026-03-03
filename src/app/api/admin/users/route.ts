@@ -84,18 +84,23 @@ export async function GET(req: Request) {
   }
 }
 
+const patchSchema = z.object({
+  userId: z.string().min(1),
+  action: z.enum(["ban", "unban", "make_admin", "remove_admin", "make_employee", "remove_employee"]),
+});
+
 export async function PATCH(req: Request) {
   try {
     await requireAdmin();
 
-    const body = (await req.json()) as {
-      userId: string;
-      action: "ban" | "unban";
-    };
+    const json = await req.json();
+    const parseResult = patchSchema.safeParse(json);
 
-    if (!body.userId || !["ban", "unban"].includes(body.action)) {
+    if (!parseResult.success) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
+
+    const body = parseResult.data;
 
     const targetUser = await prisma.user.findUnique({
       where: { id: body.userId },
@@ -110,6 +115,23 @@ export async function PATCH(req: Request) {
         { error: "Cannot ban an admin user" },
         { status: 400 }
       );
+    }
+
+    if (body.action === "make_admin") {
+      await prisma.user.update({ where: { id: body.userId }, data: { isAdmin: true } });
+      return NextResponse.json({ success: true });
+    }
+    if (body.action === "remove_admin") {
+      await prisma.user.update({ where: { id: body.userId }, data: { isAdmin: false } });
+      return NextResponse.json({ success: true });
+    }
+    if (body.action === "make_employee") {
+      await prisma.user.update({ where: { id: body.userId }, data: { isEmployee: true } });
+      return NextResponse.json({ success: true });
+    }
+    if (body.action === "remove_employee") {
+      await prisma.user.update({ where: { id: body.userId }, data: { isEmployee: false } });
+      return NextResponse.json({ success: true });
     }
 
     const ban = body.action === "ban";

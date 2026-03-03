@@ -85,7 +85,7 @@ export function ReportModal({
             Report this {entityType}
           </DialogTitle>
           <DialogDescription className="text-[13px] text-text-secondary">
-            Help us keep BackMyIdea safe. Select a reason below.
+            Help us keep Piqd safe. Select a reason below.
           </DialogDescription>
         </DialogHeader>
 

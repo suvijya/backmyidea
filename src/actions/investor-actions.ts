@@ -144,7 +144,7 @@ export async function reviewInvestorRequest(
     createNotificationInternal({
       userId: request.userId,
       type: "SYSTEM",
-      title: "Investor Access Approved",
+      title: "You're Piqd!",
       body: "Your investor access request has been approved! You can now access the investor dashboard.",
       data: { link: "/investor" },
     }).catch(console.error);
@@ -558,6 +558,7 @@ export async function getInvestorDashboardStats(): Promise<
     interestsExpressed: number;
     interestsAccepted: number;
     newIdeasThisWeek: number;
+    watchlistAvgScore: number;
   }>
 > {
   const { profile } = await requireInvestor();
@@ -565,9 +566,12 @@ export async function getInvestorDashboardStats(): Promise<
   const startOfWeek = new Date();
   startOfWeek.setDate(startOfWeek.getDate() - 7);
 
-  const [watchlistCount, interestsExpressed, interestsAccepted, newIdeasThisWeek] =
+  const [watchlistItems, interestsExpressed, interestsAccepted, newIdeasThisWeek] =
     await Promise.all([
-      prisma.watchlistItem.count({ where: { investorId: profile.id } }),
+      prisma.watchlistItem.findMany({ 
+        where: { investorId: profile.id },
+        include: { idea: { select: { validationScore: true } } }
+      }),
       prisma.investorInterest.count({ where: { investorId: profile.id } }),
       prisma.investorInterest.count({
         where: { investorId: profile.id, status: "ACCEPTED" },
@@ -583,6 +587,14 @@ export async function getInvestorDashboardStats(): Promise<
       }),
     ]);
 
+  const watchlistCount = watchlistItems.length;
+  const watchlistAvgScore =
+    watchlistCount > 0
+      ? Math.round(
+          watchlistItems.reduce((sum, item) => sum + item.idea.validationScore, 0) / watchlistCount
+        )
+      : 0;
+
   return {
     success: true,
     data: {
@@ -590,6 +602,7 @@ export async function getInvestorDashboardStats(): Promise<
       interestsExpressed,
       interestsAccepted,
       newIdeasThisWeek,
+      watchlistAvgScore,
     },
   };
 }

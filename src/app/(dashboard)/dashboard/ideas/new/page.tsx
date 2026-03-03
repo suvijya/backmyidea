@@ -152,9 +152,9 @@ export default function NewIdeaPage() {
             );
           }
           setPublishedSlug(idea.slug);
-          toast.success("Idea published! Review the suggestions below.");
+          toast.success("Idea submitted for review! Review the suggestions below.");
         } else {
-          toast.success("Idea published!");
+          toast.success("Idea submitted for review! It will be public once approved.");
           router.push(`/idea/${idea.slug}`);
         }
       } else {
@@ -173,10 +173,10 @@ export default function NewIdeaPage() {
               <Check className="h-6 w-6 text-brand-green" />
             </div>
             <h1 className="font-display text-[28px] leading-tight text-deep-ink">
-              Idea Published!
+              Idea Submitted!
             </h1>
             <p className="mt-1 text-[14px] text-text-secondary">
-              Your idea is live. Our AI flagged a few things to consider.
+              Your idea is pending approval. Our AI flagged a few things to consider.
             </p>
           </div>
 

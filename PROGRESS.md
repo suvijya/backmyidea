@@ -1,4 +1,4 @@
-# BackMyIdea -- Complete Build Progress
+# Piqd -- Complete Build Progress
 
 > **Last updated:** March 2026
 > Every feature, fix, and implementation step documented in order.
@@ -32,7 +32,7 @@
 
 ## 1. Project Overview
 
-**BackMyIdea** is a four-sided startup idea validation platform for India:
+**Piqd** is a four-sided startup idea validation platform for India:
 
 - **Founders** post startup ideas in a structured format
 - **Public (Validators)** vote and comment to validate ideas
@@ -433,7 +433,7 @@ alert-dialog, avatar, badge, button, card, checkbox, dialog, dropdown-menu, form
 
 | Page | Route | Description |
 |---|---|---|
-| About | `/about` | About BackMyIdea, mission, how it works |
+| About | `/about` | About Piqd, mission, how it works |
 | Privacy Policy | `/privacy` | Privacy policy |
 | Terms of Service | `/terms` | Terms of service |
 
@@ -979,20 +979,21 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
 10. imageUrl .url() validation
 ```
 
-## Final Finalization Report (March 2026)
+---
 
-### 1. Client-Side Error Fixes
-- **Sign-in Redirection Loop / Crash Fix**: Addressed an issue where returning a `NextResponse.redirect` from `/api/sync-onboarding` was nullifying the newly set `onboarded` cookie because Next.js App Router ignores `cookies().set` when a new `NextResponse` is returned. Switched to setting the cookie directly on the `NextResponse` object to prevent redirect loops.
-- **Onboarding Form Hydration Fix**: Removed an unused `useUser()` hook from `OnboardingForm` that was causing potential hydration mismatches and client-side crashes immediately upon redirect from Clerk before client state was populated.
+## Recent Updates (March 2024)
 
-### 2. Implementation Check
-- Added `public/manifest.json` for PWA functionality.
-- Added `src/app/sitemap.ts` to expose dynamic and static routes.
-- Added `src/app/robots.ts` to configure web crawler access.
-- Confirmed `use-debounce.ts` is correctly implemented.
+- **Root File Cleanup**: Removed temporary `fix-*.js` and `update-*.js` script files from the root directory to maintain a clean workspace.
+- **My Ideas Fix**: Fixed an issue in `dashboard/ideas/page.tsx` where users could not see their own ideas that were in `PENDING` or `REJECTED` status. These now accurately render in their own dedicated sections.
+- **Idea Publishing UI**: Updated the `new/page.tsx` (Idea creation flow) to properly communicate to the user that their idea is "Submitted for Review" and "Pending Approval" rather than immediately "Published".
+- **Employee Portal Expansion**:
+  - Implemented a standard Sidebar Navigation layout (`EmployeeLayout`) so that the Employee portal looks cohesive with the Admin panel.
+  - Built an expandable "Full Idea View" directly in the pending ideas list. Employees can now review the entire Idea detail (Problem, Solution, Stage, Target Audience, and Links) before accepting or rejecting.
+  - Created a dedicated **Reports** resolution tab (`/employee/reports`) for employees to review and either resolve or dismiss platform reports without needing full Admin access.
 
-### 3. Verification
-- Checked API routes (all properly wrapped with try/catch).
-- Checked Edge Middleware (successfully exempts `isOnboardingRoute` and handles URL headers correctly).
-- Executed `npm run build` which succeeded with 0 TypeScript and Webpack errors.
-- Executed `npm run test` which succeeded.
+
+- **Employee vs Admin Consistency**: Rebuilt the `EmployeeDashboardClient` with Shadcn Table components and layout mirroring the `AdminIdeasPage`. Both pages now share the exact same clean visual structure (warm borders, pill badges, and clean table headers) for maximum consistency.
+- **Idea Approval/Rejection Banner**: Added a floating `EmployeeReviewBanner` component that appears only to Employees/Admins when viewing a `PENDING` idea in the public view. It displays sticky "Approve" or "Reject" buttons right on the idea page.
+- **Idea Access Security**: Updated the `getIdeaBySlug` action to restrict access to `PENDING` or `REJECTED` ideas. Non-authorized users can no longer access unpublished idea URLs. If an Idea is active, anyone can view it. If not, only the Founder, an Employee, or an Admin can view it.
+- **Role Consistency in Pages**: Confirmed that the database accurately queries for both `isEmployee` and `isAdmin` flags across relevant API endpoints to prevent unauthorized access.
+

@@ -25,6 +25,7 @@ import { CommentList } from "@/components/comments/comment-list";
 import { IdeaDetailClient } from "@/components/ideas/idea-detail-client";
 import { DonationSection } from "@/components/payments/donation-section";
 import { ExpressInterestButton } from "@/components/investor/express-interest-button";
+import { EmployeeReviewBanner } from "@/components/ideas/employee-review-banner";
 import { getPublicDonors } from "@/actions/payment-actions";
 import {
   CATEGORY_LABELS,
@@ -80,13 +81,16 @@ export default async function IdeaDetailPage({
   // Find current user's vote
   let userVote: VoteType | null = null;
   let currentUserId: string | null = null;
+  let isEmployeeOrAdmin = false;
+  
   if (clerkId) {
     const user = await prisma.user.findUnique({
       where: { clerkId },
-      select: { id: true },
+      select: { id: true, isEmployee: true, isAdmin: true },
     });
     if (user) {
       currentUserId = user.id;
+      isEmployeeOrAdmin = user.isEmployee || user.isAdmin;
       const vote = idea.votes.find((v) => v.userId === user.id);
       userVote = vote?.type ?? null;
     }
@@ -125,6 +129,11 @@ export default async function IdeaDetailPage({
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-6 lg:px-8">
+      {/* Employee Review Banner for PENDING ideas */}
+      {idea.status === "PENDING" && isEmployeeOrAdmin && (
+        <EmployeeReviewBanner ideaId={idea.id} />
+      )}
+
       {/* Back link */}
       <Link
         href="/explore"

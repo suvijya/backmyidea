@@ -12,16 +12,22 @@ import { cookies } from "next/headers";
 // GET MY USERNAME (for client-side profile links)
 // ═══════════════════════════════
 
-export async function getMyUsername(): Promise<string | null> {
+export async function getMyUsername(): Promise<{ username: string | null; isAdmin: boolean; isEmployee: boolean } | null> {
   const { userId: clerkId } = await auth();
   if (!clerkId) return null;
 
   const user = await prisma.user.findUnique({
     where: { clerkId },
-    select: { username: true },
+    select: { username: true, isAdmin: true, isEmployee: true },
   });
 
-  return user?.username ?? null;
+  if (!user) return null;
+
+  return {
+    username: user.username,
+    isAdmin: user.isAdmin,
+    isEmployee: user.isEmployee,
+  };
 }
 
 // ═══════════════════════════════

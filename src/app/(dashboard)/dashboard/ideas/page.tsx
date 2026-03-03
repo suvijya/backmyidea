@@ -44,6 +44,8 @@ const STATUS_STYLES: Record<
     className: "bg-brand-amber-light text-brand-amber",
   },
   REMOVED: { label: "Removed", className: "bg-brand-red-light text-brand-red" },
+  PENDING: { label: "Pending", className: "bg-yellow-500/10 text-yellow-600" },
+  REJECTED: { label: "Rejected", className: "bg-red-500/10 text-red-600" },
 };
 
 export default async function MyIdeasPage() {
@@ -51,6 +53,8 @@ export default async function MyIdeasPage() {
   const ideas = await getDashboardIdeas(user.id);
 
   const activeIdeas = ideas.filter((i) => i.status === "ACTIVE");
+  const pendingIdeas = ideas.filter((i) => i.status === "PENDING");
+  const rejectedIdeas = ideas.filter((i) => i.status === "REJECTED");
   const archivedIdeas = ideas.filter((i) => i.status === "ARCHIVED");
   const draftIdeas = ideas.filter((i) => i.status === "DRAFT");
 
@@ -97,10 +101,28 @@ export default async function MyIdeasPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-8">
+          {/* Pending Ideas */}
+          {pendingIdeas.length > 0 && (
+            <IdeaSection title="Pending Approval" count={pendingIdeas.length}>
+              {pendingIdeas.map((idea) => (
+                <IdeaRow key={idea.id} idea={idea} />
+              ))}
+            </IdeaSection>
+          )}
+
           {/* Active Ideas */}
           {activeIdeas.length > 0 && (
             <IdeaSection title="Active" count={activeIdeas.length}>
               {activeIdeas.map((idea) => (
+                <IdeaRow key={idea.id} idea={idea} />
+              ))}
+            </IdeaSection>
+          )}
+
+          {/* Rejected Ideas */}
+          {rejectedIdeas.length > 0 && (
+            <IdeaSection title="Rejected" count={rejectedIdeas.length}>
+              {rejectedIdeas.map((idea) => (
                 <IdeaRow key={idea.id} idea={idea} />
               ))}
             </IdeaSection>

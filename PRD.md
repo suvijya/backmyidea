@@ -1,4 +1,4 @@
-# BackMyIdea — Complete Product Requirements Document
+# Piqd — Complete Product Requirements Document
 
 ## The All-in-One Platform for Startup Idea Validation, Discovery & Investment in India
 
@@ -51,7 +51,7 @@ ONE-LINE:
 validated, funded, and tracked."
 
 EXPANDED:
-BackMyIdea is a four-sided platform that connects 
+Piqd is a four-sided platform that connects 
 founders, the general public, investors, and the 
 platform itself as a data-driven moderator — creating 
 the world's largest structured dataset of early-stage 
@@ -77,7 +77,7 @@ text
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                                                         │
-│                    BackMyIdea PLATFORM                   │
+│                    Piqd PLATFORM                   │
 │              (Side 4: Data & Intelligence)              │
 │                                                         │
 │  ┌───────────┐    ┌───────────┐    ┌───────────┐       │
@@ -375,7 +375,7 @@ STAGE 1: AWARENESS
 │
 │ Touchpoints:
 │ ├── Sees a validation card shared on LinkedIn
-│ ├── Friend recommends BackMyIdea
+│ ├── Friend recommends Piqd
 │ ├── College E-Cell workshop mentions platform
 │ ├── Finds via Google: "how to validate startup idea India"
 │ └── Sees Instagram reel: "Rating startup ideas"
@@ -464,7 +464,7 @@ STAGE 8: FUNDING & GROWTH (Phase 2-3)
 │
 ▼
 STAGE 9: ONGOING RELATIONSHIP
-│ "BackMyIdea is where I build in public"
+│ "Piqd is where I build in public"
 │
 │ Experience:
 │ ├── Posts progress updates
@@ -1001,7 +1001,7 @@ STAGE 5: EXPLORATION & ENGAGEMENT
 │
 ▼
 STAGE 6: HABIT FORMATION
-│ "Let me check BackMyIdea today"
+│ "Let me check Piqd today"
 │
 │ Triggers:
 │ ├── Notification: "5 new ideas in your interests"
@@ -1026,7 +1026,7 @@ STAGE 7: DEEPER ENGAGEMENT
 │
 ▼
 STAGE 8: EVANGELIST
-│ "You guys HAVE to check out BackMyIdea"
+│ "You guys HAVE to check out Piqd"
 │
 │ Behavior:
 │ ├── Shares validation cards regularly
@@ -1262,7 +1262,7 @@ Badge Earning Flow:
 ├── Badge condition met → instant notification
 ├── Toast: "🎉 You earned 'Early Believer'!"
 ├── Badge appears on profile
-├── Can share: "I earned this badge on BackMyIdea"
+├── Can share: "I earned this badge on Piqd"
 └── Badge collection visible on profile (earned + locked)
 
 STREAKS:
@@ -1342,7 +1342,7 @@ If Validator:
 ├── "Early Believer" Count
 └── Top Categories Voted In
 
-Profile URL: BackMyIdea.in/@username
+Profile URL: Piqd.in/@username
 Shareable: yes
 
 Settings:
@@ -1423,19 +1423,19 @@ Share Idea:
 │   WhatsApp: "Check out this startup idea: [Title] — 
 │   [Pitch]. [Score]/100 validation score! [Link]"
 │   Twitter: "🔥 [Title] — [Pitch] | Score: [Score]/100 
-│   on @BackMyIdea [Link]"
+│   on @Piqd [Link]"
 └── Share tracking: increment idea.totalShares
 
 Share After Voting:
 ├── "Share your take" button appears after vote
-├── Text: "I just discovered '[Idea]' on BackMyIdea! 
+├── Text: "I just discovered '[Idea]' on Piqd! 
 │   [My vote emoji] What do you think? [Link]"
 └── Card shows voter's choice
 
 Validation Card (Auto-Generated PNG):
 ├── Format: 1200×630px (landscape, Twitter/LinkedIn)
 ├── Content:
-│   ├── BackMyIdea branding (top left)
+│   ├── Piqd branding (top left)
 │   ├── Idea title (large)
 │   ├── One-line pitch
 │   ├── Validation score (big number)
@@ -1529,9 +1529,9 @@ STAGE 1: DISCOVERY
 │ Touchpoints:
 │ ├── Sees platform mentioned in startup newsletter
 │ ├── Founder pitches using validation card
-│ ├── LinkedIn post: "This idea got 500 votes on BackMyIdea"
+│ ├── LinkedIn post: "This idea got 500 votes on Piqd"
 │ ├── VC peer mentions it as scouting tool
-│ └── BackMyIdea trend report shared in investor group
+│ └── Piqd trend report shared in investor group
 │
 ▼
 STAGE 2: FIRST VISIT
@@ -1557,7 +1557,7 @@ STAGE 3: INVESTOR SIGNUP [Phase 3]
 │   ├── Stage preference (pre-seed / seed / etc)
 │   ├── Ticket size range
 │   └── Optional: portfolio companies
-│ ├── Verification by BackMyIdea team (manual review)
+│ ├── Verification by Piqd team (manual review)
 │ ├── Approved → access to investor dashboard
 │ └── Rejected → can still browse as public user
 │
@@ -1611,7 +1611,7 @@ STAGE 6: ENGAGEMENT
 │
 ▼
 STAGE 7: ONGOING RELATIONSHIP
-│ "BackMyIdea is my scouting tool"
+│ "Piqd is my scouting tool"
 │
 │ Behavior:
 │ ├── Weekly deal flow digest email
@@ -1742,7 +1742,7 @@ Sections:
 │   └── Anti-gaming confidence score
 │
 ├── Comparable Ideas
-│   ├── Similar ideas on BackMyIdea with scores
+│   ├── Similar ideas on Piqd with scores
 │   ├── How this idea differentiates
 │   └── Category trend context
 │
@@ -1843,14 +1843,14 @@ Reports:
 
 ---
 
-## 2.4 SIDE 4: THE PLATFORM (BackMyIdea as Data & Intelligence Layer)
+## 2.4 SIDE 4: THE PLATFORM (Piqd as Data & Intelligence Layer)
 
 ### 2.4.1 Platform Role
 
 text
 
 ```
-BackMyIdea as the 4th side is NOT just "backend" or 
+Piqd as the 4th side is NOT just "backend" or 
 "admin panel." It's the intelligence layer that:
 
 1. MODERATES quality and trust
@@ -2000,7 +2000,7 @@ FEATURE PL3: DATA PRODUCTS & INSIGHTS
 ──────────────────────────────────────
 
 Purpose: Monetize and distribute the unique data 
-BackMyIdea generates
+Piqd generates
 
 Product 1: Innovation Newsletter (Free → Paid)
 ├── Weekly email: "What India Wants to Build This Week"
@@ -2041,20 +2041,20 @@ Product 3: API Access [Phase 4]
     └── College integrates into E-Cell dashboard
 
 Product 4: White-Label for Colleges [Phase 4]
-├── "BackMyIdea for [College Name]"
+├── "Piqd for [College Name]"
 ├── Private instance for college E-Cell / incubator
 ├── Features:
 │   ├── Students post ideas within college ecosystem
 │   ├── Faculty/mentors validate
 │   ├── Alumni investors get curated deal flow
 │   ├── Leaderboard within college
-│   ├── Best ideas funnel to main BackMyIdea
+│   ├── Best ideas funnel to main Piqd
 │   └── Analytics dashboard for E-Cell lead
 ├── Pricing: ₹50,000-₹2,00,000/year per institution
 └── Target: IITs, IIMs, NITs, BITS, top private universities
 
 Product 5: Corporate Innovation Partnerships [Phase 4]
-├── Large companies use BackMyIdea to:
+├── Large companies use Piqd to:
 │   ├── Scout startups in their sector
 │   ├── Run innovation challenges
 │   │   "Best Agritech Idea — sponsored by Mahindra"
@@ -2071,15 +2071,15 @@ FEATURE PL4: CONTENT & COMMUNITY
 Purpose: Create content that drives organic growth 
 and establishes authority
 
-Blog (BackMyIdea.in/blog):
+Blog (Piqd.in/blog):
 ├── "Idea of the Week" feature story
 ├── Founder interviews (video + written)
 ├── "How I validated my idea" case studies
 ├── Data-driven articles:
-│   ├── "The 10 most validated ideas on BackMyIdea"
+│   ├── "The 10 most validated ideas on Piqd"
 │   ├── "What kind of ideas do Indians want?"
 │   ├── "Tier 2 cities are building different"
-│   └── "From BackMyIdea to funded: stories"
+│   └── "From Piqd to funded: stories"
 ├── Educational content:
 │   ├── "How to write a great idea submission"
 │   ├── "What investors look for in validation data"
@@ -2433,7 +2433,7 @@ WEEK 3-4: SOFT LAUNCH
 WEEK 5-8: COLLEGE BLITZ
 ├── Partner with 10-20 college E-Cells/incubators:
 │   ├── IITs, NITs, BITS, top private colleges
-│   ├── "Use BackMyIdea for your idea screening"
+│   ├── "Use Piqd for your idea screening"
 │   ├── Free presentation/workshop at E-Cell events
 │   ├── College-specific leaderboard
 │   └── Prize: "Best Idea from [College]" monthly
@@ -2466,7 +2466,7 @@ MONTH 5-8: COMMUNITY & NETWORK EFFECTS
 MONTH 9-14: INVESTOR SIDE LAUNCH
 ├── Invite 100 angel investors personally
 ├── Launch investor dashboard beta
-├── "BackMyIdea for Investors" campaign on LinkedIn
+├── "Piqd for Investors" campaign on LinkedIn
 ├── Partner with angel networks (Indian Angel Network, etc.)
 ├── First trend report published (PR event)
 ├── Corporate innovation outreach begins

@@ -66,10 +66,10 @@ export default function AboutPage() {
         <p>
           Have questions or feedback? Reach out to us at{" "}
           <a
-            href="mailto:hello@backmyidea.in"
+            href="mailto:hello@piqd.in"
             className="font-medium text-saffron hover:text-saffron-dark"
           >
-            hello@backmyidea.in
+            hello@piqd.in
           </a>
         </p>
       </div>

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SCORE_TIER_LABELS, SCORE_TIER_COLORS, APP_NAME } from "@/lib/constants";
 import { getVotePercentages } from "@/lib/utils";
 
-export const alt = "BackMyIdea - Idea Validation Card";
+export const alt = "Piqd - Idea Validation Card";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

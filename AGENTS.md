@@ -1,4 +1,4 @@
-# AGENTS.md — BackMyIdea
+# AGENTS.md — Piqd
 
 ## Role
 
@@ -24,7 +24,7 @@ You are a **senior full-stack engineer** and the primary coding agent on this pr
 
 ## What This Product Is
 
-**BackMyIdea** is a four-sided startup idea validation platform for India.
+**Piqd** is a four-sided startup idea validation platform for India.
 
 - **Founders** post startup ideas in a structured format
 - **Public (Validators)** vote (🔥 Use This / 🤔 Maybe / 👎 Not For Me) and comment
@@ -280,7 +280,7 @@ NEXT_PUBLIC_RAZORPAY_KEY_ID=
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=BackMyIdea
+NEXT_PUBLIC_APP_NAME=Piqd
 ```
 
 ---

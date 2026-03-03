@@ -16,6 +16,8 @@ import {
   Compass,
   Trophy,
   TrendingUp,
+  Shield,
+  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,15 +50,15 @@ export function Navbar() {
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [prismaUsername, setPrismaUsername] = useState<string | null>(null);
+  const [dbUser, setDbUser] = useState<{ username: string | null; isAdmin: boolean; isEmployee: boolean; } | null>(null);
 
   useEffect(() => {
     if (isSignedIn) {
-      getMyUsername().then(setPrismaUsername).catch(() => {});
+      getMyUsername().then(res => setDbUser(res)).catch(() => {});
     }
   }, [isSignedIn]);
 
-  const profileHref = prismaUsername ? `/profile/${prismaUsername}` : "/dashboard";
+  const profileHref = dbUser?.username ? `/profile/${dbUser.username}` : "/dashboard";
 
   // Don't show navbar on onboarding
   if (pathname === "/onboarding") return null;
@@ -94,7 +96,7 @@ export function Navbar() {
             <Lightbulb className="h-4.5 w-4.5 text-white" strokeWidth={2.5} />
           </div>
           <span className="font-display text-[20px] tracking-tight text-deep-ink">
-            BackMyIdea
+            Piqd
           </span>
         </Link>
 
@@ -218,6 +220,31 @@ export function Navbar() {
                         Settings
                       </Link>
                     </DropdownMenuItem>
+                    {(dbUser?.isAdmin || dbUser?.isEmployee) && (
+                      <DropdownMenuSeparator className="bg-warm-border" />
+                    )}
+                    {dbUser?.isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/admin/ideas"
+                          className="flex cursor-pointer items-center gap-2.5 text-[13px] text-text-secondary"
+                        >
+                          <Shield className="h-4 w-4" />
+                          Admin Panel
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    {dbUser?.isEmployee && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/employee"
+                          className="flex cursor-pointer items-center gap-2.5 text-[13px] text-text-secondary"
+                        >
+                          <ClipboardCheck className="h-4 w-4" />
+                          Employee Portal
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator className="bg-warm-border" />
                     <DropdownMenuItem
                       onClick={handleSignOut}
@@ -309,7 +336,7 @@ export function Navbar() {
                         />
                       </div>
                       <span className="font-display text-[18px] text-deep-ink">
-                        BackMyIdea
+                        Piqd
                       </span>
                     </Link>
                   )}
@@ -393,6 +420,36 @@ export function Navbar() {
                         <Settings className="h-4 w-4" />
                         Settings
                       </Link>
+                      {dbUser?.isAdmin && (
+                        <Link
+                          href="/admin/ideas"
+                          onClick={() => setMobileOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-medium transition-colors",
+                            pathname.startsWith("/admin")
+                              ? "bg-saffron-light text-saffron"
+                              : "text-text-secondary hover:bg-warm-hover hover:text-deep-ink"
+                          )}
+                        >
+                          <Shield className="h-4 w-4" />
+                          Admin Panel
+                        </Link>
+                      )}
+                      {dbUser?.isEmployee && (
+                        <Link
+                          href="/employee"
+                          onClick={() => setMobileOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-medium transition-colors",
+                            pathname.startsWith("/employee")
+                              ? "bg-saffron-light text-saffron"
+                              : "text-text-secondary hover:bg-warm-hover hover:text-deep-ink"
+                          )}
+                        >
+                          <ClipboardCheck className="h-4 w-4" />
+                          Employee Portal
+                        </Link>
+                      )}
                     </div>
                   </>
                 )}

@@ -44,7 +44,7 @@ export function IdeaDetailClient({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Check out this idea on BackMyIdea",
+          title: "Check out this idea on Piqd",
           url,
         });
         incrementShareCount(ideaId).catch(console.error);

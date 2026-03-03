@@ -66,15 +66,24 @@ export async function GET(req: Request) {
   }
 }
 
+const patchSchema = z.object({
+  reportId: z.string().min(1),
+  status: z.enum(["PENDING", "REVIEWED", "ACTION_TAKEN", "DISMISSED"]).optional(),
+  action: z.enum(["dismiss", "remove_content", "ban_user", "remove_and_ban"]).optional(),
+});
+
 export async function PATCH(req: Request) {
   try {
     await requireAdmin();
 
-    const body = (await req.json()) as {
-      reportId: string;
-      status?: ReportStatus;
-      action?: "dismiss" | "remove_content" | "ban_user" | "remove_and_ban";
-    };
+    const json = await req.json();
+    const parseResult = patchSchema.safeParse(json);
+
+    if (!parseResult.success) {
+      return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+    }
+
+    const body = parseResult.data;
 
     if (!body.reportId) {
       return NextResponse.json({ error: "Missing reportId" }, { status: 400 });

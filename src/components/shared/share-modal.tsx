@@ -35,9 +35,9 @@ export function ShareModal({ ideaId, title, slug, children }: ShareModalProps) {
   const url =
     typeof window !== "undefined"
       ? `${window.location.origin}/idea/${slug}`
-      : `https://backmyidea.in/idea/${slug}`;
+      : `https://piqd.in/idea/${slug}`;
 
-  const shareText = `Check out "${title}" on BackMyIdea`;
+  const shareText = `Check out "${title}" on Piqd`;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(url);

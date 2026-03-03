@@ -72,7 +72,7 @@ type AdminIdea = {
   };
 };
 
-const STATUS_STYLES: Record<IdeaStatus, string> = {
+const STATUS_STYLES: Record<string, string> = {
   ACTIVE: "bg-brand-green-light text-brand-green border-brand-green/20",
   DRAFT: "bg-warm-subtle text-text-muted border-warm-border",
   ARCHIVED: "bg-brand-amber-light text-brand-amber border-brand-amber/20",

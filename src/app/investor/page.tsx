@@ -76,6 +76,7 @@ type DashboardStats = {
   interestsExpressed: number;
   interestsAccepted: number;
   newIdeasThisWeek: number;
+  watchlistAvgScore: number;
 };
 
 export default function InvestorDashboardPage() {
@@ -171,11 +172,16 @@ export default function InvestorDashboardPage() {
     <div className="space-y-6">
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <StatCard
             label="Watchlist"
             value={stats.watchlistCount}
             icon={Bookmark}
+          />
+          <StatCard
+            label="Avg WL Score"
+            value={stats.watchlistAvgScore}
+            icon={TrendingUp}
           />
           <StatCard
             label="Interests Sent"
@@ -190,7 +196,7 @@ export default function InvestorDashboardPage() {
           <StatCard
             label="New This Week"
             value={stats.newIdeasThisWeek}
-            icon={TrendingUp}
+            icon={Lightbulb}
           />
         </div>
       )}

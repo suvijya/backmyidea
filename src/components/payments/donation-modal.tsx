@@ -179,7 +179,7 @@ export function DonationModal({
         amount: orderData.amount,
         currency: orderData.currency,
         order_id: orderData.orderId,
-        name: "BackMyIdea",
+        name: "Piqd",
         description: `Donation for "${ideaTitle}"`,
         handler: async (response: RazorpayResponse) => {
           // 4. Verify payment

@@ -54,7 +54,7 @@ text
 ````
 
 ```bash
-$ npx create-next-app@latest BackMyIdea \
+$ npx create-next-app@latest Piqd \
     --typescript \
     --tailwind \
     --eslint \
@@ -63,12 +63,12 @@ $ npx create-next-app@latest BackMyIdea \
     --import-alias "@/*" \
     --turbopack
 
-$ cd BackMyIdea
+$ cd Piqd
 ````
 
 **VERIFY:**
 
-- [ ]  `BackMyIdea/` directory exists
+- [ ]  `Piqd/` directory exists
 - [ ]  `src/app/page.tsx` exists
 - [ ]  `npm run dev` starts without errors
 
@@ -231,7 +231,7 @@ UPLOADTHING_TOKEN=""
 
 # ── Public ──
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NEXT_PUBLIC_APP_NAME="BackMyIdea"
+NEXT_PUBLIC_APP_NAME="Piqd"
 ```
 
 text
@@ -1564,7 +1564,7 @@ DEPENDS ON: TASK-020 (providers)
 Create the root layout with:
 
 - Import Inter font from `next/font/google`
-- Metadata with title template `"%s | BackMyIdea"`, default `"BackMyIdea — Validate Your Startup Idea"`, description about Indian startup validation platform
+- Metadata with title template `"%s | Piqd"`, default `"Piqd — Validate Your Startup Idea"`, description about Indian startup validation platform
 - metadataBase from `NEXT_PUBLIC_APP_URL` env
 - Body wraps children with Providers component
 - Include `<Navbar />` component (create placeholder if needed)
@@ -1592,7 +1592,7 @@ Specifications:
 
 - Sticky top-0, z-50, white background, border-b
 - Max-w-6xl mx-auto, px-4, h-16
-- Left: Logo text "BackMyIdea" as Link to "/" (font-bold text-xl)
+- Left: Logo text "Piqd" as Link to "/" (font-bold text-xl)
 - Center (desktop only, hidden on mobile): Links to /explore ("Explore"), /leaderboard ("Leaderboard")
 - Right:
     - Search icon button (Link to /search)
@@ -1654,7 +1654,7 @@ Simple server component:
 
 - Hidden on mobile (hidden md:block)
 - border-t, py-8, text-center
-- "BackMyIdea — Validate your startup ideas"
+- "Piqd — Validate your startup ideas"
 - Links: About, Guidelines, Privacy (all link to / for now)
 - "Built with ❤️ in India" text
 - text-sm text-gray-500
@@ -1747,7 +1747,7 @@ DEPENDS ON: TASK-011 (validations), TASK-014 (auth-utils)
 Specifications:
 
 - Centered layout (max-w-lg mx-auto, py-12)
-- Title: "Welcome to BackMyIdea! 🎉"
+- Title: "Welcome to Piqd! 🎉"
 - Subtitle: "Let's set up your profile in 30 seconds"
 - Form using react-hook-form + zodResolver with onboardingSchema:
     1. **Username** field:

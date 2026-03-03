@@ -82,20 +82,23 @@ export async function GET(req: Request) {
   }
 }
 
-const VALID_STATUSES: IdeaStatus[] = ["ACTIVE", "DRAFT", "ARCHIVED", "REMOVED"];
+const patchSchema = z.object({
+  ideaId: z.string().min(1),
+  status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED", "REMOVED"]),
+});
 
 export async function PATCH(req: Request) {
   try {
     await requireAdmin();
 
-    const body = (await req.json()) as {
-      ideaId: string;
-      status: IdeaStatus;
-    };
+    const json = await req.json();
+    const parseResult = patchSchema.safeParse(json);
 
-    if (!body.ideaId || !VALID_STATUSES.includes(body.status)) {
+    if (!parseResult.success) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
+
+    const body = parseResult.data;
 
     const idea = await prisma.idea.findUnique({ where: { id: body.ideaId } });
 

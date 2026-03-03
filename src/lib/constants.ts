@@ -4,7 +4,7 @@ import type { Category, IdeaStage, ScoreTier, TargetAudience, UserLevel, VoteTyp
 // APP
 // ═══════════════════════════════
 
-export const APP_NAME = "BackMyIdea";
+export const APP_NAME = "Piqd";
 export const APP_DESCRIPTION =
   "Validate your startup idea with real people. Get votes, feedback, and a validation score before you build.";
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";

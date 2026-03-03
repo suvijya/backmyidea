@@ -68,7 +68,7 @@ export async function createIdea(
 
   // Check max active ideas
   const activeCount = await prisma.idea.count({
-    where: { founderId: user.id, status: "ACTIVE" },
+    where: { founderId: user.id, status: { in: ["ACTIVE", "PENDING"] } },
   });
   if (activeCount >= MAX_ACTIVE_IDEAS) {
     return {
@@ -99,7 +99,7 @@ export async function createIdea(
 
   // AI duplicate check
   const existingIdeas = await prisma.idea.findMany({
-    where: { status: "ACTIVE", category: data.category },
+    where: { status: { in: ["ACTIVE", "PENDING"] }, category: data.category },
     select: { id: true, title: true, slug: true, pitch: true },
     take: 50,
     orderBy: { totalVotes: "desc" },
@@ -131,7 +131,7 @@ export async function createIdea(
       isDuplicate: duplicateResult?.isDuplicate ?? false,
       donationsEnabled,
       founderId: user.id,
-      status: "ACTIVE",
+      status: "PENDING",
     },
   });
 
@@ -290,6 +290,29 @@ export async function getIdeaBySlug(
 
   if (!idea || idea.status === "REMOVED") {
     return { success: false, error: "Idea not found" };
+  }
+
+  // If idea is not active, restrict access
+  if (idea.status !== "ACTIVE") {
+    const { userId: clerkId } = await auth();
+    if (!clerkId) {
+      return { success: false, error: "Idea not found" };
+    }
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true, isAdmin: true, isEmployee: true },
+    });
+    
+    if (!user) {
+      return { success: false, error: "Idea not found" };
+    }
+
+    const isFounder = idea.founder.id === user.id;
+    const canView = isFounder || user.isAdmin || user.isEmployee;
+
+    if (!canView) {
+      return { success: false, error: "Idea not found" };
+    }
   }
 
   // Increment view count (fire-and-forget)

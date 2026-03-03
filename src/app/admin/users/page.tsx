@@ -32,6 +32,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  MoreVertical,
+  UserPlus,
+  UserMinus,
+} from "lucide-react";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -57,6 +68,7 @@ type AdminUser = {
   level: UserLevel;
   points: number;
   isAdmin: boolean;
+  isEmployee: boolean;
   isBanned: boolean;
   onboarded: boolean;
   createdAt: string;
@@ -127,6 +139,40 @@ export default function AdminUsersPage() {
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, search]);
+
+  async function handleAction(userId: string, action: string) {
+    setActionInProgress(userId);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, action }),
+      });
+      if (!res.ok) {
+        const data = await res.json() as { error: string };
+        throw new Error(data.error || "Failed");
+      }
+
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.id === userId) {
+            if (action === "ban") return { ...u, isBanned: true };
+            if (action === "unban") return { ...u, isBanned: false };
+            if (action === "make_admin") return { ...u, isAdmin: true };
+            if (action === "remove_admin") return { ...u, isAdmin: false };
+            if (action === "make_employee") return { ...u, isEmployee: true };
+            if (action === "remove_employee") return { ...u, isEmployee: false };
+          }
+          return u;
+        })
+      );
+      toast.success("Action completed successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update user");
+    } finally {
+      setActionInProgress(null);
+    }
+  }
 
   async function handleBanToggle(userId: string, ban: boolean) {
     setActionInProgress(userId);
@@ -341,6 +387,14 @@ export default function AdminUsersPage() {
                                 Admin
                               </Badge>
                             )}
+                            {user.isEmployee && !user.isAdmin && (
+                              <Badge
+                                variant="outline"
+                                className="bg-saffron-light text-saffron border-saffron/20 text-[10px]"
+                              >
+                                Employee
+                              </Badge>
+                            )}
                             {user.isBanned && (
                               <Badge
                                 variant="outline"
@@ -355,68 +409,41 @@ export default function AdminUsersPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          {!user.isAdmin && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant={
-                                    user.isBanned ? "outline" : "destructive"
-                                  }
-                                  className={`h-7 gap-1 text-[12px] ${
-                                    user.isBanned
-                                      ? "border-warm-border"
-                                      : "bg-brand-red hover:bg-brand-red/90"
-                                  }`}
-                                  disabled={actionInProgress === user.id}
-                                >
-                                  {actionInProgress === user.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : user.isBanned ? (
-                                    <ShieldCheck className="h-3 w-3" />
-                                  ) : (
-                                    <ShieldBan className="h-3 w-3" />
-                                  )}
-                                  {user.isBanned ? "Unban" : "Ban"}
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    {user.isBanned ? "Unban" : "Ban"} {user.name}
-                                    ?
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    {user.isBanned
-                                      ? `This will restore ${user.name}'s access to the platform. Their previously removed ideas will NOT be automatically restored.`
-                                      : `This will ban ${user.name} from the platform. All their active ideas will be removed. This action can be reversed later.`}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="border-warm-border">
-                                    Cancel
-                                  </AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() =>
-                                      handleBanToggle(
-                                        user.id,
-                                        !user.isBanned
-                                      )
-                                    }
-                                    className={
-                                      user.isBanned
-                                        ? "bg-brand-green hover:bg-brand-green/90"
-                                        : "bg-brand-red hover:bg-brand-red/90"
-                                    }
-                                  >
-                                    {user.isBanned
-                                      ? "Yes, Unban"
-                                      : "Yes, Ban User"}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={actionInProgress === user.id}>
+                                {actionInProgress === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              {!user.isAdmin && (
+                                <DropdownMenuItem onClick={() => handleAction(user.id, "make_admin")}>
+                                  <UserPlus className="mr-2 h-4 w-4" /> Make Admin
+                                </DropdownMenuItem>
+                              )}
+                              {user.isAdmin && (
+                                <DropdownMenuItem onClick={() => handleAction(user.id, "remove_admin")} className="text-brand-red">
+                                  <UserMinus className="mr-2 h-4 w-4" /> Remove Admin
+                                </DropdownMenuItem>
+                              )}
+                              {!user.isEmployee && !user.isAdmin && (
+                                <DropdownMenuItem onClick={() => handleAction(user.id, "make_employee")}>
+                                  <UserPlus className="mr-2 h-4 w-4" /> Make Employee
+                                </DropdownMenuItem>
+                              )}
+                              {user.isEmployee && !user.isAdmin && (
+                                <DropdownMenuItem onClick={() => handleAction(user.id, "remove_employee")}>
+                                  <UserMinus className="mr-2 h-4 w-4" /> Remove Employee
+                                </DropdownMenuItem>
+                              )}
+                              {!user.isAdmin && (
+                                <DropdownMenuItem onClick={() => handleAction(user.id, user.isBanned ? "unban" : "ban")} className={user.isBanned ? "text-brand-green" : "text-brand-red"}>
+                                  {user.isBanned ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldBan className="mr-2 h-4 w-4" />}
+                                  {user.isBanned ? "Unban User" : "Ban User"}
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}

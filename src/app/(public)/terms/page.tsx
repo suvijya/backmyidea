@@ -115,10 +115,10 @@ export default function TermsPage() {
         <p>
           Questions about these terms? Contact us at{" "}
           <a
-            href="mailto:legal@backmyidea.in"
+            href="mailto:legal@piqd.in"
             className="font-medium text-saffron hover:text-saffron-dark"
           >
-            legal@backmyidea.in
+            legal@piqd.in
           </a>
           .
         </p>

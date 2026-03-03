@@ -29,7 +29,7 @@ import {
 import type { UserRole } from "@prisma/client";
 
 const STEPS = [
-  { id: "role", title: "How do you want to use BackMyIdea?" },
+  { id: "role", title: "How do you want to use Piqd?" },
   { id: "username", title: "Choose your username" },
   { id: "details", title: "Tell us about yourself" },
 ] as const;
@@ -112,7 +112,7 @@ export function OnboardingForm() {
 
       const result = await completeOnboarding(fd);
       if (result.success) {
-        toast.success("Welcome to BackMyIdea!");
+        toast.success("Welcome to Piqd!");
         router.push("/explore");
       } else {
         toast.error(result.error);

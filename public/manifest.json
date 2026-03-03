@@ -1,6 +1,6 @@
 {
-  "name": "BackMyIdea",
-  "short_name": "BackMyIdea",
+  "name": "Piqd",
+  "short_name": "Piqd",
   "description": "Validate your startup ideas in India",
   "start_url": "/",
   "display": "standalone",

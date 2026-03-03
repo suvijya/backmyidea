@@ -16,7 +16,7 @@ const COMPANY_LINKS = [
 
 const SOCIAL_LINKS = [
   {
-    href: "https://twitter.com/backmyidea",
+    href: "https://twitter.com/piqd",
     label: "Twitter",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -25,7 +25,7 @@ const SOCIAL_LINKS = [
     ),
   },
   {
-    href: "https://linkedin.com/company/backmyidea",
+    href: "https://linkedin.com/company/piqd",
     label: "LinkedIn",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -34,7 +34,7 @@ const SOCIAL_LINKS = [
     ),
   },
   {
-    href: "https://instagram.com/backmyidea",
+    href: "https://instagram.com/piqd",
     label: "Instagram",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -59,7 +59,7 @@ export function Footer() {
                 />
               </div>
               <span className="font-display text-[18px] text-deep-ink">
-                BackMyIdea
+                Piqd
               </span>
             </Link>
             <p className="mt-3 text-[13px] leading-relaxed text-text-secondary">
@@ -134,7 +134,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-10 border-t border-warm-border pt-6">
           <p className="text-[11px] text-text-muted">
-            &copy; {new Date().getFullYear()} BackMyIdea. All rights reserved.
+            &copy; {new Date().getFullYear()} Piqd. All rights reserved.
           </p>
         </div>
       </div>

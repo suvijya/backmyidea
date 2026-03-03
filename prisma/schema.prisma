@@ -53,6 +53,8 @@ enum IdeaStage {
 }
 
 enum IdeaStatus {
+  PENDING
+  REJECTED
   DRAFT
   ACTIVE
   ARCHIVED
@@ -156,7 +158,8 @@ model User {
   longestStreak Int       @default(0)
 
   // Admin
-  isAdmin  Boolean @default(false)
+  isAdmin      Boolean   @default(false)
+  isEmployee   Boolean   @default(false)
   isBanned Boolean @default(false)
 
   // Timestamps

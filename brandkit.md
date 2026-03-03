@@ -8,7 +8,7 @@
 
 ## Brand Essence
 
-BackMyIdea is a **validation engine for startups**.
+Piqd is a **validation engine for startups**.
 
 It sits between:
 
@@ -29,7 +29,7 @@ It transforms:
 
 ## Core Positioning Statement
 
-BackMyIdea is India’s structured startup validation platform where founders test ideas before building and investors discover signal before noise.
+Piqd is India’s structured startup validation platform where founders test ideas before building and investors discover signal before noise.
 
 ---
 
@@ -71,7 +71,7 @@ Never apply gradients inside icon
 
 This is where we go deep.
 
-BackMyIdea uses a **warm, intelligent, editorial tech palette**.
+Piqd uses a **warm, intelligent, editorial tech palette**.
 
 Not neon.  
 Not Web3.  
@@ -114,7 +114,7 @@ HSL: 16°, 87%, 55%
 
 # 🧱 CORE NEUTRAL SYSTEM
 
-BackMyIdea is built on warm neutrals (not blue-grays).
+Piqd is built on warm neutrals (not blue-grays).
 
 |Name|HEX|Usage|
 |---|---|---|
@@ -150,7 +150,7 @@ Always thick & bold.
 
 # 🌗 DARK MODE SYSTEM
 
-BackMyIdea dark mode must feel:
+Piqd dark mode must feel:
 
 Warm.  
 Not pure black.  
@@ -248,7 +248,7 @@ India’s Top
 _Ventures_
 
 Welcome to  
-BackMyIdea
+Piqd
 
 ---
 
@@ -265,7 +265,7 @@ Instrument Serif adds:
 - Editorial luxury
     
 
-It makes BackMyIdea feel bigger than a SaaS tool.
+It makes Piqd feel bigger than a SaaS tool.
 
 ---
 
@@ -552,7 +552,7 @@ Never use orange for body text.
 
 # 1️⃣2️⃣ BRAND FEEL SUMMARY
 
-BackMyIdea should feel like:
+Piqd should feel like:
 
 The NSE of startup ideas.  
 A Bloomberg terminal for founders.  
