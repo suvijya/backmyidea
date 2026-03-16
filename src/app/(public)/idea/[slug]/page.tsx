@@ -317,55 +317,45 @@ export default async function IdeaDetailPage({
         <aside className="lg:sticky lg:top-24 lg:h-fit">
           <div className="space-y-5">
             {/* Score Card */}
-            <div className="rounded-[16px] border border-warm-border bg-white p-6 shadow-card">
-              {idea.totalVotes >= MIN_VOTES_FOR_SCORE ? (
-                canViewScore ? (
-                  <div className="flex flex-col items-center">
-                    <ScoreRing
-                      score={idea.validationScore}
-                      size={120}
-                      strokeWidth={10}
-                      tier={SCORE_TIER_LABELS[idea.scoreTier]}
-                    />
-                    <p className="mt-3 text-center text-[12px] leading-relaxed text-text-muted">
-                      Based on {formatNumber(idea.totalVotes)} votes
-                    </p>
-                  </div>
+            {(idea.totalVotes < MIN_VOTES_FOR_SCORE || canViewScore) && (
+              <div className="rounded-[16px] border border-warm-border bg-white p-6 shadow-card">
+                {idea.totalVotes >= MIN_VOTES_FOR_SCORE ? (
+                  <>
+                    <div className="flex flex-col items-center">
+                      <ScoreRing
+                        score={idea.validationScore}
+                        size={120}
+                        strokeWidth={10}
+                        tier={SCORE_TIER_LABELS[idea.scoreTier]}
+                      />
+                      <p className="mt-3 text-center text-[12px] leading-relaxed text-text-muted">
+                        Based on {formatNumber(idea.totalVotes)} votes
+                      </p>
+                    </div>
+                    {/* Vote Breakdown */}
+                    <div className="mt-5 border-t border-warm-border pt-5">
+                      <VoteBreakdown
+                        useThisCount={idea.useThisCount}
+                        maybeCount={idea.maybeCount}
+                        notForMeCount={idea.notForMeCount}
+                      />
+                    </div>
+                  </>
                 ) : (
                   <div className="flex flex-col items-center py-4">
                     <div className="flex h-20 w-20 items-center justify-center rounded-full bg-warm-subtle">
                       <span className="font-data text-[28px] font-bold text-text-muted">
-                        ?
+                        {idea.totalVotes}/{MIN_VOTES_FOR_SCORE}
                       </span>
                     </div>
                     <p className="mt-3 text-center text-[13px] text-text-muted">
-                      Score hidden. Only founders and investors can view the validation score.
+                      {MIN_VOTES_FOR_SCORE - idea.totalVotes} more votes needed
+                      to generate a score
                     </p>
                   </div>
-                )
-              ) : (
-                <div className="flex flex-col items-center py-4">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-warm-subtle">
-                    <span className="font-data text-[28px] font-bold text-text-muted">
-                      {idea.totalVotes}/{MIN_VOTES_FOR_SCORE}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-center text-[13px] text-text-muted">
-                    {MIN_VOTES_FOR_SCORE - idea.totalVotes} more votes needed
-                    to generate a score
-                  </p>
-                </div>
-              )}
-
-              {/* Vote Breakdown */}
-              <div className="mt-5 border-t border-warm-border pt-5">
-                <VoteBreakdown
-                  useThisCount={idea.useThisCount}
-                  maybeCount={idea.maybeCount}
-                  notForMeCount={idea.notForMeCount}
-                />
+                )}
               </div>
-            </div>
+            )}
 
             {/* Vote Buttons */}
             <div className="rounded-[16px] border border-warm-border bg-white p-5 shadow-card">

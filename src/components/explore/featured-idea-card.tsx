@@ -60,22 +60,17 @@ export function FeaturedIdeaCard({
         </div>
 
         {/* Validation Score Badge */}
-        <div className="shrink-0 flex flex-col items-center justify-center rounded-full border border-white/10 bg-deep-ink px-5 py-3 shadow-xl backdrop-blur-md self-start md:self-center">
-          {canViewScore ? (
+        {canViewScore && (
+          <div className="shrink-0 flex flex-col items-center justify-center rounded-full border border-white/10 bg-deep-ink px-5 py-3 shadow-xl backdrop-blur-md self-start md:self-center">
             <div className="flex items-center gap-2 text-brand-green">
               <CheckCircle className="h-5 w-5" />
               <span className="font-data text-[24px] font-bold leading-none">{validationScore}%</span>
             </div>
-          ) : (
-            <div className="flex items-center gap-2 text-white/40">
-              <CheckCircle className="h-5 w-5 opacity-50" />
-              <span className="font-data text-[24px] font-bold leading-none">?</span>
-            </div>
-          )}
-          <span className="text-[10px] font-medium uppercase tracking-wider text-white/60 mt-1">
-            Validation Score
-          </span>
-        </div>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-white/60 mt-1">
+              Validation Score
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
