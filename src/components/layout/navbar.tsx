@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
+import { useDbUser } from "@/components/providers";
 import {
   Menu,
   Search,
@@ -35,7 +36,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "@/components/layout/notification-bell";
-import { getMyUsername } from "@/actions/user-actions";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -50,13 +50,7 @@ export function Navbar() {
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dbUser, setDbUser] = useState<{ username: string | null; isAdmin: boolean; isEmployee: boolean; } | null>(null);
-
-  useEffect(() => {
-    if (isSignedIn) {
-      getMyUsername().then(res => setDbUser(res)).catch(() => {});
-    }
-  }, [isSignedIn]);
+  const dbUser = useDbUser();
 
   const profileHref = dbUser?.username ? `/profile/${dbUser.username}` : "/dashboard";
 

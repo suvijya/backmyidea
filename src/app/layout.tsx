@@ -8,6 +8,7 @@ const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   display: "swap",
+  adjustFontFallback: false,
 });
 
 const dmMono = DM_Mono({
@@ -15,6 +16,7 @@ const dmMono = DM_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   display: "swap",
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
@@ -52,7 +54,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Piqd — Validate Your Startup Idea",
     description:
-      "Post your startup idea. Real people vote. Get a validation score and honest feedback.",
+      "Post your startup idea. Real individuals vote. Get a validation score and honest feedback.",
   },
   robots: {
     index: true,

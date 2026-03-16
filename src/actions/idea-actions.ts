@@ -273,15 +273,32 @@ export async function updateIdeaStatus(
 export async function getIdeaBySlug(
   slug: string
 ): Promise<ActionResult<IdeaDetail>> {
+  const { userId: clerkId } = await auth();
+
+  let currentUserId: string | null = null;
+  let isAdminOrEmployee = false;
+
+  if (clerkId) {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true, isAdmin: true, isEmployee: true },
+    });
+    if (user) {
+      currentUserId = user.id;
+      isAdminOrEmployee = user.isAdmin || user.isEmployee;
+    }
+  }
+
   const idea = await prisma.idea.findUnique({
     where: { slug },
     include: {
       founder: {
         select: { id: true, name: true, username: true, image: true, bio: true, city: true },
       },
-      votes: {
+      votes: currentUserId ? {
+        where: { userId: currentUserId },
         select: { id: true, type: true, userId: true },
-      },
+      } : false,
       _count: {
         select: { comments: true, votes: true },
       },
@@ -294,26 +311,19 @@ export async function getIdeaBySlug(
 
   // If idea is not active, restrict access
   if (idea.status !== "ACTIVE") {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return { success: false, error: "Idea not found" };
-    }
-    const user = await prisma.user.findUnique({
-      where: { clerkId },
-      select: { id: true, isAdmin: true, isEmployee: true },
-    });
-    
-    if (!user) {
-      return { success: false, error: "Idea not found" };
-    }
-
-    const isFounder = idea.founder.id === user.id;
-    const canView = isFounder || user.isAdmin || user.isEmployee;
+    const isFounder = currentUserId && idea.founder.id === currentUserId;
+    const canView = isFounder || isAdminOrEmployee;
 
     if (!canView) {
       return { success: false, error: "Idea not found" };
     }
   }
+
+  // Ensure votes array is present
+  const data = {
+    ...idea,
+    votes: idea.votes || []
+  };
 
   // Increment view count (fire-and-forget)
   prisma.idea
@@ -321,7 +331,7 @@ export async function getIdeaBySlug(
     .catch(console.error);
   trackDailyStat(idea.id, "views").catch(console.error);
 
-  return { success: true, data: idea };
+  return { success: true, data };
 }
 
 // ═══════════════════════════════
@@ -361,6 +371,16 @@ export async function getIdeasFeed(
   filters: IdeaFilters,
   cursor?: string
 ): Promise<PaginatedResponse<IdeaFeedItem>> {
+  const { userId: clerkId } = await auth();
+  let currentUserId: string | null = null;
+  if (clerkId) {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true },
+    });
+    if (user) currentUserId = user.id;
+  }
+
   const where: Prisma.IdeaWhereInput = {
     status: "ACTIVE",
   };
@@ -407,17 +427,23 @@ export async function getIdeasFeed(
       founder: {
         select: { id: true, name: true, username: true, image: true },
       },
-      votes: {
+      votes: currentUserId ? {
+        where: { userId: currentUserId },
         select: { type: true, userId: true },
-      },
+      } : false,
     },
     orderBy,
     take: FEED_PAGE_SIZE + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
 
-  const hasMore = ideas.length > FEED_PAGE_SIZE;
-  const items = hasMore ? ideas.slice(0, FEED_PAGE_SIZE) : ideas;
+  const formattedIdeas = ideas.map(idea => ({
+    ...idea,
+    votes: idea.votes || []
+  }));
+
+  const hasMore = formattedIdeas.length > FEED_PAGE_SIZE;
+  const items = hasMore ? formattedIdeas.slice(0, FEED_PAGE_SIZE) : formattedIdeas;
   const nextCursor = hasMore ? items[items.length - 1]?.id : undefined;
 
   return { items, nextCursor, hasMore };
@@ -503,9 +529,13 @@ export async function getIdeasByUser(
   // Determine if current user is the owner — if not, only show ACTIVE ideas
   const { userId: clerkId } = await auth();
   let isOwner = false;
+  let currentUserId: string | null = null;
   if (clerkId) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId }, select: { id: true, isAdmin: true } });
-    isOwner = currentUser?.id === userId || currentUser?.isAdmin === true;
+    if (currentUser) {
+      currentUserId = currentUser.id;
+      isOwner = currentUser.id === userId || currentUser.isAdmin === true;
+    }
   }
 
   const statusFilter: Prisma.IdeaWhereInput["status"] = isOwner
@@ -518,12 +548,16 @@ export async function getIdeasByUser(
       founder: {
         select: { id: true, name: true, username: true, image: true },
       },
-      votes: {
+      votes: currentUserId ? {
+        where: { userId: currentUserId },
         select: { type: true, userId: true },
-      },
+      } : false,
     },
     orderBy: { createdAt: "desc" },
   });
 
-  return ideas;
+  return ideas.map(idea => ({
+    ...idea,
+    votes: idea.votes || []
+  }));
 }

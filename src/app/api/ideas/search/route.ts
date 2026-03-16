@@ -3,9 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { searchSchema } from "@/lib/validations";
 import { FEED_PAGE_SIZE } from "@/lib/constants";
 import type { Prisma } from "@prisma/client";
+import { auth } from "@clerk/nextjs/server";
 
 export async function GET(req: Request) {
   try {
+    const { userId: clerkId } = await auth();
+    let currentUserId: string | null = null;
+    if (clerkId) {
+      const user = await prisma.user.findUnique({ where: { clerkId }, select: { id: true } });
+      if (user) currentUserId = user.id;
+    }
+
     const { searchParams } = new URL(req.url);
 
     const raw = {
@@ -63,17 +71,23 @@ export async function GET(req: Request) {
         founder: {
           select: { id: true, name: true, username: true, image: true },
         },
-        votes: {
+        votes: currentUserId ? {
+          where: { userId: currentUserId },
           select: { type: true, userId: true },
-        },
+        } : false,
       },
       orderBy,
       take: pageSize + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
-    const hasMore = ideas.length > pageSize;
-    const items = hasMore ? ideas.slice(0, pageSize) : ideas;
+    const formattedIdeas = ideas.map(idea => ({
+      ...idea,
+      votes: idea.votes || []
+    }));
+
+    const hasMore = formattedIdeas.length > pageSize;
+    const items = hasMore ? formattedIdeas.slice(0, pageSize) : formattedIdeas;
 
     return NextResponse.json({
       ideas: items,

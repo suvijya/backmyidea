@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { FEED_PAGE_SIZE } from "@/lib/constants";
+import { auth } from "@clerk/nextjs/server";
 
 export async function GET(req: Request) {
   try {
+    const { userId: clerkId } = await auth();
+    let currentUserId: string | null = null;
+    if (clerkId) {
+      const user = await prisma.user.findUnique({ where: { clerkId }, select: { id: true } });
+      if (user) currentUserId = user.id;
+    }
+
     const { searchParams } = new URL(req.url);
     const cursor = searchParams.get("cursor") ?? undefined;
     const period = searchParams.get("period") ?? "week"; // week | month | all
@@ -27,9 +35,10 @@ export async function GET(req: Request) {
         founder: {
           select: { id: true, name: true, username: true, image: true },
         },
-        votes: {
+        votes: currentUserId ? {
+          where: { userId: currentUserId },
           select: { type: true, userId: true },
-        },
+        } : false,
       },
       // Trending: sort by total votes (weighted by recency)
       orderBy: [
@@ -40,8 +49,13 @@ export async function GET(req: Request) {
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
-    const hasMore = ideas.length > FEED_PAGE_SIZE;
-    const items = hasMore ? ideas.slice(0, FEED_PAGE_SIZE) : ideas;
+    const formattedIdeas = ideas.map(idea => ({
+      ...idea,
+      votes: idea.votes || []
+    }));
+
+    const hasMore = formattedIdeas.length > FEED_PAGE_SIZE;
+    const items = hasMore ? formattedIdeas.slice(0, FEED_PAGE_SIZE) : formattedIdeas;
 
     return NextResponse.json({
       ideas: items,
