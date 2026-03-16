@@ -39,6 +39,7 @@ interface IdeaCardProps {
   createdAt: Date | string;
   userVote?: VoteType | null;
   isOwnIdea?: boolean;
+  canViewScore?: boolean;
   className?: string;
 }
 
@@ -62,9 +63,10 @@ export function IdeaCard({
   createdAt,
   userVote,
   isOwnIdea = false,
+  canViewScore = false,
   className,
 }: IdeaCardProps) {
-  const showScore = totalVotes >= MIN_VOTES_FOR_SCORE;
+  const showScore = totalVotes >= MIN_VOTES_FOR_SCORE && canViewScore;
   const timeStr = timeAgo(new Date(createdAt));
 
   return (

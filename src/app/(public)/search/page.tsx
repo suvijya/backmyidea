@@ -3,6 +3,7 @@ import { getIdeasFeed } from "@/actions/idea-actions";
 import { IdeaFeed } from "@/components/ideas/idea-feed";
 import { IdeaFilters } from "@/components/ideas/idea-filters";
 import { EmptyState } from "@/components/shared/empty-state";
+import { canUserViewGlobalScores } from "@/lib/clerk";
 
 export const dynamic = "force-dynamic";
 import type { IdeaFilters as IdeaFiltersType } from "@/types";
@@ -31,6 +32,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const initialData = query
     ? await getIdeasFeed(filters)
     : { items: [], hasMore: false };
+
+  const canViewScores = await canUserViewGlobalScores();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -81,7 +84,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               <p className="mb-4 text-[13px] text-text-muted">
                 Showing results for &ldquo;{query}&rdquo;
               </p>
-              <IdeaFeed initialIdeas={initialData.items} initialHasMore={initialData.hasMore} filters={filters} />
+              <IdeaFeed initialIdeas={initialData.items} initialHasMore={initialData.hasMore} filters={filters} canViewGlobalScores={canViewScores} />
             </>
           ) : (
             <EmptyState

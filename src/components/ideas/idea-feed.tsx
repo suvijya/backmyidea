@@ -14,6 +14,7 @@ interface IdeaFeedProps {
   initialCursor?: string;
   initialHasMore: boolean;
   filters: IdeaFilters;
+  canViewGlobalScores?: boolean;
 }
 
 export function IdeaFeed({
@@ -21,6 +22,7 @@ export function IdeaFeed({
   initialCursor,
   initialHasMore,
   filters,
+  canViewGlobalScores = false,
 }: IdeaFeedProps) {
   const { userId } = useAuth();
   const [ideas, setIdeas] = useState(initialIdeas);
@@ -115,6 +117,7 @@ export function IdeaFeed({
               createdAt={idea.createdAt}
               userVote={userVote}
               isOwnIdea={isOwnIdea}
+              canViewScore={canViewGlobalScores || isOwnIdea}
             />
           );
         })}

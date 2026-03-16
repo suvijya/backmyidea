@@ -27,6 +27,7 @@ import { DonationSection } from "@/components/payments/donation-section";
 import { ExpressInterestButton } from "@/components/investor/express-interest-button";
 import { EmployeeReviewBanner } from "@/components/ideas/employee-review-banner";
 import { getPublicDonors } from "@/actions/payment-actions";
+import { canUserViewGlobalScores } from "@/lib/clerk";
 import {
   CATEGORY_LABELS,
   CATEGORY_EMOJIS,
@@ -97,7 +98,9 @@ export default async function IdeaDetailPage({
   }
 
   const isOwnIdea = currentUserId === idea.founderId;
-  const showScore = idea.totalVotes >= MIN_VOTES_FOR_SCORE;
+  const canViewGlobalScores = await canUserViewGlobalScores();
+  const canViewScore = canViewGlobalScores || isOwnIdea;
+  const showScore = idea.totalVotes >= MIN_VOTES_FOR_SCORE && canViewScore;
 
   // Check if current user is an approved investor (for express interest button)
   let isInvestor = false;
@@ -315,18 +318,31 @@ export default async function IdeaDetailPage({
           <div className="space-y-5">
             {/* Score Card */}
             <div className="rounded-[16px] border border-warm-border bg-white p-6 shadow-card">
-              {showScore ? (
-                <div className="flex flex-col items-center">
-                  <ScoreRing
-                    score={idea.validationScore}
-                    size={120}
-                    strokeWidth={10}
-                    tier={SCORE_TIER_LABELS[idea.scoreTier]}
-                  />
-                  <p className="mt-3 text-center text-[12px] leading-relaxed text-text-muted">
-                    Based on {formatNumber(idea.totalVotes)} votes
-                  </p>
-                </div>
+              {idea.totalVotes >= MIN_VOTES_FOR_SCORE ? (
+                canViewScore ? (
+                  <div className="flex flex-col items-center">
+                    <ScoreRing
+                      score={idea.validationScore}
+                      size={120}
+                      strokeWidth={10}
+                      tier={SCORE_TIER_LABELS[idea.scoreTier]}
+                    />
+                    <p className="mt-3 text-center text-[12px] leading-relaxed text-text-muted">
+                      Based on {formatNumber(idea.totalVotes)} votes
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center py-4">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-warm-subtle">
+                      <span className="font-data text-[28px] font-bold text-text-muted">
+                        ?
+                      </span>
+                    </div>
+                    <p className="mt-3 text-center text-[13px] text-text-muted">
+                      Score hidden. Only founders and investors can view the validation score.
+                    </p>
+                  </div>
+                )
               ) : (
                 <div className="flex flex-col items-center py-4">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-warm-subtle">

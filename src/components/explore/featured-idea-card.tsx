@@ -13,6 +13,7 @@ interface FeaturedIdeaCardProps {
   pitch: string;
   category: Category;
   validationScore: number;
+  canViewScore?: boolean;
 }
 
 export function FeaturedIdeaCard({
@@ -22,6 +23,7 @@ export function FeaturedIdeaCard({
   pitch,
   category,
   validationScore,
+  canViewScore = false,
 }: FeaturedIdeaCardProps) {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-deep-ink p-6 md:p-8 text-white shadow-xl mb-8">
@@ -59,10 +61,17 @@ export function FeaturedIdeaCard({
 
         {/* Validation Score Badge */}
         <div className="shrink-0 flex flex-col items-center justify-center rounded-full border border-white/10 bg-deep-ink px-5 py-3 shadow-xl backdrop-blur-md self-start md:self-center">
-          <div className="flex items-center gap-2 text-brand-green">
-            <CheckCircle className="h-5 w-5" />
-            <span className="font-data text-[24px] font-bold leading-none">{validationScore}%</span>
-          </div>
+          {canViewScore ? (
+            <div className="flex items-center gap-2 text-brand-green">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-data text-[24px] font-bold leading-none">{validationScore}%</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-white/40">
+              <CheckCircle className="h-5 w-5 opacity-50" />
+              <span className="font-data text-[24px] font-bold leading-none">?</span>
+            </div>
+          )}
           <span className="text-[10px] font-medium uppercase tracking-wider text-white/60 mt-1">
             Validation Score
           </span>

@@ -46,76 +46,86 @@ export function ExploreSidebarLeft() {
   );
 
   return (
-    <div className="sticky top-24 rounded-2xl border border-warm-border bg-white p-5 shadow-card">
-      <h2 className="mb-4 text-[13px] font-bold tracking-wider text-text-muted uppercase">
-        FILTERS / REFINE YOUR FEED
-      </h2>
-
+    <div className="flex flex-col space-y-8">
       {/* Categories */}
-      <div className="mb-6 space-y-1">
-        {SIDEBAR_CATEGORIES.map((item) => {
-          const Icon = item.icon;
-          let isActive = false;
-          if (item.id === "all") isActive = !currentCategory && (!currentSort || currentSort === "newest");
-          else if (item.sort) isActive = currentSort === item.sort && !currentCategory;
-          else isActive = currentCategory === item.value;
+      <div>
+        <h2 className="mb-3 px-3 text-[11px] font-bold tracking-wider text-text-disabled uppercase">
+          CATEGORIES
+        </h2>
+        <nav className="space-y-1">
+          {SIDEBAR_CATEGORIES.map((item) => {
+            const Icon = item.icon;
+            let isActive = false;
+            if (item.id === "all") isActive = !currentCategory && (!currentSort || currentSort === "newest");
+            else if (item.sort) isActive = currentSort === item.sort && !currentCategory;
+            else isActive = currentCategory === item.value;
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => {
-                if (item.id === "all") updateParams({ category: null, sort: "newest" });
-                else if (item.sort) updateParams({ category: null, sort: item.sort });
-                else updateParams({ category: item.value as string, sort: null });
-              }}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium transition-colors",
-                isActive
-                  ? "bg-warm-subtle text-deep-ink"
-                  : "text-text-secondary hover:bg-warm-hover hover:text-deep-ink"
-              )}
-            >
-              <Icon className={cn("h-4 w-4", isActive ? "text-saffron" : "text-text-muted")} />
-              {item.label}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.id === "all") updateParams({ category: null, sort: "newest" });
+                  else if (item.sort) updateParams({ category: null, sort: item.sort });
+                  else updateParams({ category: item.value as string, sort: null });
+                }}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium transition-colors",
+                  isActive
+                    ? "bg-saffron-light text-saffron"
+                    : "text-text-secondary hover:bg-warm-hover hover:text-deep-ink"
+                )}
+              >
+                <Icon className={cn("h-[18px] w-[18px]", isActive ? "text-saffron" : "text-text-muted")} />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
       {/* Stages */}
       <div>
-        <h3 className="mb-3 px-1 text-[11px] font-bold tracking-wider text-text-disabled uppercase">
-          Stage
+        <h3 className="mb-3 px-3 text-[11px] font-bold tracking-wider text-text-disabled uppercase">
+          STAGE
         </h3>
-        <div className="space-y-2">
+        <nav className="space-y-1">
           {SIDEBAR_STAGES.map((stage) => {
             const isActive = currentStage === stage.id;
             return (
-              <label
+              <button
                 key={stage.id}
-                className="group flex cursor-pointer items-start gap-3 rounded-lg p-2 transition-colors hover:bg-warm-hover"
+                onClick={() => updateParams({ stage: isActive ? null : stage.id })}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+                  isActive
+                    ? "bg-saffron-light"
+                    : "hover:bg-warm-hover"
+                )}
               >
-                <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-warm-border-strong bg-white transition-colors group-hover:border-saffron">
-                  {isActive && <div className="h-2 w-2 rounded-sm bg-saffron" />}
+                <div className={cn(
+                  "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                  isActive ? "border-saffron bg-saffron" : "border-warm-border-strong bg-white"
+                )}>
+                  {isActive && <div className="h-2 w-2 rounded-sm bg-white" />}
                 </div>
-                <input
-                  type="checkbox"
-                  className="hidden"
-                  checked={isActive}
-                  onChange={() => updateParams({ stage: isActive ? null : stage.id })}
-                />
                 <div className="flex flex-col">
-                  <span className={cn("text-[14px] font-medium leading-tight", isActive ? "text-deep-ink" : "text-text-secondary")}>
+                  <span className={cn(
+                    "text-[14px] font-medium leading-tight", 
+                    isActive ? "text-saffron" : "text-text-secondary"
+                  )}>
                     {stage.label}
                   </span>
-                  <span className="text-[12px] text-text-disabled">
+                  <span className={cn(
+                    "text-[12px] mt-0.5",
+                    isActive ? "text-saffron/70" : "text-text-disabled"
+                  )}>
                     {stage.sublabel}
                   </span>
                 </div>
-              </label>
+              </button>
             );
           })}
-        </div>
+        </nav>
       </div>
     </div>
   );

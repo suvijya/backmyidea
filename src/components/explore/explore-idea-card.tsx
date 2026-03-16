@@ -38,6 +38,7 @@ interface ExploreIdeaCardProps {
   createdAt: Date | string;
   userVote?: VoteType | null;
   isOwnIdea?: boolean;
+  canViewScore?: boolean;
   className?: string;
 }
 
@@ -57,6 +58,7 @@ export function ExploreIdeaCard({
   createdAt,
   userVote,
   isOwnIdea = false,
+  canViewScore = false,
   className,
 }: ExploreIdeaCardProps) {
   const timeStr = timeAgo(new Date(createdAt));
@@ -78,9 +80,15 @@ export function ExploreIdeaCard({
 
       {/* Additions: Score badge on the left */}
       <div className="hidden sm:flex flex-col items-center justify-center shrink-0 w-[80px] rounded-lg bg-warm-subtle/50 py-4 px-2 border border-warm-border">
-        <span className="font-display text-[32px] leading-none text-deep-ink">
-          {validationScore}
-        </span>
+        {canViewScore ? (
+          <span className="font-display text-[32px] leading-none text-deep-ink">
+            {validationScore}
+          </span>
+        ) : (
+          <span className="font-display text-[32px] leading-none text-text-disabled">
+            ?
+          </span>
+        )}
         <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted mt-1">
           Score
         </span>

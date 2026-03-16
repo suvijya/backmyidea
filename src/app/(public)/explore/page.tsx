@@ -7,6 +7,7 @@ import { IdeaSkeletonList } from "@/components/ideas/idea-skeleton";
 import type { IdeaFilters as IdeaFiltersType, SortOption } from "@/types";
 import type { Category, IdeaStage } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { canUserViewGlobalScores } from "@/lib/clerk";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const { items, totalPages, currentPage } = await getExploreFeed(filters, page);
 
   // Fetch Right Sidebar Data
-  const [activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas] = await Promise.all([
+  const [activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas, canViewGlobalScores] = await Promise.all([
     prisma.user.count({ where: { votes: { some: {} } } }),
     prisma.idea.count({
       where: {
@@ -59,6 +60,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       orderBy: { createdAt: "desc" },
       take: 200,
     }),
+    canUserViewGlobalScores(),
   ]);
 
   const stats = {
@@ -67,10 +69,10 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   };
 
   const tagCounts: Record<string, number> = {};
-  recentIdeas.forEach((idea) => {
+  recentIdeas.forEach((idea: { tags: string[]; category: string }) => {
     // Also use categories as topics if tags are empty
     if (idea.tags && idea.tags.length > 0) {
-      idea.tags.forEach((tag) => {
+      idea.tags.forEach((tag: string) => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
       });
     } else {
@@ -105,21 +107,21 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr_260px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr_260px] items-start">
         {/* Left Sidebar */}
-        <aside className="hidden lg:block">
+        <aside className="hidden lg:block sticky top-24">
           <ExploreSidebarLeft />
         </aside>
 
         {/* Center Main Content */}
         <main className="min-w-0">
           <Suspense fallback={<IdeaSkeletonList count={6} />}>
-            <ExploreFeed ideas={items} totalPages={totalPages} currentPage={currentPage} />
+            <ExploreFeed ideas={items} totalPages={totalPages} currentPage={currentPage} canViewGlobalScores={canViewGlobalScores} />
           </Suspense>
         </main>
 
         {/* Right Sidebar */}
-        <aside className="hidden lg:block">
+        <aside className="hidden lg:block sticky top-24">
           <ExploreSidebarRight stats={stats} trendingTopics={trendingTopics} topValidator={topValidator} />
         </aside>
       </div>

@@ -13,9 +13,10 @@ interface ExploreFeedProps {
   ideas: IdeaFeedItem[];
   totalPages: number;
   currentPage: number;
+  canViewGlobalScores?: boolean;
 }
 
-export function ExploreFeed({ ideas, totalPages, currentPage }: ExploreFeedProps) {
+export function ExploreFeed({ ideas, totalPages, currentPage, canViewGlobalScores = false }: ExploreFeedProps) {
   const { userId } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -58,6 +59,7 @@ export function ExploreFeed({ ideas, totalPages, currentPage }: ExploreFeedProps
           pitch={featuredIdea.pitch}
           category={featuredIdea.category}
           validationScore={featuredIdea.validationScore}
+          canViewScore={canViewGlobalScores || featuredIdea.founder.id === userId}
         />
       )}
 
@@ -118,6 +120,7 @@ export function ExploreFeed({ ideas, totalPages, currentPage }: ExploreFeedProps
               createdAt={idea.createdAt}
               userVote={userVote}
               isOwnIdea={isOwnIdea}
+              canViewScore={canViewGlobalScores || isOwnIdea}
             />
           );
         })}

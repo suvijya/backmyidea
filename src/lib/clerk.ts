@@ -63,3 +63,15 @@ export async function requireAdmin(): Promise<User> {
 
   return user;
 }
+
+export async function canUserViewGlobalScores(): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) return false;
+  if (user.isAdmin || user.isEmployee) return true;
+  
+  const investorProfile = await prisma.investorProfile.findUnique({
+    where: { userId: user.id },
+  });
+  
+  return !!investorProfile;
+}
