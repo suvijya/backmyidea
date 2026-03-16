@@ -51,14 +51,16 @@ export function IdeaFeed({
     }
   }, [isLoading, hasMore, cursor, filters]);
 
-  // Intersection Observer for infinite scroll
+  // We leave observerRef attached to the container so that scrolling triggers
+  // loadMore automatically. The Load More button is a fallback for users
+  // or if they want to click it before the observer triggers.
   useEffect(() => {
     const el = observerRef.current;
     if (!el) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) {
+        if (entries[0]?.isIntersecting && !isLoading) {
           loadMore();
         }
       },
@@ -106,7 +108,7 @@ export function IdeaFeed({
               maybeCount={idea.maybeCount}
               notForMeCount={idea.notForMeCount}
               founder={{
-                name: idea.founder.name ?? "Anonymous",
+                name: idea.founder.name,
                 username: idea.founder.username,
                 imageUrl: idea.founder.image,
               }}
@@ -118,15 +120,24 @@ export function IdeaFeed({
         })}
       </div>
 
-      {/* Infinite scroll trigger */}
-      <div ref={observerRef} className="py-8">
-        {isLoading && (
-          <div className="flex items-center justify-center gap-2 text-text-muted">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-[13px]">Loading more ideas...</span>
-          </div>
-        )}
-      </div>
+      {/* Infinite Scroll Observer & Load More Button */}
+      {hasMore && (
+        <div ref={observerRef} className="mt-8 flex justify-center pb-8">
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-text-muted">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm font-medium">Loading more ideas...</span>
+            </div>
+          ) : (
+            <button
+              onClick={loadMore}
+              className="rounded-full bg-warm-subtle px-6 py-2.5 text-[14px] font-medium text-text-secondary transition-colors hover:bg-warm-hover hover:text-deep-ink"
+            >
+              Load More
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

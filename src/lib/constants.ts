@@ -25,7 +25,7 @@ export const MAX_TAGS = 5;
 export const MAX_USERNAME_LENGTH = 30;
 export const MIN_USERNAME_LENGTH = 3;
 
-export const FEED_PAGE_SIZE = 12;
+export const FEED_PAGE_SIZE = 10;
 export const COMMENTS_PAGE_SIZE = 20;
 export const NOTIFICATIONS_PAGE_SIZE = 20;
 export const LEADERBOARD_PAGE_SIZE = 50;
