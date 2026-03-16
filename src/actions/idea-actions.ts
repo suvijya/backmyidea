@@ -449,6 +449,87 @@ export async function getIdeasFeed(
   return { items, nextCursor, hasMore };
 }
 
+export async function getExploreFeed(
+  filters: IdeaFilters,
+  page: number = 1
+): Promise<{ items: IdeaFeedItem[]; totalPages: number; currentPage: number; totalCount: number }> {
+  const { userId: clerkId } = await auth();
+  let currentUserId: string | null = null;
+  if (clerkId) {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true },
+    });
+    if (user) currentUserId = user.id;
+  }
+
+  const where: Prisma.IdeaWhereInput = {
+    status: "ACTIVE",
+  };
+
+  if (filters.category) {
+    where.category = filters.category;
+  }
+  if (filters.stage) {
+    where.stage = filters.stage;
+  }
+  if (filters.search) {
+    where.OR = [
+      { title: { contains: filters.search, mode: "insensitive" } },
+      { pitch: { contains: filters.search, mode: "insensitive" } },
+      { tags: { has: filters.search.toLowerCase() } },
+    ];
+  }
+
+  let orderBy: Prisma.IdeaOrderByWithRelationInput;
+  switch (filters.sort) {
+    case "newest":
+      orderBy = { createdAt: "desc" };
+      break;
+    case "top":
+      orderBy = { validationScore: "desc" };
+      break;
+    case "hot":
+      orderBy = { totalVotes: "desc" };
+      break;
+    case "trending":
+    default:
+      orderBy = { totalVotes: "desc" };
+      break;
+  }
+
+  const limit = FEED_PAGE_SIZE;
+  const skip = (page - 1) * limit;
+
+  const [totalCount, ideas] = await prisma.$transaction([
+    prisma.idea.count({ where }),
+    prisma.idea.findMany({
+      where,
+      include: {
+        founder: {
+          select: { id: true, name: true, username: true, image: true },
+        },
+        votes: currentUserId ? {
+          where: { userId: currentUserId },
+          select: { type: true, userId: true },
+        } : false,
+      },
+      orderBy,
+      take: limit,
+      skip,
+    })
+  ]);
+
+  const formattedIdeas = ideas.map(idea => ({
+    ...idea,
+    votes: idea.votes || []
+  }));
+
+  const totalPages = Math.ceil(totalCount / limit);
+
+  return { items: formattedIdeas as IdeaFeedItem[], totalPages, currentPage: page, totalCount };
+}
+
 // ═══════════════════════════════
 // RECALCULATE SCORE (fire-and-forget)
 // ═══════════════════════════════
