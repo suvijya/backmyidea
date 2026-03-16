@@ -260,7 +260,7 @@ export default function LandingPage() {
                     </Button>
                   </Link>
                 ) : (
-                  <SignInButton mode="modal">
+                  <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
                     <Button
                       size="lg"
                       className="gap-2 bg-saffron px-7 text-[15px] font-semibold text-white shadow-saffron hover:bg-saffron-dark"
@@ -599,7 +599,7 @@ export default function LandingPage() {
                 </Button>
               </Link>
             ) : (
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
                 <Button
                   size="lg"
                   className="gap-2 bg-saffron px-8 text-[15px] font-semibold text-white shadow-saffron hover:bg-saffron-dark"

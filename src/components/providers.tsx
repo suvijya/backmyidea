@@ -38,6 +38,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       afterSignOutUrl="/"
+      signInFallbackRedirectUrl="/api/sync-onboarding"
+      signUpFallbackRedirectUrl="/api/sync-onboarding"
     >
       <DbUserProvider>
         {children}

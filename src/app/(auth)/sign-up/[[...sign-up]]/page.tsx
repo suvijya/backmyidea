@@ -3,6 +3,7 @@ import { SignUp } from "@clerk/nextjs";
 export default function SignUpPage() {
   return (
     <SignUp
+      fallbackRedirectUrl="/api/sync-onboarding"
       appearance={{
         elements: {
           rootBox: "mx-auto",

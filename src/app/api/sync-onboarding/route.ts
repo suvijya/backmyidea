@@ -1,11 +1,35 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/clerk";
+import { currentUser } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
 export async function GET(req: Request) {
-  const user = await getCurrentUser();
-  
-  if (user?.onboarded) {
+  const clerkUser = await currentUser();
+  if (!clerkUser) {
+    return NextResponse.redirect(new URL("/sign-in", req.url));
+  }
+
+  // JIT creation or fetch
+  let user = await prisma.user.findUnique({
+    where: { clerkId: clerkUser.id },
+  });
+
+  if (!user) {
+    const email = clerkUser.emailAddresses[0]?.emailAddress ?? null;
+    const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || "User";
+
+    user = await prisma.user.create({
+      data: {
+        clerkId: clerkUser.id,
+        name,
+        email,
+        image: clerkUser.imageUrl,
+        onboarded: false,
+      },
+    });
+  }
+
+  if (user.onboarded) {
     const response = NextResponse.redirect(new URL("/explore", req.url));
     response.cookies.set("onboarded", "true", {
       maxAge: 60 * 60 * 24 * 365,
@@ -16,6 +40,6 @@ export async function GET(req: Request) {
     });
     return response;
   }
-  
+
   return NextResponse.redirect(new URL("/onboarding", req.url));
 }

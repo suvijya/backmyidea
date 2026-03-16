@@ -25,7 +25,7 @@ export function DonateButton({
       <div className="flex items-center gap-2">
         <Heart className="h-4 w-4 text-saffron" />
         <h3 className="text-[14px] font-semibold text-deep-ink">
-          Back this idea
+          Piq this Idea
         </h3>
       </div>
 

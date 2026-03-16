@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Vote, Lightbulb } from "lucide-react";
+import { Vote, Lightbulb, Flame } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RankMedal } from "@/components/leaderboard/rank-medal";
 import { LEVEL_LABELS } from "@/lib/constants";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, cn } from "@/lib/utils";
 import type { UserLevel } from "@prisma/client";
 
 type LeaderboardUser = {
@@ -13,6 +13,7 @@ type LeaderboardUser = {
   image: string | null;
   points: number;
   level: UserLevel;
+  currentStreak: number;
   _count: { votes: number; ideas: number };
 };
 
@@ -70,6 +71,12 @@ export function UserLeaderboardItem({
           <Lightbulb className="h-3 w-3" />
           {formatNumber(user._count.ideas)}
         </span>
+        {user.currentStreak > 0 && (
+          <span className="flex items-center gap-1 text-saffron">
+            <Flame className={cn("h-3 w-3", user.currentStreak >= 3 && "animate-pulse")} />
+            {user.currentStreak} day{user.currentStreak > 1 ? "s" : ""}
+          </span>
+        )}
       </div>
 
       {/* Points */}

@@ -240,7 +240,7 @@ export function DonationModal({
           <div className="flex items-center gap-2">
             <Heart className="h-4 w-4 text-saffron" />
             <h2 className="text-[16px] font-semibold text-deep-ink">
-              Back this idea
+              Piq this Idea
             </h2>
           </div>
           <button

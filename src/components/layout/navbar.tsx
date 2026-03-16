@@ -253,7 +253,7 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -262,7 +262,7 @@ export function Navbar() {
                   Sign In
                 </Button>
               </SignInButton>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
                 <Button
                   size="sm"
                   className="gap-1.5 bg-saffron text-white shadow-none hover:bg-saffron-dark"
@@ -477,7 +477,7 @@ export function Navbar() {
                       </Button>
                     </div>
                   ) : (
-                    <SignInButton mode="modal">
+                    <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
                       <Button className="w-full bg-saffron text-white hover:bg-saffron-dark">
                         Get Started
                       </Button>

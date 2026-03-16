@@ -18,6 +18,7 @@ export default async function LeaderboardPage() {
         image: true,
         points: true,
         level: true,
+        currentStreak: true,
         _count: { select: { votes: true, ideas: true } },
       },
       orderBy: { points: "desc" },
