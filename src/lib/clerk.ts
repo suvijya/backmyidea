@@ -1,6 +1,6 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { prisma } from "./prisma";
 import type { User } from "@prisma/client";
 import { cookies } from "next/headers";
@@ -58,7 +58,7 @@ export async function requireAdmin(): Promise<User> {
   const user = await requireUser();
 
   if (!user.isAdmin) {
-    redirect("/");
+    notFound();
   }
 
   return user;
