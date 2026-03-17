@@ -82,3 +82,13 @@ export const shareLimiter = new Ratelimit({
   prefix: "rl:share",
   analytics: true,
 });
+
+export const dmLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(
+    RATE_LIMITS.dm.limit,
+    RATE_LIMITS.dm.window
+  ),
+  prefix: "rl:dm",
+  analytics: true,
+});

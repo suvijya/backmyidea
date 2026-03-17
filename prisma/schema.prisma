@@ -103,6 +103,7 @@ enum NotificationType {
   IDEA_TRENDING
   BADGE_EARNED
   SYSTEM
+  NEW_DIRECT_MESSAGE
 }
 
 enum ReportReason {
@@ -176,6 +177,7 @@ model User {
   notifications    Notification[]
   reports          Report[]
   donations        Donation[]
+  directMessages   DirectMessage[]
   investorProfile  InvestorProfile?
   investorRequests InvestorRequest[]
 
@@ -244,6 +246,7 @@ model Idea {
   reports           Report[]
   dailyStats        IdeaDailyStat[]
   donations         Donation[]
+  directMessages    DirectMessage[]
   watchlistItems    WatchlistItem[]
   investorInterests InvestorInterest[]
 
@@ -360,6 +363,26 @@ model Notification {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead, createdAt(sort: Desc)])
+}
+
+// ═══════════════════════════════
+// DIRECT MESSAGES (Suggestions)
+// ═══════════════════════════════
+
+model DirectMessage {
+  id        String   @id @default(cuid())
+  content   String   @db.VarChar(500)
+  
+  createdAt DateTime @default(now())
+
+  userId    String
+  ideaId    String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@index([ideaId, createdAt(sort: Desc)])
+  @@index([userId])
 }
 
 // ═══════════════════════════════

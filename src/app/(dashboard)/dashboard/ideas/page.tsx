@@ -195,7 +195,7 @@ function IdeaRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <Link
-            href={`/idea/${idea.slug}`}
+            href={`/dashboard/ideas/${idea.id}`}
             className="truncate text-[15px] font-semibold text-deep-ink hover:text-saffron transition-colors"
           >
             {idea.title}

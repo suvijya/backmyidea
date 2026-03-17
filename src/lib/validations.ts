@@ -214,6 +214,11 @@ export const expressInterestSchema = z.object({
   message: z.string().max(500).optional(),
 });
 
+export const directMessageSchema = z.object({
+  ideaId: z.string().min(1, "Idea ID is required"),
+  content: z.string().min(5, "Message must be at least 5 characters").max(500, "Message cannot exceed 500 characters"),
+});
+
 // ═══════════════════════════════
 // TYPE INFERENCE
 // ═══════════════════════════════
@@ -229,3 +234,4 @@ export type SearchInput = z.infer<typeof searchSchema>;
 export type InvestorRequestInput = z.infer<typeof investorRequestSchema>;
 export type WatchlistInput = z.infer<typeof watchlistSchema>;
 export type ExpressInterestInput = z.infer<typeof expressInterestSchema>;
+export type DirectMessageInput = z.infer<typeof directMessageSchema>;

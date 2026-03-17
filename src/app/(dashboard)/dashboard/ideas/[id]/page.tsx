@@ -82,6 +82,22 @@ export default async function IdeaDetailDashboardPage({
     },
   });
 
+  // Fetch direct messages (private suggestions)
+  const directMessages = await (prisma as any).directMessage.findMany({
+    where: { ideaId: idea.id },
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          image: true,
+        },
+      },
+    },
+  });
+
   // Serialize dates to strings for the client component
   const serializedInterests = investorInterests.map((interest) => ({
     ...interest,
@@ -173,6 +189,54 @@ export default async function IdeaDetailDashboardPage({
           }
         />
       </div>
+
+      {/* Private Suggestions */}
+      {directMessages.length > 0 && (
+        <div className="mt-8" id="messages">
+          <h2 className="mb-4 text-[15px] font-bold text-deep-ink">
+            Private Suggestions ({directMessages.length})
+          </h2>
+          <div className="space-y-3">
+            {directMessages.map((msg: any) => (
+              <div
+                key={msg.id}
+                className="rounded-xl border border-warm-border bg-white p-4"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-6 w-6 overflow-hidden rounded-full bg-warm-subtle">
+                    {msg.user.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={msg.user.image}
+                        alt={msg.user.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-text-muted">
+                        {msg.user.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[13px] font-medium text-deep-ink">
+                      {msg.user.name}
+                    </span>
+                    <span className="ml-2 text-[12px] text-text-muted">
+                      @{msg.user.username}
+                    </span>
+                  </div>
+                  <span className="ml-auto text-[11px] text-text-muted">
+                    {timeAgo(new Date(msg.createdAt))}
+                  </span>
+                </div>
+                <p className="text-[14px] text-text-secondary whitespace-pre-wrap">
+                  {msg.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Donations Section */}
       {idea.status === "ACTIVE" && (

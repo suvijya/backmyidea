@@ -28,13 +28,14 @@ import { useEffect } from "react";
 
 const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
   NEW_VOTE: <Vote className="h-4 w-4 text-saffron" />,
-  NEW_COMMENT: <MessageSquare className="h-4 w-4 text-brand-blue" />,
-  COMMENT_REPLY: <MessageSquare className="h-4 w-4 text-brand-blue" />,
+  NEW_COMMENT: <MessageSquare className="h-4 w-4 text-blue-500" />,
+  COMMENT_REPLY: <MessageSquare className="h-4 w-4 text-blue-500" />,
   SCORE_MILESTONE: <TrendingUp className="h-4 w-4 text-brand-green" />,
-  VOTES_MILESTONE: <Trophy className="h-4 w-4 text-brand-amber" />,
-  IDEA_TRENDING: <TrendingUp className="h-4 w-4 text-saffron" />,
-  BADGE_EARNED: <Award className="h-4 w-4 text-brand-amber" />,
-  SYSTEM: <AlertCircle className="h-4 w-4 text-text-muted" />,
+  VOTES_MILESTONE: <TrendingUp className="h-4 w-4 text-brand-green" />,
+  IDEA_TRENDING: <TrendingUp className="h-4 w-4 text-brand-red" />,
+  BADGE_EARNED: <Award className="h-4 w-4 text-purple-500" />,
+  NEW_DIRECT_MESSAGE: <MessageSquare className="h-4 w-4 text-pink-500" />,
+  SYSTEM: <Bell className="h-4 w-4 text-text-muted" />,
 };
 
 export default function NotificationsPage() {

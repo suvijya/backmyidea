@@ -191,6 +191,7 @@ export const RATE_LIMITS = {
   ai: { limit: 14, window: "1 m" as const },
   donate: { limit: 10, window: "1 h" as const },
   share: { limit: 30, window: "1 h" as const },
+  dm: { limit: 2, window: "24 h" as const },
 } as const;
 
 // ═══════════════════════════════

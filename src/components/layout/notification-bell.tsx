@@ -19,6 +19,7 @@ const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
   VOTES_MILESTONE: <Trophy className="h-4 w-4 text-brand-amber" />,
   IDEA_TRENDING: <TrendingUp className="h-4 w-4 text-saffron" />,
   BADGE_EARNED: <Award className="h-4 w-4 text-brand-amber" />,
+  NEW_DIRECT_MESSAGE: <MessageSquare className="h-4 w-4 text-pink-500" />,
   SYSTEM: <AlertCircle className="h-4 w-4 text-text-muted" />,
 };
 

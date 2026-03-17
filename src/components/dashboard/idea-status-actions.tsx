@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Trash2,
   Loader2,
+  LineChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,9 +70,16 @@ export function IdeaStatusActions({ ideaId, slug, status }: IdeaStatusActionsPro
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem asChild>
+          <Link href={`/dashboard/ideas/${ideaId}`} className="flex items-center gap-2">
+            <LineChart className="h-3.5 w-3.5" />
+            View dashboard
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem asChild>
           <Link href={`/idea/${slug}`} className="flex items-center gap-2">
             <ExternalLink className="h-3.5 w-3.5" />
-            View idea
+            View public page
           </Link>
         </DropdownMenuItem>
 

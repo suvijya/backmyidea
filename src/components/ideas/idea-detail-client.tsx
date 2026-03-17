@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Share2, Pencil, Flag, Trash2, Archive, Loader2 } from "lucide-react";
+import { Share2, Pencil, Flag, Trash2, Archive, Loader2, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { incrementShareCount, updateIdeaStatus } from "@/actions/idea-actions";
 import { ReportModal } from "@/components/shared/report-modal";
+import { SendSuggestionModal } from "@/components/ideas/send-suggestion-modal";
 import { cn } from "@/lib/utils";
 
 interface IdeaDetailClientProps {
@@ -37,6 +38,7 @@ export function IdeaDetailClient({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [reportOpen, setReportOpen] = useState(false);
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
 
   const handleShare = async () => {
     const url = `${window.location.origin}/idea/${slug}`;
@@ -93,6 +95,25 @@ export function IdeaDetailClient({
         <Share2 className="h-4 w-4" />
         Share this idea
       </Button>
+
+      {/* Suggestion for non-owners */}
+      {isSignedIn && !isOwnIdea && (
+        <>
+          <Button
+            variant="outline"
+            onClick={() => setSuggestionOpen(true)}
+            className="w-full gap-2 border-warm-border text-text-secondary hover:bg-warm-hover"
+          >
+            <MessageSquareText className="h-4 w-4" />
+            Send private suggestion
+          </Button>
+          <SendSuggestionModal
+            ideaId={ideaId}
+            open={suggestionOpen}
+            onOpenChange={setSuggestionOpen}
+          />
+        </>
+      )}
 
       {/* Owner actions */}
       {isOwnIdea && (
