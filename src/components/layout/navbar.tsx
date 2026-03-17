@@ -9,7 +9,6 @@ import {
   Menu,
   Search,
   Plus,
-  Lightbulb,
   LayoutDashboard,
   User,
   Settings,
@@ -86,9 +85,6 @@ export function Navbar() {
           href="/"
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-saffron">
-            <Lightbulb className="h-4.5 w-4.5 text-white" strokeWidth={2.5} />
-          </div>
           <span className="font-display text-[20px] tracking-tight text-deep-ink">
             Piqd
           </span>
@@ -323,12 +319,6 @@ export function Navbar() {
                       className="flex items-center gap-2"
                       onClick={() => setMobileOpen(false)}
                     >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-saffron">
-                        <Lightbulb
-                          className="h-3.5 w-3.5 text-white"
-                          strokeWidth={2.5}
-                        />
-                      </div>
                       <span className="font-display text-[18px] text-deep-ink">
                         Piqd
                       </span>

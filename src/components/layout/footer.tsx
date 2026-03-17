@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Lightbulb } from "lucide-react";
 
 const PRODUCT_LINKS = [
   { href: "/explore", label: "Explore Ideas" },
@@ -52,12 +51,6 @@ export function Footer() {
           {/* Brand column */}
           <div className="col-span-1">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-saffron">
-                <Lightbulb
-                  className="h-3.5 w-3.5 text-white"
-                  strokeWidth={2.5}
-                />
-              </div>
               <span className="font-display text-[18px] text-deep-ink">
                 Piqd
               </span>

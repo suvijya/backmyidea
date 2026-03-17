@@ -81,6 +81,20 @@ export default function NotificationsPage() {
     });
   };
 
+  const getNotificationLink = (notification: NotificationItem) => {
+    const data = notification.data as Record<string, any> | null;
+    if (data?.link) return data.link;
+    if (data?.ideaSlug) return `/idea/${data.ideaSlug}`;
+    return "/dashboard";
+  };
+
+  const handleNotificationClick = (notification: NotificationItem) => {
+    if (!notification.isRead) {
+      handleMarkRead(notification.id);
+    }
+    router.push(getNotificationLink(notification));
+  };
+
   const handleMarkAllRead = () => {
     startTransition(async () => {
       const result = await markAllNotificationsRead();
@@ -159,11 +173,12 @@ export default function NotificationsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   className={cn(
-                    "flex items-start gap-3 rounded-xl border p-4 transition-colors",
+                    "flex items-start gap-3 rounded-xl border p-4 transition-colors cursor-pointer hover:shadow-sm",
                     notification.isRead
-                      ? "border-warm-border bg-white"
-                      : "border-saffron/20 bg-saffron-light/30"
+                      ? "border-warm-border bg-white hover:border-warm-border-strong"
+                      : "border-saffron/20 bg-saffron-light/30 hover:border-saffron/40"
                   )}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   {/* Icon */}
                   <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-warm-subtle">
@@ -186,7 +201,10 @@ export default function NotificationsPage() {
                   {/* Mark as read */}
                   {!notification.isRead && (
                     <button
-                      onClick={() => handleMarkRead(notification.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkRead(notification.id);
+                      }}
                       className="shrink-0 rounded-full p-1 text-saffron transition-colors hover:bg-saffron-light"
                       title="Mark as read"
                     >
