@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { useDbUser } from "@/components/providers";
 import {
   Menu,
@@ -249,7 +249,7 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
+              <Link href="/sign-in">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -257,15 +257,15 @@ export function Navbar() {
                 >
                   Sign In
                 </Button>
-              </SignInButton>
-              <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
+              </Link>
+              <Link href="/sign-up">
                 <Button
                   size="sm"
                   className="gap-1.5 bg-saffron text-white shadow-none hover:bg-saffron-dark"
                 >
                   Get Started
                 </Button>
-              </SignInButton>
+              </Link>
             </>
           )}
 
@@ -467,11 +467,11 @@ export function Navbar() {
                       </Button>
                     </div>
                   ) : (
-                    <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
+                    <Link href="/sign-up" onClick={() => setMobileOpen(false)}>
                       <Button className="w-full bg-saffron text-white hover:bg-saffron-dark">
                         Get Started
                       </Button>
-                    </SignInButton>
+                    </Link>
                   )}
                 </div>
               </div>

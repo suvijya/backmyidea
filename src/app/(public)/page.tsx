@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { SignInButton, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { motion, useInView } from "framer-motion";
 import {
   ArrowRight,
@@ -260,7 +260,7 @@ export default function LandingPage() {
                     </Button>
                   </Link>
                 ) : (
-                  <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
+                  <Link href="/sign-up">
                     <Button
                       size="lg"
                       className="gap-2 bg-saffron px-7 text-[15px] font-semibold text-white shadow-saffron hover:bg-saffron-dark"
@@ -268,7 +268,7 @@ export default function LandingPage() {
                       Post Your Idea — Free
                       <ArrowRight className="h-4 w-4" />
                     </Button>
-                  </SignInButton>
+                  </Link>
                 )}
                 <Link href="/explore">
                   <Button
@@ -599,7 +599,7 @@ export default function LandingPage() {
                 </Button>
               </Link>
             ) : (
-              <SignInButton mode="modal" fallbackRedirectUrl="/api/sync-onboarding" signUpFallbackRedirectUrl="/api/sync-onboarding">
+              <Link href="/sign-up">
                 <Button
                   size="lg"
                   className="gap-2 bg-saffron px-8 text-[15px] font-semibold text-white shadow-saffron hover:bg-saffron-dark"
@@ -607,7 +607,7 @@ export default function LandingPage() {
                   Get Started — Free
                   <ArrowRight className="h-4 w-4" />
                 </Button>
-              </SignInButton>
+              </Link>
             )}
             <Link href="/explore">
               <Button
