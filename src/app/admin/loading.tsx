@@ -2,25 +2,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminLoading() {
   return (
-    <div>
-      {/* Page header skeleton */}
-      <div className="mb-8">
-        <Skeleton className="mb-3 h-8 w-48" />
-        <Skeleton className="h-4 w-64" />
+    <div className="space-y-8 pb-12 w-full animate-in fade-in duration-500">
+      {/* Hero section skeleton */}
+      <Skeleton className="h-[250px] w-full rounded-3xl" />
+      
+      {/* Secondary metrics skeleton */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Skeleton className="h-[300px] w-full rounded-3xl lg:col-span-2" />
+        <div className="flex flex-col justify-between space-y-4">
+          <Skeleton className="h-[90px] w-full rounded-2xl" />
+          <Skeleton className="h-[90px] w-full rounded-2xl" />
+          <Skeleton className="h-[90px] w-full rounded-2xl" />
+        </div>
       </div>
-
-      {/* Stats grid skeleton */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-warm-border bg-white p-5"
-          >
-            <Skeleton className="mb-3 h-10 w-10 rounded-lg" />
-            <Skeleton className="mb-2 h-8 w-20" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        ))}
+      
+      {/* Control center skeleton */}
+      <div className="space-y-4 mt-8">
+        <Skeleton className="h-6 w-48 mb-4" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Skeleton className="h-[100px] w-full rounded-2xl" />
+          <Skeleton className="h-[100px] w-full rounded-2xl" />
+          <Skeleton className="h-[100px] w-full rounded-2xl" />
+        </div>
       </div>
     </div>
   );

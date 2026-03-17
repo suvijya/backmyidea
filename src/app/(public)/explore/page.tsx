@@ -8,6 +8,7 @@ import type { IdeaFilters as IdeaFiltersType, SortOption } from "@/types";
 import type { Category, IdeaStage } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canUserViewGlobalScores } from "@/lib/clerk";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const dynamic = "force-dynamic";
 
@@ -21,22 +22,19 @@ interface ExplorePageProps {
   }>;
 }
 
-export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-  const params = await searchParams;
-  const page = params.page ? parseInt(params.page, 10) : 1;
+// ─── Center Feed Loader ─────────────────────────────────────────
+async function FeedLoader({ filters, page }: { filters: IdeaFiltersType; page: number }) {
+  const [{ items, totalPages, currentPage }, canViewGlobalScores] = await Promise.all([
+    getExploreFeed(filters, page),
+    canUserViewGlobalScores(),
+  ]);
 
-  const filters: IdeaFiltersType = {
-    sort: (params.sort as SortOption) || "trending",
-    category: params.category as Category | undefined,
-    stage: params.stage as IdeaStage | undefined,
-    search: params.search,
-  };
+  return <ExploreFeed ideas={items} totalPages={totalPages} currentPage={currentPage} canViewGlobalScores={canViewGlobalScores} />;
+}
 
-  // Fetch feed
-  const { items, totalPages, currentPage } = await getExploreFeed(filters, page);
-
-  // Fetch Right Sidebar Data
-  const [activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas, canViewGlobalScores] = await Promise.all([
+// ─── Right Sidebar Loader ───────────────────────────────────────
+async function RightSidebarLoader() {
+  const [activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas] = await Promise.all([
     prisma.user.count({ where: { votes: { some: {} } } }),
     prisma.idea.count({
       where: {
@@ -60,7 +58,6 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       orderBy: { createdAt: "desc" },
       take: 200,
     }),
-    canUserViewGlobalScores(),
   ]);
 
   const stats = {
@@ -70,7 +67,6 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
 
   const tagCounts: Record<string, number> = {};
   recentIdeas.forEach((idea: { tags: string[]; category: string }) => {
-    // Also use categories as topics if tags are empty
     if (idea.tags && idea.tags.length > 0) {
       idea.tags.forEach((tag: string) => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
@@ -105,6 +101,40 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       }
     : null;
 
+  return <ExploreSidebarRight stats={stats} trendingTopics={trendingTopics} topValidator={topValidator} />;
+}
+
+// function SidebarSkeleton() {
+//   return (
+//     <div className="space-y-6">
+//       <div className="rounded-2xl border border-warm-border p-5">
+//         <Skeleton className="h-6 w-32 mb-4" />
+//         <Skeleton className="h-4 w-full mb-2" />
+//         <Skeleton className="h-4 w-2/3" />
+//       </div>
+//       <div className="rounded-2xl border border-warm-border p-5">
+//         <Skeleton className="h-6 w-32 mb-4" />
+//         <div className="flex gap-2">
+//           <Skeleton className="h-8 w-16 rounded-full" />
+//           <Skeleton className="h-8 w-20 rounded-full" />
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// ─── Main Page ──────────────────────────────────────────────────
+export default async function ExplorePage({ searchParams }: ExplorePageProps) {
+  const params = await searchParams;
+  const page = params.page ? parseInt(params.page, 10) : 1;
+
+  const filters: IdeaFiltersType = {
+    sort: (params.sort as SortOption) || "trending",
+    category: params.category as Category | undefined,
+    stage: params.stage as IdeaStage | undefined,
+    search: params.search,
+  };
+
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr_260px] items-start">
@@ -115,14 +145,16 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
 
         {/* Center Main Content */}
         <main className="min-w-0">
-          <Suspense fallback={<IdeaSkeletonList count={6} />}>
-            <ExploreFeed ideas={items} totalPages={totalPages} currentPage={currentPage} canViewGlobalScores={canViewGlobalScores} />
+          <Suspense key={JSON.stringify(filters) + page} fallback={<IdeaSkeletonList count={6} />}>
+            <FeedLoader filters={filters} page={page} />
           </Suspense>
         </main>
 
         {/* Right Sidebar */}
         <aside className="hidden lg:block sticky top-24">
-          <ExploreSidebarRight stats={stats} trendingTopics={trendingTopics} topValidator={topValidator} />
+          <Suspense fallback={<div className="space-y-4"><Skeleton className="h-[200px] rounded-2xl w-full" /><Skeleton className="h-[200px] rounded-2xl w-full" /></div>}>
+            <RightSidebarLoader />
+          </Suspense>
         </aside>
       </div>
     </div>

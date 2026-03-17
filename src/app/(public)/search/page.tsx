@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import { Search as SearchIcon } from "lucide-react";
 import { getIdeasFeed } from "@/actions/idea-actions";
 import { IdeaFeed } from "@/components/ideas/idea-feed";
 import { IdeaFilters } from "@/components/ideas/idea-filters";
 import { EmptyState } from "@/components/shared/empty-state";
 import { canUserViewGlobalScores } from "@/lib/clerk";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const dynamic = "force-dynamic";
 import type { IdeaFilters as IdeaFiltersType } from "@/types";
@@ -18,6 +20,48 @@ interface SearchPageProps {
   }>;
 }
 
+// ─── Search Results Loader ────────────────────────────────────────
+async function SearchResults({ query, filters }: { query: string; filters: IdeaFiltersType }) {
+  const [initialData, canViewScores] = await Promise.all([
+    query ? getIdeasFeed(filters) : Promise.resolve({ items: [], hasMore: false }),
+    canUserViewGlobalScores()
+  ]);
+
+  if (!query) {
+    return (
+      <div className="rounded-xl border border-dashed border-warm-border bg-warm-subtle/50 p-12 text-center">
+        <SearchIcon className="mx-auto h-8 w-8 text-text-muted" />
+        <h3 className="mt-3 text-[15px] font-semibold text-deep-ink">
+          Start searching
+        </h3>
+        <p className="mt-1 text-[13px] text-text-secondary">
+          Type a keyword above to find startup ideas
+        </p>
+      </div>
+    );
+  }
+
+  if (initialData.items.length === 0) {
+    return (
+      <EmptyState
+        icon={<SearchIcon className="h-5 w-5 text-text-muted" />}
+        title="No results found"
+        description={`We couldn't find any ideas matching "${query}". Try a different search term or adjust filters.`}
+      />
+    );
+  }
+
+  return (
+    <>
+      <p className="mb-4 text-[13px] text-text-muted">
+        Showing results for &ldquo;{query}&rdquo;
+      </p>
+      <IdeaFeed initialIdeas={initialData.items} initialHasMore={initialData.hasMore} filters={filters} canViewGlobalScores={canViewScores} />
+    </>
+  );
+}
+
+// ─── Main Page ──────────────────────────────────────────────────
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const query = params.q ?? "";
@@ -28,12 +72,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     stage: params.stage as IdeaStage | undefined,
     sort: (params.sort as IdeaFiltersType["sort"]) ?? "trending",
   };
-
-  const initialData = query
-    ? await getIdeasFeed(filters)
-    : { items: [], hasMore: false };
-
-  const canViewScores = await canUserViewGlobalScores();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -78,32 +116,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
       {/* Results */}
       <div className="mt-6">
-        {query ? (
-          initialData.items.length > 0 ? (
-            <>
-              <p className="mb-4 text-[13px] text-text-muted">
-                Showing results for &ldquo;{query}&rdquo;
-              </p>
-              <IdeaFeed initialIdeas={initialData.items} initialHasMore={initialData.hasMore} filters={filters} canViewGlobalScores={canViewScores} />
-            </>
-          ) : (
-            <EmptyState
-              icon={<SearchIcon className="h-5 w-5 text-text-muted" />}
-              title="No results found"
-              description={`We couldn't find any ideas matching "${query}". Try a different search term or adjust filters.`}
-            />
-          )
-        ) : (
-          <div className="rounded-xl border border-dashed border-warm-border bg-warm-subtle/50 p-12 text-center">
-            <SearchIcon className="mx-auto h-8 w-8 text-text-muted" />
-            <h3 className="mt-3 text-[15px] font-semibold text-deep-ink">
-              Start searching
-            </h3>
-            <p className="mt-1 text-[13px] text-text-secondary">
-              Type a keyword above to find startup ideas
-            </p>
+        <Suspense key={JSON.stringify(filters)} fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-32 mb-2 rounded-md" />
+            <Skeleton className="h-[120px] w-full rounded-2xl" />
+            <Skeleton className="h-[120px] w-full rounded-2xl" />
+            <Skeleton className="h-[120px] w-full rounded-2xl" />
           </div>
-        )}
+        }>
+          <SearchResults query={query} filters={filters} />
+        </Suspense>
       </div>
     </div>
   );

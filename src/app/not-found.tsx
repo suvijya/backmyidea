@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { SearchX, ArrowLeft, Lightbulb } from "lucide-react";
 import * as motion from "framer-motion/client";
@@ -7,8 +6,6 @@ import * as motion from "framer-motion/client";
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col selection:bg-brand-blue/20">
-      <Navbar />
-      
       <main className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden">
         {/* Abstract Background Elements */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-blue/5 dark:bg-brand-blue/10 rounded-full blur-[120px] pointer-events-none -z-10" />

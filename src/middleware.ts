@@ -1,13 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-// Routes that can be accessed without authentication
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/api/webhooks(.*)",
-  "/api/validation-card(.*)"
+// Routes that require authentication
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/admin(.*)",
+  "/investor(.*)",
+  "/employee(.*)"
 ]);
 
 const isOnboardingRoute = createRouteMatcher([
@@ -15,14 +14,14 @@ const isOnboardingRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
+  if (isProtectedRoute(req)) {
     await auth.protect();
     
     // Check onboarding status via cookie if not on the onboarding page
     if (!isOnboardingRoute(req)) {
       const onboardedCookie = req.cookies.get("onboarded");
       if (!onboardedCookie) {
-        // Only redirect if it's not an API route (API routes handle their own auth)
+        // Only redirect if it's not an API route
         if (!req.nextUrl.pathname.startsWith("/api/")) {
           const url = new URL("/onboarding", req.url);
           return NextResponse.redirect(url);

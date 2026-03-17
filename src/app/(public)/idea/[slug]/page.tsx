@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 import {
@@ -39,6 +40,7 @@ import {
 } from "@/lib/constants";
 import { formatDate, formatNumber } from "@/lib/utils";
 import type { VoteType, TargetAudience } from "@prisma/client";
+import IdeaDetailLoading from "./loading";
 
 interface IdeaDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -48,13 +50,17 @@ export async function generateMetadata({
   params,
 }: IdeaDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const result = await getIdeaBySlug(slug);
+  
+  // Lightweight fetch just for metadata
+  const idea = await prisma.idea.findUnique({
+    where: { slug },
+    select: { title: true, pitch: true },
+  });
 
-  if (!result.success) {
+  if (!idea) {
     return { title: "Idea Not Found" };
   }
 
-  const idea = result.data;
   return {
     title: `${idea.title} — ${APP_NAME}`,
     description: idea.pitch,
@@ -66,10 +72,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function IdeaDetailPage({
-  params,
-}: IdeaDetailPageProps) {
-  const { slug } = await params;
+async function IdeaDetailLoader({ slug }: { slug: string }) {
   const result = await getIdeaBySlug(slug);
 
   if (!result.success) {
@@ -131,7 +134,7 @@ export default async function IdeaDetailPage({
     : [];
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 py-6 lg:px-8">
+    <>
       {/* Employee Review Banner for PENDING ideas */}
       {idea.status === "PENDING" && isEmployeeOrAdmin && (
         <EmployeeReviewBanner ideaId={idea.id} />
@@ -489,6 +492,20 @@ export default async function IdeaDetailPage({
           isOwnIdea={isOwnIdea}
         />
       </div>
+    </>
+  );
+}
+
+export default async function IdeaDetailPage({
+  params,
+}: IdeaDetailPageProps) {
+  const { slug } = await params;
+
+  return (
+    <div className="mx-auto max-w-[1200px] px-4 py-6 lg:px-8">
+      <Suspense fallback={<IdeaDetailLoading />}>
+        <IdeaDetailLoader slug={slug} />
+      </Suspense>
     </div>
   );
 }

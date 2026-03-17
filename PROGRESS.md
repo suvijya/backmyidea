@@ -924,8 +924,8 @@ UserRole, UserLevel, Category (16 sectors), IdeaStage, IdeaStatus, TargetAudienc
 | 3 | **No error tracking** | No Sentry, LogRocket, or any crash reporting service. Errors in production happen silently. | -- |
 | 4 | **No security headers** | `next.config.ts` has no `headers()` configuration. Missing: `Content-Security-Policy`, `X-Frame-Options`, `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`. | `next.config.ts` |
 | 5 | **AI routes unvalidated + unrate-limited** | `aiLimiter` is defined in `src/lib/redis.ts:46` but **never imported or used anywhere**. Both `/api/ai/quality-check` and `/api/ai/duplicate-check` use TypeScript `as` type assertions instead of Zod validation. Risks: prompt injection, Gemini quota exhaustion, malformed data crashes. | `src/app/api/ai/quality-check/route.ts:21`, `src/app/api/ai/duplicate-check/route.ts:21`, `src/lib/redis.ts:46` |
-| 6 | **No `global-error.tsx`** | Root layout crash = white screen in production. Error boundaries exist only inside route groups `(auth)`, `(public)`, `(dashboard)`, `admin`. | `src/app/` (missing file) |
-| 7 | **No `not-found.tsx`** | No custom 404 page anywhere. Users see generic Next.js 404. | `src/app/` (missing file) |
+| 6 | **No `global-error.tsx`** | Root layout crash = white screen in production. Error boundaries exist only inside route groups `(auth)`, `(public)`, `(dashboard)`, `admin`. | Fixed (Created) |
+| 7 | **No `not-found.tsx`** | No custom 404 page anywhere. Users see generic Next.js 404. | Fixed (Created) |
 
 ### Medium Issues (Should Fix Before Launch)
 
@@ -981,8 +981,10 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
 
 ---
 
-## Recent Updates (March 2024)
+## Recent Updates (March 2026)
 
+- **Performance & Navigation Upgrades**: Added extensive `Suspense` boundaries around server components (e.g., Explore Feed, Dashboard Stats) to ensure instant UI transitions without blocking page loads.
+- **Double Header Bug Fixed**: Resolved an issue where the `Navbar` was rendering twice by stripping it from the global `not-found.tsx` fallback page, ensuring route layouts act as the single source of truth for the app header.
 - **Root File Cleanup**: Removed temporary `fix-*.js` and `update-*.js` script files from the root directory to maintain a clean workspace.
 - **My Ideas Fix**: Fixed an issue in `dashboard/ideas/page.tsx` where users could not see their own ideas that were in `PENDING` or `REJECTED` status. These now accurately render in their own dedicated sections.
 - **Idea Publishing UI**: Updated the `new/page.tsx` (Idea creation flow) to properly communicate to the user that their idea is "Submitted for Review" and "Pending Approval" rather than immediately "Published".
@@ -996,6 +998,16 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
 - **Idea Approval/Rejection Banner**: Added a floating `EmployeeReviewBanner` component that appears only to Employees/Admins when viewing a `PENDING` idea in the public view. It displays sticky "Approve" or "Reject" buttons right on the idea page.
 - **Idea Access Security**: Updated the `getIdeaBySlug` action to restrict access to `PENDING` or `REJECTED` ideas. Non-authorized users can no longer access unpublished idea URLs. If an Idea is active, anyone can view it. If not, only the Founder, an Employee, or an Admin can view it.
 - **Role Consistency in Pages**: Confirmed that the database accurately queries for both `isEmployee` and `isAdmin` flags across relevant API endpoints to prevent unauthorized access.
+- **Global Not Found Page Redesign**: Radically redesigned the global 404 (`not-found.tsx`) to be engaging, high-end, and tightly aligned with the Piqd aesthetic (abstract background blurs, framer-motion animations).
+- **Admin Command Center Upgrade**: Overhauled the `/admin` dashboard to function as a visual 'God Mode' Platform Telemetry hub. Upgraded the stats cards to premium glassmorphic components with dynamic gradient reveals and updated platform velocity readouts. 
+- **Admin Role Protection**: Restructured `requireAdmin()` within `src/lib/clerk.ts` to throw a 404 instead of a redirect so non-admin users cannot probe or realize the existence of admin routes.
+- **Investor Dashboard Upgrade**: Redesigned Investor Intelligence hub with Recharts area graphs and premium stat cards.
+
+## Active Phase (Next Steps)
+- **Performance & Scalability Pass**:
+  - Implement React `Suspense` and `loading.tsx` extensively to remove blocking rendering on navigation.
+  - Optimize page transitions so the UI doesn't freeze "when clicking on something". 
+  - Ensure the user sees immediate UI responses while dynamic queries stream in.
 
 
 - **Employee "All Ideas" Access**: Extracted the Idea management table (`AdminIdeasPage`) into a reusable `IdeasClient` component. Added a new `/employee/ideas` route so that Employees can now browse, search, and change the status of *any* published idea (e.g., Delete, Archive, Restore) exactly like Admins do. The backend `/api/admin/ideas` route was updated to securely accept `isEmployee` flags as well.
