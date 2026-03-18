@@ -7,7 +7,7 @@ import { createCommentSchema } from "@/lib/validations";
 import { createNotificationInternal } from "@/lib/notifications";
 import { awardPoints, checkAndAwardBadges, updateUserLevel } from "@/lib/gamification";
 import { trackDailyStat } from "@/lib/daily-stats";
-import type { ActionResult, CommentWithReplies, CommentWithAuthor } from "@/types";
+import type { ActionResult, CommentWithReplies } from "@/types";
 import type { Comment } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { COMMENTS_PAGE_SIZE } from "@/lib/constants";

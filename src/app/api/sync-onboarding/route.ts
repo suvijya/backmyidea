@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+
 
 export async function GET(req: Request) {
   const clerkUser = await currentUser();

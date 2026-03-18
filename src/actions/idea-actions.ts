@@ -7,7 +7,7 @@ import { createIdeaSchema, updateIdeaSchema } from "@/lib/validations";
 import { generateSlug } from "@/lib/utils";
 import { checkIdeaQuality, checkDuplicateIdea } from "@/lib/gemini";
 import { calculateValidationScore } from "@/lib/scoring";
-import { createNotificationInternal } from "@/lib/notifications";
+
 import { checkAndAwardBadges, awardPoints, updateUserLevel } from "@/lib/gamification";
 import { trackDailyStat, snapshotDailyScore } from "@/lib/daily-stats";
 import { MAX_ACTIVE_IDEAS } from "@/lib/constants";

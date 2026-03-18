@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { dmLimiter } from "@/lib/redis";
 import { directMessageSchema } from "@/lib/validations";
 import { createNotificationInternal } from "@/lib/notifications";
-import { revalidatePath } from "next/cache";
+
 
 export async function sendDirectMessage(ideaId: string, content: string) {
   try {
@@ -41,7 +41,7 @@ export async function sendDirectMessage(ideaId: string, content: string) {
     }
 
     // Insert direct message
-    const message = await (prisma as any).directMessage.create({
+    await prisma.directMessage.create({
       data: {
         content: parsed.data.content,
         userId: user.id,

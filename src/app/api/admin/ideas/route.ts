@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/clerk";
-import type { Prisma, IdeaStatus } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 const querySchema = z.object({

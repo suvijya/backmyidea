@@ -83,7 +83,7 @@ export default async function IdeaDetailDashboardPage({
   });
 
   // Fetch direct messages (private suggestions)
-  const directMessages = await (prisma as any).directMessage.findMany({
+  const directMessages = await prisma.directMessage.findMany({
     where: { ideaId: idea.id },
     orderBy: { createdAt: "desc" },
     include: {

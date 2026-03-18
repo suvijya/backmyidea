@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "./prisma";
 import type { User } from "@prisma/client";
-import { cookies } from "next/headers";
+
 
 /**
  * Get the current Prisma user from Clerk session.
