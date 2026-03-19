@@ -7,7 +7,7 @@ export function RankMedal({ rank }: { rank: number }) {
 
   return (
     <div
-      className={`flex h-8 w-8 items-center justify-center rounded-full font-data text-[13px] font-bold ${colors[rank]}`}
+      className={`flex h-full w-full items-center justify-center rounded-full font-data text-[12px] sm:text-[13px] font-bold shadow-sm ${colors[rank]}`}
     >
       {rank}
     </div>

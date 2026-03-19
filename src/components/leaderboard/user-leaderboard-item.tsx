@@ -27,21 +27,21 @@ export function UserLeaderboardItem({
   return (
     <Link
       href={`/profile/${user.username ?? user.id}`}
-      className="flex items-center gap-4 rounded-xl border border-warm-border bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
+      className="flex items-center gap-3 sm:gap-4 rounded-xl border border-warm-border bg-white p-3 sm:p-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
     >
       {/* Rank */}
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+      <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center">
         {rank <= 3 ? (
           <RankMedal rank={rank} />
         ) : (
-          <span className="font-data text-[14px] font-bold text-text-muted">
+          <span className="font-data text-[13px] sm:text-[14px] font-bold text-text-muted">
             {rank}
           </span>
         )}
       </div>
 
       {/* Avatar */}
-      <Avatar className="h-10 w-10 shrink-0">
+      <Avatar className="h-9 w-9 sm:h-10 sm:w-10 shrink-0">
         <AvatarImage src={user.image ?? undefined} />
         <AvatarFallback className="bg-saffron-light text-saffron text-sm font-bold">
           {user.name?.charAt(0) ?? "?"}
@@ -50,19 +50,19 @@ export function UserLeaderboardItem({
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate text-[15px] font-semibold text-deep-ink">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+          <h3 className="truncate text-[14px] sm:text-[15px] font-semibold text-deep-ink">
             {user.name}
           </h3>
-          <span className="rounded-full bg-warm-subtle px-2 py-0.5 text-[10px] font-medium text-text-muted">
+          <span className="w-fit rounded-full bg-warm-subtle px-2 py-0.5 text-[10px] font-medium text-text-muted">
             {LEVEL_LABELS[user.level]}
           </span>
         </div>
-        <p className="text-[12px] text-text-muted">@{user.username}</p>
+        <p className="text-[11px] sm:text-[12px] text-text-muted">@{user.username}</p>
       </div>
 
       {/* Stats */}
-      <div className="hidden items-center gap-4 text-[12px] text-text-muted sm:flex">
+      <div className="hidden items-center gap-3 lg:gap-4 text-[12px] text-text-muted md:flex">
         <span className="flex items-center gap-1">
           <Vote className="h-3 w-3" />
           {formatNumber(user._count.votes)}
@@ -81,10 +81,10 @@ export function UserLeaderboardItem({
 
       {/* Points */}
       <div className="shrink-0 text-right">
-        <p className="font-data text-[16px] font-bold text-deep-ink">
+        <p className="font-data text-[15px] sm:text-[16px] font-bold text-deep-ink">
           {formatNumber(user.points)}
         </p>
-        <p className="text-[10px] text-text-muted">pts</p>
+        <p className="text-[10px] text-text-muted uppercase tracking-wider">pts</p>
       </div>
     </Link>
   );
