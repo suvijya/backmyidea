@@ -116,10 +116,11 @@ export function Navbar() {
 
         {/* ── Right: Actions ── */}
         <div className="flex items-center gap-2">
-          {/* Search icon — desktop */}
+          {/* Search icon — desktop & mobile */}
           <Link
             href="/search"
-            className="hidden rounded-md p-2 text-text-secondary transition-colors hover:bg-warm-hover hover:text-deep-ink md:flex"
+            prefetch={true}
+            className="rounded-md p-2 text-text-secondary transition-colors hover:bg-warm-hover hover:text-deep-ink flex"
           >
             <Search className="h-[18px] w-[18px]" />
           </Link>
@@ -348,19 +349,6 @@ export function Navbar() {
                       </Link>
                     );
                   })}
-                  <Link
-                    href="/search"
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-medium transition-colors",
-                      pathname === "/search"
-                        ? "bg-saffron-light text-saffron"
-                        : "text-text-secondary hover:bg-warm-hover hover:text-deep-ink"
-                    )}
-                  >
-                    <Search className="h-4 w-4" />
-                    Search
-                  </Link>
                 </div>
 
                 {/* Signed-in user: dashboard links */}

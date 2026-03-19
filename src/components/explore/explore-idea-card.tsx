@@ -164,8 +164,18 @@ export function ExploreIdeaCard({
         </div>
       </div>
 
-      {/* Additions: Voting buttons on the right */}
-      <div className="shrink-0 flex items-center sm:pl-5 sm:border-l sm:border-warm-border pt-4 sm:pt-0 mt-4 sm:mt-0 border-t sm:border-t-0 border-warm-border">
+        {/* Additions: Voting buttons on the right / bottom on mobile */}
+      <div className="shrink-0 flex items-center justify-center w-full sm:w-auto sm:pl-5 sm:border-l sm:border-warm-border pt-4 sm:pt-0 mt-2 sm:mt-0 border-t sm:border-t-0 border-warm-border">
+        <VoteButtons
+          ideaId={id}
+          useThisCount={useThisCount}
+          maybeCount={maybeCount}
+          notForMeCount={notForMeCount}
+          userVote={userVote}
+          isOwnIdea={isOwnIdea}
+          layout="horizontal"
+          className="sm:hidden w-full flex justify-between gap-2"
+        />
         <VoteButtons
           ideaId={id}
           useThisCount={useThisCount}
@@ -174,6 +184,7 @@ export function ExploreIdeaCard({
           userVote={userVote}
           isOwnIdea={isOwnIdea}
           layout="vertical"
+          className="hidden sm:flex"
         />
       </div>
     </article>

@@ -26,14 +26,14 @@ export function FeaturedIdeaCard({
   canViewScore = false,
 }: FeaturedIdeaCardProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-deep-ink p-6 md:p-8 text-white shadow-xl mb-8">
+    <div className="relative overflow-hidden rounded-2xl bg-deep-ink p-5 md:p-8 text-white shadow-xl mb-8">
       {/* Background decoration */}
-      <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-saffron/10 blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 -mb-16 h-48 w-48 rounded-full bg-brand-blue/10 blur-3xl" />
+      <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-saffron/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 -mb-16 h-48 w-48 rounded-full bg-brand-blue/10 blur-3xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="flex-1 max-w-2xl">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="flex-1 w-full max-w-2xl">
+          <div className="flex flex-wrap items-center gap-2 mb-3 md:mb-4">
             <span className="rounded-full bg-saffron px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
               Featured
             </span>

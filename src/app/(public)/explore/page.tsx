@@ -138,8 +138,8 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr_260px] items-start">
-        {/* Left Sidebar */}
-        <aside className="hidden lg:block sticky top-24">
+        {/* Left Sidebar (Desktop) / Top Filters (Mobile) */}
+        <aside className="lg:sticky lg:top-24">
           <ExploreSidebarLeft />
         </aside>
 

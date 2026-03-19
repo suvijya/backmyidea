@@ -149,7 +149,7 @@ export function VoteButtons({
             )}
           >
             <span className="text-[15px]">{config.emoji}</span>
-            <span className="hidden sm:inline">{config.label}</span>
+            <span className={cn(layout === "vertical" ? "hidden sm:inline" : "hidden lg:inline")}>{config.label}</span>
             <span className="font-data text-[12px]">{count}</span>
 
             {/* Fly-up +1 animation */}
