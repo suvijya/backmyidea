@@ -224,7 +224,7 @@ export default function AdminUsersPage() {
           />
         </div>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[160px] border-warm-border">
+          <SelectTrigger className="w-full border-warm-border sm:w-[160px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -319,8 +319,8 @@ export default function AdminUsersPage() {
                         key={user.id}
                         className="border-warm-border hover:bg-warm-subtle/50"
                       >
-                        <TableCell>
-                          <div className="flex items-center gap-3">
+                          <TableCell className="max-w-[240px] sm:max-w-none">
+                            <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={user.image ?? undefined} />
                               <AvatarFallback className="bg-warm-subtle text-[12px] font-semibold text-text-secondary">

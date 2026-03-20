@@ -153,7 +153,7 @@ export default function WatchlistPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-[24px] text-deep-ink">Watchlist</h1>
           <p className="text-[13px] text-text-secondary">
@@ -163,7 +163,7 @@ export default function WatchlistPage() {
 
         {/* Filter by status */}
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="h-8 w-[160px] border-warm-border text-[13px]">
+          <SelectTrigger className="h-8 w-full border-warm-border text-[13px] sm:w-[160px]">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -261,8 +261,8 @@ function WatchlistCard({
   const categoryLabel = CATEGORY_LABELS[idea.category as Category] ?? idea.category;
 
   return (
-    <div className="rounded-xl border border-warm-border bg-white p-4 transition-shadow hover:shadow-sm">
-      <div className="flex items-start justify-between gap-4">
+      <div className="rounded-xl border border-warm-border bg-white p-4 transition-shadow hover:shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           {/* Status + Category */}
           <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -324,7 +324,7 @@ function WatchlistCard({
         </div>
 
         {/* Score + Actions */}
-        <div className="flex shrink-0 flex-col items-end gap-2">
+        <div className="flex shrink-0 flex-row items-center justify-between gap-3 sm:flex-col sm:items-end sm:gap-2">
           <div
             className="flex h-11 w-11 items-center justify-center rounded-full border-[2.5px]"
             style={{ borderColor: tierColor }}

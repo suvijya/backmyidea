@@ -30,10 +30,10 @@ export function EmployeeReportsClient({ initialReports }: { initialReports: any[
     <div className="space-y-4">
       {reports.map(report => (
         <Card key={report.id} className="overflow-hidden border border-warm-border">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start mb-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-medium text-deep-ink flex items-center gap-2">
+                <h3 className="flex flex-wrap items-center gap-2 text-[16px] font-medium text-deep-ink sm:text-lg">
                   <Badge variant="destructive">{report.reason}</Badge>
                   {report.entityType.toUpperCase()}
                 </h3>
@@ -52,9 +52,9 @@ export function EmployeeReportsClient({ initialReports }: { initialReports: any[
               </div>
             )}
 
-            <div className="flex items-center gap-3 pt-4 border-t border-warm-border">
-              <Button variant="outline" onClick={() => handleAction(report.id, "dismiss")}>Dismiss</Button>
-              <Button className="bg-brand-red text-white hover:bg-brand-red/90" onClick={() => handleAction(report.id, "resolve")}>Mark Resolved</Button>
+            <div className="flex flex-col gap-2 border-t border-warm-border pt-4 sm:flex-row sm:items-center sm:gap-3">
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => handleAction(report.id, "dismiss")}>Dismiss</Button>
+              <Button className="w-full bg-brand-red text-white hover:bg-brand-red/90 sm:w-auto" onClick={() => handleAction(report.id, "resolve")}>Mark Resolved</Button>
             </div>
           </CardContent>
         </Card>

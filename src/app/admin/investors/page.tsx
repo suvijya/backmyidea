@@ -128,7 +128,7 @@ export default function AdminInvestorsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[20px] font-semibold text-deep-ink">
             Investor Access Requests
@@ -139,7 +139,7 @@ export default function AdminInvestorsPage() {
         </div>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-8 w-[160px] border-warm-border text-[13px]">
+          <SelectTrigger className="h-8 w-full border-warm-border text-[13px] sm:w-[160px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -166,7 +166,7 @@ export default function AdminInvestorsPage() {
               className="rounded-xl border border-warm-border bg-white p-5"
             >
               {/* Header */}
-              <div className="mb-4 flex items-start justify-between">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 overflow-hidden rounded-full border border-warm-border bg-warm-subtle">
                     {request.user.image ? (
@@ -322,7 +322,7 @@ export default function AdminInvestorsPage() {
                     className="mb-3 resize-none border-warm-border text-[13px]"
                     rows={2}
                   />
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button

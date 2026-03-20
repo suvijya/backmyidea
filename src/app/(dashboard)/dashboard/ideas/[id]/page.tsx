@@ -116,7 +116,7 @@ export default async function IdeaDetailDashboardPage({
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="rounded-full border border-warm-border bg-warm-subtle px-2.5 py-1 text-[12px] font-medium text-text-secondary">
@@ -138,7 +138,7 @@ export default async function IdeaDetailDashboardPage({
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           {showScore && <ScoreBadge score={idea.validationScore} />}
           <Link href={`/idea/${idea.slug}`}>
             <Button
@@ -281,10 +281,10 @@ export default async function IdeaDetailDashboardPage({
                     </h3>
                     <div className="mt-3 space-y-3">
                       {donationStats.recentDonations.map((donation) => (
-                        <div
-                          key={donation.id}
-                          className="flex items-center justify-between"
-                        >
+                          <div
+                            key={donation.id}
+                            className="flex items-center justify-between gap-2"
+                          >
                           <div className="flex items-center gap-2.5">
                             <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-warm-subtle">
                               {!donation.isAnonymous &&
@@ -304,7 +304,7 @@ export default async function IdeaDetailDashboardPage({
                               )}
                             </div>
                             <div>
-                              <p className="text-[13px] font-medium text-deep-ink">
+                              <p className="truncate text-[13px] font-medium text-deep-ink">
                                 {donation.isAnonymous
                                   ? "Anonymous"
                                   : donation.donor.name}

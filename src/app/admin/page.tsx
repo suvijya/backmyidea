@@ -136,7 +136,7 @@ export default function AdminOverviewPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* ─── GOD MODE HERO ───────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl bg-zinc-950 p-8 text-white shadow-2xl border border-white/10">
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-950 p-4 text-white shadow-2xl sm:p-6 md:p-8">
         <div className="absolute right-0 top-0 -mr-20 -mt-20 h-96 w-96 rounded-full bg-brand-blue/20 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-80 w-80 rounded-full bg-purple-500/20 blur-[100px] pointer-events-none" />
         
@@ -158,7 +158,7 @@ export default function AdminOverviewPage() {
               </p>
             </div>
             
-            <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 p-3 shadow-xl backdrop-blur-md sm:p-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-green/20 text-brand-green">
                 <Database className="h-6 w-6" />
               </div>
@@ -176,7 +176,7 @@ export default function AdminOverviewPage() {
           </div>
 
           {/* Core Metrics Highlight Row */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 pt-6 border-t border-white/10 mt-6">
+             <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-6 sm:gap-4 lg:grid-cols-4">
             {loading
               ? Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton key={i} className="h-[100px] w-full rounded-2xl bg-white/5" />
@@ -316,7 +316,7 @@ function PremiumStatCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden bg-white/5 border border-white/10 hover:bg-white/10 group">
+    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 sm:p-5">
       <div className="absolute right-0 top-0 -mr-6 -mt-6 h-24 w-24 rounded-full bg-white/5 blur-2xl group-hover:bg-white/10 transition-colors" />
       <div className="flex items-center gap-3 mb-3 relative z-10">
         <div className="p-2 rounded-lg bg-white/10">
@@ -326,7 +326,7 @@ function PremiumStatCard({
           {label}
         </span>
       </div>
-      <p className="font-data text-[32px] font-bold leading-none tracking-tight text-white relative z-10">
+      <p className="relative z-10 font-data text-[24px] font-bold leading-none tracking-tight text-white sm:text-[32px]">
         {value.toLocaleString()}
       </p>
     </div>

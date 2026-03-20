@@ -283,7 +283,7 @@ export function EditIdeaForm({ idea }: EditIdeaFormProps) {
         <Label className="text-[13px] font-semibold text-deep-ink">
           Tags (up to {MAX_TAGS})
         </Label>
-        <div className="mt-1.5 flex gap-2">
+        <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
           <Input
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
@@ -330,7 +330,7 @@ export function EditIdeaForm({ idea }: EditIdeaFormProps) {
       </div>
 
       {/* Submit */}
-      <div className="flex items-center justify-between border-t border-warm-border pt-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-warm-border pt-6">
         <Button
           type="button"
           variant="outline"

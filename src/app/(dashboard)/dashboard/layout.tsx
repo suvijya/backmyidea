@@ -26,6 +26,12 @@ export default async function DashboardLayout({
     <>
       <Navbar />
       <div className="mx-auto max-w-[1200px] px-4 py-6 lg:px-8">
+        {/* Mobile Dashboard Nav - Horizontal scroll */}
+        <div className="lg:hidden w-full overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide mb-2">
+          <div className="flex gap-2 min-w-max">
+            <DashboardSidebarNav horizontal />
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
           {/* Sidebar — desktop only */}
           <aside className="hidden lg:block">

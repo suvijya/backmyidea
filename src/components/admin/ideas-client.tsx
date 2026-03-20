@@ -213,7 +213,7 @@ export function IdeasClient() {
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px] border-warm-border">
+          <SelectTrigger className="w-full border-warm-border sm:w-[160px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -325,7 +325,7 @@ export function IdeasClient() {
                           key={idea.id}
                           className="border-warm-border hover:bg-warm-subtle/50"
                         >
-                          <TableCell className="max-w-[280px]">
+                          <TableCell className="max-w-[240px] sm:max-w-[280px]">
                             <Link
                               href={`/idea/${idea.slug}`}
                               className="flex items-center gap-1 text-[14px] font-medium text-deep-ink hover:text-saffron transition-colors line-clamp-2"

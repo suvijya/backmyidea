@@ -102,7 +102,7 @@ export default function ComparePage() {
   }
 
   return (
-    <div className="space-y-6">
+      <div className="space-y-6">
       <div>
         <h1 className="font-display text-[24px] text-deep-ink">
           Compare Ideas
@@ -136,9 +136,9 @@ export default function ComparePage() {
             {selectedIdeas.map((idea) => (
               <div
                 key={idea.id}
-                className="flex items-center gap-1.5 rounded-lg border border-saffron bg-saffron-light px-3 py-1.5"
+                className="flex max-w-full items-center gap-1.5 rounded-lg border border-saffron bg-saffron-light px-3 py-1.5"
               >
-                <span className="text-[13px] font-medium text-saffron">
+                <span className="truncate text-[13px] font-medium text-saffron">
                   {idea.title}
                 </span>
                 <button
@@ -163,7 +163,7 @@ export default function ComparePage() {
 
                 {/* Dropdown picker */}
                 {showPicker && (
-                  <div className="absolute left-0 top-full z-10 mt-1 max-h-64 w-80 overflow-auto rounded-xl border border-warm-border bg-white p-2 shadow-lg">
+                  <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-warm-border bg-white p-2 shadow-lg sm:w-80 sm:right-auto">
                     {watchlistIdeas
                       .filter((idea) => !selectedIds.includes(idea.id))
                       .map((idea) => (
@@ -203,7 +203,7 @@ export default function ComparePage() {
 
           {/* Comparison Table */}
           {selectedIdeas.length >= 2 ? (
-            <div className="overflow-x-auto rounded-xl border border-warm-border bg-white">
+            <div className="overflow-x-auto rounded-xl border border-warm-border bg-white overscroll-x-contain">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-warm-border">

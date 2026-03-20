@@ -233,7 +233,7 @@ export default function AdminReportsPage() {
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v as ReportStatus)}
         >
-          <SelectTrigger className="w-[180px] border-warm-border">
+          <SelectTrigger className="w-full border-warm-border sm:w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -357,7 +357,7 @@ export default function AdminReportsPage() {
                     {/* Right: Actions */}
                     {(report.status === "PENDING" ||
                       report.status === "REVIEWED") && (
-                      <div className="flex shrink-0 gap-2">
+                      <div className="flex shrink-0 flex-wrap gap-2 sm:flex-nowrap">
                         {updatingId === report.id ? (
                           <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
                         ) : (

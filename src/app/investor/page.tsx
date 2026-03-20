@@ -199,17 +199,17 @@ export default function InvestorDashboardPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* ─── HERO & STATS ───────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl bg-deep-ink p-8 text-white shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl bg-deep-ink p-4 text-white shadow-2xl sm:p-6 md:p-8">
         <div className="absolute right-0 top-0 -mr-20 -mt-20 h-96 w-96 rounded-full bg-saffron/20 blur-3xl" />
         <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-80 w-80 rounded-full bg-brand-blue/20 blur-3xl" />
         
         <div className="relative z-10">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+          <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-saffron backdrop-blur-md mb-4 border border-white/10">
                 <Activity className="h-3 w-3" /> Alpha Deal Flow
               </div>
-              <h1 className="font-display text-[32px] leading-tight md:text-[42px] tracking-tight">
+              <h1 className="font-display text-[28px] leading-tight tracking-tight sm:text-[32px] md:text-[42px]">
                 Investor Intelligence
               </h1>
               <p className="mt-2 text-[15px] text-white/60 max-w-xl leading-relaxed">
@@ -218,7 +218,7 @@ export default function InvestorDashboardPage() {
               </p>
             </div>
             
-            <div className="h-[120px] w-full md:w-[300px] shrink-0">
+            <div className="h-[120px] w-full shrink-0 md:w-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={momentumData}>
                   <defs>
@@ -287,16 +287,16 @@ export default function InvestorDashboardPage() {
 
       {/* ─── DEAL FLOW TABLE / FEED ─────────────────────────────────── */}
       <div className="space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
+          <div className="flex flex-col gap-4 px-2 md:flex-row md:items-center md:justify-between">
           <h2 className="font-display text-[22px] text-deep-ink flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-brand-blue" />
             Live Deal Flow
           </h2>
           
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="h-9 w-[130px] border-warm-border text-[13px] bg-white rounded-xl shadow-sm">
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+              <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="h-9 w-full border-warm-border bg-white text-[13px] shadow-sm sm:w-[130px]">
                 <SelectValue placeholder="All Sectors" />
               </SelectTrigger>
               <SelectContent>
@@ -309,8 +309,8 @@ export default function InvestorDashboardPage() {
               </SelectContent>
             </Select>
 
-            <Select value={stage} onValueChange={setStage}>
-              <SelectTrigger className="h-9 w-[130px] border-warm-border text-[13px] bg-white rounded-xl shadow-sm">
+              <Select value={stage} onValueChange={setStage}>
+              <SelectTrigger className="h-9 w-full border-warm-border bg-white text-[13px] shadow-sm sm:w-[130px]">
                 <SelectValue placeholder="All Stages" />
               </SelectTrigger>
               <SelectContent>
@@ -323,8 +323,8 @@ export default function InvestorDashboardPage() {
               </SelectContent>
             </Select>
 
-            <Select value={minScore} onValueChange={setMinScore}>
-              <SelectTrigger className="h-9 w-[110px] border-warm-border text-[13px] bg-white rounded-xl shadow-sm">
+              <Select value={minScore} onValueChange={setMinScore}>
+              <SelectTrigger className="h-9 w-full border-warm-border bg-white text-[13px] shadow-sm sm:w-[110px]">
                 <SelectValue placeholder="Min Score" />
               </SelectTrigger>
               <SelectContent>
@@ -336,8 +336,8 @@ export default function InvestorDashboardPage() {
               </SelectContent>
             </Select>
 
-            <Select value={sort} onValueChange={setSort}>
-              <SelectTrigger className="h-9 w-[120px] border-warm-border text-[13px] bg-white rounded-xl shadow-sm font-medium">
+              <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="h-9 w-full border-warm-border bg-white text-[13px] font-medium shadow-sm sm:w-[120px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -593,11 +593,11 @@ function DealFlowCard({
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-8 pb-12">
-      <Skeleton className="h-[380px] w-full rounded-3xl" />
-      <div className="flex justify-between">
-        <Skeleton className="h-[40px] w-[200px] rounded-xl" />
-        <Skeleton className="h-[40px] w-[400px] rounded-xl" />
+      <div className="space-y-8 pb-12">
+        <Skeleton className="h-[380px] w-full rounded-3xl" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+        <Skeleton className="h-[40px] w-full rounded-xl sm:w-[200px]" />
+        <Skeleton className="h-[40px] w-full rounded-xl sm:w-[400px]" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
         <Skeleton key={i} className="h-[180px] w-full rounded-xl" />
@@ -605,4 +605,3 @@ function DashboardSkeleton() {
     </div>
   );
 }
-

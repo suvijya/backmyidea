@@ -87,7 +87,7 @@ function HeroIdeaCard() {
 
       {/* Main card */}
       <motion.div
-        className="relative rounded-[16px] border border-warm-border bg-white p-6 shadow-elevated"
+        className="relative rounded-[16px] border border-warm-border bg-white p-4 shadow-elevated sm:p-6"
         style={{ transform: "rotate(-1.5deg)" }}
         animate={{ y: [0, -6, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -151,7 +151,7 @@ function HeroIdeaCard() {
         </div>
 
         {/* Vote buttons (static demo) */}
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <div className="flex flex-1 items-center justify-center gap-1 rounded-md border-[1.5px] border-brand-green bg-brand-green-light py-2 text-[12px] font-medium text-brand-green">
             <span>🔥</span>
             <span className="hidden sm:inline">I&apos;d Use This</span>
@@ -219,7 +219,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
-                className="mt-5 font-display text-[48px] leading-[0.95] tracking-tight text-deep-ink sm:text-[56px] md:text-[64px] lg:text-[72px]"
+                className="mt-5 font-display text-[40px] leading-[1.05] tracking-tight text-deep-ink sm:text-[48px] md:text-[64px] lg:text-[72px]"
               >
                 Validate your{" "}
                 <br className="hidden sm:block" />
@@ -331,7 +331,7 @@ export default function LandingPage() {
           STATS TICKER
           ════════════════════════════════════════════ */}
       <section className="border-y border-warm-border bg-warm-subtle">
-        <div className="mx-auto flex max-w-[900px] flex-wrap items-center justify-between gap-6 px-6 py-6 md:gap-0 md:py-5">
+        <div className="mx-auto flex max-w-[900px] flex-wrap items-center justify-between gap-4 px-4 py-6 md:gap-0 md:px-6 md:py-5">
           {[
             { end: 500, suffix: "+", label: "ideas validated" },
             { end: 12400, suffix: "+", label: "community members" },
