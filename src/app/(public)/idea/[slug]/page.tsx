@@ -16,7 +16,6 @@ import {
   Flag,
   CheckCircle2,
 } from "lucide-react";
-import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { getIdeaBySlug } from "@/actions/idea-actions";
 import { VoteButtons } from "@/components/voting/vote-buttons";
@@ -28,7 +27,7 @@ import { DonationSection } from "@/components/payments/donation-section";
 import { ExpressInterestButton } from "@/components/investor/express-interest-button";
 import { EmployeeReviewBanner } from "@/components/ideas/employee-review-banner";
 import { getPublicDonors } from "@/actions/payment-actions";
-import { canUserViewGlobalScores } from "@/lib/clerk";
+import { getCurrentUser, canUserViewGlobalScores } from "@/lib/clerk";
 import {
   CATEGORY_LABELS,
   CATEGORY_EMOJIS,
@@ -80,24 +79,17 @@ async function IdeaDetailLoader({ slug }: { slug: string }) {
   }
 
   const idea = result.data;
-  const { userId: clerkId } = await auth();
+  
+  const user = await getCurrentUser();
 
   // Find current user's vote
   let userVote: VoteType | null = null;
-  let currentUserId: string | null = null;
-  let isEmployeeOrAdmin = false;
+  let currentUserId: string | null = user?.id || null;
+  let isEmployeeOrAdmin = user ? (user.isEmployee || user.isAdmin) : false;
   
-  if (clerkId) {
-    const user = await prisma.user.findUnique({
-      where: { clerkId },
-      select: { id: true, isEmployee: true, isAdmin: true },
-    });
-    if (user) {
-      currentUserId = user.id;
-      isEmployeeOrAdmin = user.isEmployee || user.isAdmin;
-      const vote = idea.votes.find((v) => v.userId === user.id);
-      userVote = vote?.type ?? null;
-    }
+  if (user) {
+    const vote = idea.votes.find((v) => v.userId === user.id);
+    userVote = vote?.type ?? null;
   }
 
   const isOwnIdea = currentUserId === idea.founderId;

@@ -3,13 +3,13 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "./prisma";
 import type { User } from "@prisma/client";
-
+import { cache } from "react";
 
 /**
  * Get the current Prisma user from Clerk session.
  * Returns null if not authenticated or user not found in DB.
  */
-export async function getCurrentUser(): Promise<User | null> {
+export const getCurrentUser = cache(async (): Promise<User | null> => {
   const { userId: clerkId } = await auth();
 
   if (!clerkId) {
@@ -21,7 +21,7 @@ export async function getCurrentUser(): Promise<User | null> {
   });
 
   return user;
-}
+});
 
 /**
  * Require an authenticated and onboarded user.
@@ -29,15 +29,7 @@ export async function getCurrentUser(): Promise<User | null> {
  * redirects to /onboarding if not onboarded.
  */
 export async function requireUser(): Promise<User> {
-  const { userId: clerkId } = await auth();
-
-  if (!clerkId) {
-    redirect("/sign-in");
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-  });
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/sign-in");

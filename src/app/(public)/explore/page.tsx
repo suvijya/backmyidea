@@ -9,6 +9,7 @@ import type { Category, IdeaStage } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canUserViewGlobalScores } from "@/lib/clerk";
 import { Skeleton } from "@/components/ui/skeleton";
+import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -32,33 +33,47 @@ async function FeedLoader({ filters, page }: { filters: IdeaFiltersType; page: n
   return <ExploreFeed ideas={items} totalPages={totalPages} currentPage={currentPage} canViewGlobalScores={canViewGlobalScores} />;
 }
 
+// Cache the expensive sidebar queries to revalidate only every 5 minutes (300 seconds)
+const getCachedSidebarStats = unstable_cache(
+  async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const [activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas] = await Promise.all([
+      prisma.user.count({ where: { votes: { some: {} } } }),
+      prisma.idea.count({
+        where: {
+          createdAt: { gte: today },
+        },
+      }),
+      prisma.user.findFirst({
+        orderBy: { points: "desc" },
+        where: { onboarded: true, isBanned: false },
+        select: {
+          name: true,
+          username: true,
+          image: true,
+          level: true,
+          _count: { select: { votes: true } },
+        },
+      }),
+      prisma.idea.findMany({
+        where: { status: "ACTIVE" },
+        select: { tags: true, category: true },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      }),
+    ]);
+
+    return { activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas };
+  },
+  ['explore-sidebar-stats'],
+  { revalidate: 300, tags: ['sidebar-stats'] }
+);
+
 // ─── Right Sidebar Loader ───────────────────────────────────────
 async function RightSidebarLoader() {
-  const [activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas] = await Promise.all([
-    prisma.user.count({ where: { votes: { some: {} } } }),
-    prisma.idea.count({
-      where: {
-        createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-      },
-    }),
-    prisma.user.findFirst({
-      orderBy: { points: "desc" },
-      where: { onboarded: true, isBanned: false },
-      select: {
-        name: true,
-        username: true,
-        image: true,
-        level: true,
-        _count: { select: { votes: true } },
-      },
-    }),
-    prisma.idea.findMany({
-      where: { status: "ACTIVE" },
-      select: { tags: true, category: true },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    }),
-  ]);
+  const { activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas } = await getCachedSidebarStats();
 
   const stats = {
     activeVoters: activeVotersCount,

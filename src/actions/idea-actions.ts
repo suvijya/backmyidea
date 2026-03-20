@@ -12,8 +12,8 @@ import { checkAndAwardBadges, awardPoints, updateUserLevel } from "@/lib/gamific
 import { trackDailyStat, snapshotDailyScore } from "@/lib/daily-stats";
 import { MAX_ACTIVE_IDEAS } from "@/lib/constants";
 import type { ActionResult, IdeaFeedItem, IdeaDetail, PaginatedResponse, IdeaFilters, AIQualityResult, AIDuplicateResult } from "@/types";
-import type { Idea, IdeaStatus, Prisma } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import type { Idea, IdeaStatus, Prisma, VoteType } from "@prisma/client";
+import { revalidatePath, unstable_cache } from "next/cache";
 import { FEED_PAGE_SIZE } from "@/lib/constants";
 
 // ═══════════════════════════════
@@ -273,21 +273,9 @@ export async function updateIdeaStatus(
 export async function getIdeaBySlug(
   slug: string
 ): Promise<ActionResult<IdeaDetail>> {
-  const { userId: clerkId } = await auth();
-
-  let currentUserId: string | null = null;
-  let isAdminOrEmployee = false;
-
-  if (clerkId) {
-    const user = await prisma.user.findUnique({
-      where: { clerkId },
-      select: { id: true, isAdmin: true, isEmployee: true },
-    });
-    if (user) {
-      currentUserId = user.id;
-      isAdminOrEmployee = user.isAdmin || user.isEmployee;
-    }
-  }
+  const user = await getCurrentUser();
+  const currentUserId = user?.id || null;
+  const isAdminOrEmployee = user ? (user.isAdmin || user.isEmployee) : false;
 
   const idea = await prisma.idea.findUnique({
     where: { slug },
@@ -371,15 +359,8 @@ export async function getIdeasFeed(
   filters: IdeaFilters,
   cursor?: string
 ): Promise<PaginatedResponse<IdeaFeedItem>> {
-  const { userId: clerkId } = await auth();
-  let currentUserId: string | null = null;
-  if (clerkId) {
-    const user = await prisma.user.findUnique({
-      where: { clerkId },
-      select: { id: true },
-    });
-    if (user) currentUserId = user.id;
-  }
+  const user = await getCurrentUser();
+  const currentUserId = user?.id || null;
 
   const where: Prisma.IdeaWhereInput = {
     status: "ACTIVE",
@@ -449,85 +430,115 @@ export async function getIdeasFeed(
   return { items, nextCursor, hasMore };
 }
 
+import { getCurrentUser } from "@/lib/clerk";
+
 export async function getExploreFeed(
   filters: IdeaFilters,
   page: number = 1
 ): Promise<{ items: IdeaFeedItem[]; totalPages: number; currentPage: number; totalCount: number }> {
-  const { userId: clerkId } = await auth();
-  let currentUserId: string | null = null;
-  if (clerkId) {
-    const user = await prisma.user.findUnique({
-      where: { clerkId },
-      select: { id: true },
-    });
-    if (user) currentUserId = user.id;
-  }
+  const user = await getCurrentUser();
+  const currentUserId = user?.id || null;
 
-  const where: Prisma.IdeaWhereInput = {
-    status: "ACTIVE",
+  // Create a stable cache key string based on filters and page
+  const cacheKey = JSON.stringify({ ...filters, page });
+
+  // Use unstable_cache to cache the expensive count and fetch query for 60 seconds
+  const getCachedBaseData = unstable_cache(
+    async (cacheFilters: IdeaFilters, cachePage: number) => {
+      const where: Prisma.IdeaWhereInput = {
+        status: "ACTIVE",
+      };
+
+      if (cacheFilters.category) {
+        where.category = cacheFilters.category;
+      }
+      if (cacheFilters.stage) {
+        where.stage = cacheFilters.stage;
+      }
+      if (cacheFilters.search) {
+        where.OR = [
+          { title: { contains: cacheFilters.search, mode: "insensitive" } },
+          { pitch: { contains: cacheFilters.search, mode: "insensitive" } },
+          { tags: { has: cacheFilters.search.toLowerCase() } },
+        ];
+      }
+
+      let orderBy: Prisma.IdeaOrderByWithRelationInput;
+      switch (cacheFilters.sort) {
+        case "newest":
+          orderBy = { createdAt: "desc" };
+          break;
+        case "top":
+          orderBy = { validationScore: "desc" };
+          break;
+        case "hot":
+          orderBy = { totalVotes: "desc" };
+          break;
+        case "trending":
+        default:
+          orderBy = { totalVotes: "desc" };
+          break;
+      }
+
+      const limit = FEED_PAGE_SIZE;
+      const skip = (cachePage - 1) * limit;
+
+      const [totalCount, ideas] = await prisma.$transaction([
+        prisma.idea.count({ where }),
+        prisma.idea.findMany({
+          where,
+          include: {
+            founder: {
+              select: { id: true, name: true, username: true, image: true },
+            },
+          },
+          orderBy,
+          take: limit,
+          skip,
+        }),
+      ]);
+
+      return { totalCount, ideas };
+    },
+    [`explore-feed-${cacheKey}`],
+    { revalidate: 60, tags: ["explore-feed"] }
+  );
+
+  const { totalCount, ideas: baseIdeas } = await getCachedBaseData(filters, page) as {
+    totalCount: number;
+    ideas: any[];
   };
 
-  if (filters.category) {
-    where.category = filters.category;
-  }
-  if (filters.stage) {
-    where.stage = filters.stage;
-  }
-  if (filters.search) {
-    where.OR = [
-      { title: { contains: filters.search, mode: "insensitive" } },
-      { pitch: { contains: filters.search, mode: "insensitive" } },
-      { tags: { has: filters.search.toLowerCase() } },
-    ];
-  }
-
-  let orderBy: Prisma.IdeaOrderByWithRelationInput;
-  switch (filters.sort) {
-    case "newest":
-      orderBy = { createdAt: "desc" };
-      break;
-    case "top":
-      orderBy = { validationScore: "desc" };
-      break;
-    case "hot":
-      orderBy = { totalVotes: "desc" };
-      break;
-    case "trending":
-    default:
-      orderBy = { totalVotes: "desc" };
-      break;
-  }
-
-  const limit = FEED_PAGE_SIZE;
-  const skip = (page - 1) * limit;
-
-  const [totalCount, ideas] = await prisma.$transaction([
-    prisma.idea.count({ where }),
-    prisma.idea.findMany({
-      where,
-      include: {
-        founder: {
-          select: { id: true, name: true, username: true, image: true },
-        },
-        votes: currentUserId ? {
-          where: { userId: currentUserId },
-          select: { type: true, userId: true },
-        } : false,
+  // If user is logged in, fetch their votes for these specific ideas
+  let userVotes: Record<string, { type: VoteType; userId: string }> = {};
+  if (currentUserId && baseIdeas.length > 0) {
+    const ideaIds = baseIdeas.map((idea: any) => idea.id);
+    const votes = await prisma.vote.findMany({
+      where: {
+        userId: currentUserId,
+        ideaId: { in: ideaIds },
       },
-      orderBy,
-      take: limit,
-      skip,
-    })
-  ]);
+      select: { ideaId: true, type: true, userId: true },
+    });
+    
+    votes.forEach((v) => {
+      userVotes[v.ideaId] = { type: v.type, userId: v.userId };
+    });
+  }
 
-  const formattedIdeas = ideas.map(idea => ({
+  const formattedIdeas = baseIdeas.map((idea: any) => ({
     ...idea,
-    votes: idea.votes || []
+    votes: userVotes[idea.id] ? [userVotes[idea.id]] : [],
   }));
 
-  const totalPages = Math.ceil(totalCount / limit);
+  const totalPages = Math.ceil(totalCount / FEED_PAGE_SIZE);
 
-  return { items: formattedIdeas as IdeaFeedItem[], totalPages, currentPage: page, totalCount };
+  return {
+    items: formattedIdeas as unknown as IdeaFeedItem[],
+    totalPages,
+    currentPage: page,
+    totalCount,
+  };
 }
 
 // ═══════════════════════════════
@@ -608,16 +619,9 @@ export async function getIdeasByUser(
   userId: string
 ): Promise<IdeaFeedItem[]> {
   // Determine if current user is the owner — if not, only show ACTIVE ideas
-  const { userId: clerkId } = await auth();
-  let isOwner = false;
-  let currentUserId: string | null = null;
-  if (clerkId) {
-    const currentUser = await prisma.user.findUnique({ where: { clerkId }, select: { id: true, isAdmin: true } });
-    if (currentUser) {
-      currentUserId = currentUser.id;
-      isOwner = currentUser.id === userId || currentUser.isAdmin === true;
-    }
-  }
+  const user = await getCurrentUser();
+  const currentUserId = user?.id || null;
+  const isOwner = user ? (user.id === userId || user.isAdmin === true) : false;
 
   const statusFilter: Prisma.IdeaWhereInput["status"] = isOwner
     ? { not: "REMOVED" }
