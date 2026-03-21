@@ -21,22 +21,47 @@ export function RealtimeTopValidator({ initialData }: RealtimeTopValidatorProps)
   const [topValidator, setTopValidator] = useState<TopValidatorData | null>(initialData);
 
   useEffect(() => {
-    // Poll every 10 seconds
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch("/api/leaderboard/top");
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data) {
-            setTopValidator(json.data);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch top validator", err);
-      }
-    }, 10000);
+    let cancelled = false;
 
-    return () => clearInterval(interval);
+    const fetchTopValidator = async () => {
+      try {
+        const res = await fetch("/api/leaderboard/top", {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          return;
+        }
+        const json = (await res.json()) as { data: TopValidatorData | null };
+        if (!cancelled && json.data) {
+          setTopValidator(json.data);
+        }
+      } catch {
+        // silent failure
+      }
+    };
+
+    const poll = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+      fetchTopValidator().catch(() => {});
+    };
+
+    const interval = setInterval(poll, 60_000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        poll();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, []);
 
   if (!topValidator) return null;

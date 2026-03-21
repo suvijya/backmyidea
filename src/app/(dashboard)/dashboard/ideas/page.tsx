@@ -50,7 +50,7 @@ const STATUS_STYLES: Record<
 
 export default async function MyIdeasPage() {
   const user = await requireUser();
-  const ideas = await getDashboardIdeas(user.id);
+  const ideas = await getDashboardIdeas(user.id, { skipAuthCheck: true });
 
   const activeIdeas = ideas.filter((i) => i.status === "ACTIVE");
   const pendingIdeas = ideas.filter((i) => i.status === "PENDING");
