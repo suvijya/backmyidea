@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { ideaLimiter, shareLimiter } from "@/lib/redis";
+import { redis, ideaLimiter, shareLimiter } from "@/lib/redis";
 import { createIdeaSchema, updateIdeaSchema } from "@/lib/validations";
 import { generateSlug } from "@/lib/utils";
 import { checkIdeaQuality, checkDuplicateIdea } from "@/lib/gemini";
@@ -423,7 +423,27 @@ export async function getIdeasFeed(
 
   const ideas = await prisma.idea.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      pitch: true,
+      category: true,
+      stage: true,
+      validationScore: true,
+      scoreTier: true,
+      createdAt: true,
+      useThisCount: true,
+      maybeCount: true,
+      notForMeCount: true,
+      totalVotes: true,
+      totalComments: true,
+      totalViews: true,
+      totalShares: true,
+      imageUrl: true,
+      status: true,
+      founderId: true,
+      updatedAt: true,
       founder: {
         select: { id: true, name: true, username: true, image: true },
       },
@@ -505,7 +525,27 @@ export async function getExploreFeed(
     prisma.idea.count({ where }),
     prisma.idea.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        pitch: true,
+        category: true,
+        stage: true,
+        validationScore: true,
+        scoreTier: true,
+        createdAt: true,
+        useThisCount: true,
+        maybeCount: true,
+        notForMeCount: true,
+        totalVotes: true,
+        totalComments: true,
+        totalViews: true,
+        totalShares: true,
+        imageUrl: true,
+        status: true,
+        founderId: true,
+        updatedAt: true,
         founder: {
           select: { id: true, name: true, username: true, image: true },
         },
@@ -625,7 +665,27 @@ export async function getIdeasByUser(
 
   const ideas = await prisma.idea.findMany({
     where: { founderId: userId, status: statusFilter },
-    include: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      pitch: true,
+      category: true,
+      stage: true,
+      validationScore: true,
+      scoreTier: true,
+      createdAt: true,
+      useThisCount: true,
+      maybeCount: true,
+      notForMeCount: true,
+      totalVotes: true,
+      totalComments: true,
+      totalViews: true,
+      totalShares: true,
+      imageUrl: true,
+      status: true,
+      founderId: true,
+      updatedAt: true,
       founder: {
         select: { id: true, name: true, username: true, image: true },
       },
@@ -637,8 +697,109 @@ export async function getIdeasByUser(
     orderBy: { createdAt: "desc" },
   });
 
-  return ideas.map(idea => ({
+  const formattedIdeas = ideas.map(idea => ({
     ...idea,
     votes: idea.votes || []
   }));
+
+  return formattedIdeas as IdeaFeedItem[];
+}
+
+// ═══════════════════════════════
+// EXPLORE SIDEBAR & TRENDING (cached)
+// ═══════════════════════════════
+
+export async function getExploreSidebarData() {
+  const cacheKey = "explore:sidebar_stats";
+  try {
+    const cached = await redis.get<any>(cacheKey);
+    if (cached) return cached;
+  } catch (err) {
+    console.error("Redis error in getExploreSidebarData:", err);
+  }
+
+  const [activeVotersCount, ideasTodayCount, topValidatorRaw] = await Promise.all([
+    prisma.user.count({ where: { votes: { some: {} } } }),
+    prisma.idea.count({
+      where: {
+        createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        status: "ACTIVE",
+      },
+    }),
+    prisma.user.findFirst({
+      orderBy: { points: "desc" },
+      where: { onboarded: true, isBanned: false },
+      select: {
+        name: true,
+        username: true,
+        image: true,
+        level: true,
+        _count: { select: { votes: true } },
+      },
+    }),
+  ]);
+
+  const stats = {
+    activeVoters: activeVotersCount,
+    ideasToday: ideasTodayCount,
+    topValidator: topValidatorRaw ? {
+      name: topValidatorRaw.name,
+      username: topValidatorRaw.username || "",
+      image: topValidatorRaw.image,
+      level: topValidatorRaw.level,
+      reviewCount: topValidatorRaw._count.votes,
+    } : null,
+  };
+
+  try {
+    await redis.set(cacheKey, stats, { ex: 300 }); // 5 minutes cache
+  } catch (err) {
+    console.error("Redis set error in getExploreSidebarData:", err);
+  }
+  
+  return stats;
+}
+
+export async function getTrendingTopics() {
+  const cacheKey = "explore:trending_topics";
+  try {
+    const cached = await redis.get<any[]>(cacheKey);
+    if (cached) return cached;
+  } catch (err) {
+    console.error("Redis error in getTrendingTopics:", err);
+  }
+
+  const recentIdeas = await prisma.idea.findMany({
+    where: { status: "ACTIVE" },
+    select: { tags: true, category: true },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  const tagCounts: Record<string, number> = {};
+  recentIdeas.forEach((idea) => {
+    if (idea.tags && idea.tags.length > 0) {
+      idea.tags.forEach((tag) => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+    } else {
+      const cat = idea.category.toLowerCase().replace(/_/g, "-");
+      tagCounts[cat] = (tagCounts[cat] || 0) + 1;
+    }
+  });
+
+  const trendingTopics = Object.entries(tagCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
+
+  try {
+    if (trendingTopics.length > 0) {
+      await redis.set(cacheKey, trendingTopics, { ex: 1800 }); // 30 minutes cache
+    }
+  } catch (err) {
+    console.error("Redis set error in getTrendingTopics:", err);
+  }
+
+  return trendingTopics;
 }

@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
   { href: "/explore", label: "Explore", icon: Compass },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/investor/apply", label: "For Investors", icon: TrendingUp },
+  { href: "/investor", label: "For Investors", icon: TrendingUp },
 ] as const;
 
 export function Navbar() {
@@ -79,19 +79,21 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-warm-border bg-white/95 backdrop-blur-sm">
-      <nav className="mx-auto flex h-[60px] max-w-[1440px] items-center justify-between px-4 lg:px-8">
+      <nav className="mx-auto flex h-[60px] max-w-[1200px] items-center px-4 lg:px-8">
         {/* ── Left: Logo ── */}
-        <Link
-          href="/"
-          className="flex items-center gap-2 transition-opacity hover:opacity-80"
-        >
-          <span className="font-display text-[20px] tracking-tight text-deep-ink">
-            Piqd
-          </span>
-        </Link>
+        <div className="flex-1">
+          <Link
+            href="/"
+            className="flex w-fit items-center gap-2 transition-all hover:opacity-80 -skew-x-6"
+          >
+            <span className="font-display text-[22px] tracking-tight text-deep-ink">
+              Piqd
+            </span>
+          </Link>
+        </div>
 
         {/* ── Center: Desktop Nav Links ── */}
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center justify-center gap-1 md:flex">
           {NAV_LINKS.map((link) => {
             const isActive = pathname.startsWith(link.href);
             return (
@@ -99,15 +101,15 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "relative px-3.5 py-2 text-[13px] font-medium transition-colors",
+                  "relative px-4 py-2 text-[13px] font-medium transition-all -skew-x-6",
                   isActive
                     ? "text-deep-ink"
                     : "text-text-secondary hover:text-deep-ink"
                 )}
               >
-                {link.label}
+                <span className="inline-block skew-x-6">{link.label}</span>
                 {isActive && (
-                  <span className="absolute bottom-0 left-3.5 right-3.5 h-[2px] rounded-full bg-saffron" />
+                  <span className="absolute bottom-1 left-4 right-4 h-[2px] rounded-full bg-saffron" />
                 )}
               </Link>
             );
@@ -115,20 +117,22 @@ export function Navbar() {
         </div>
 
         {/* ── Right: Actions ── */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center justify-end gap-2 skew-x-[-6deg] translate-x-2">
           {/* Search icon — desktop & mobile */}
           <Link
             href="/search"
             prefetch={true}
             className="rounded-md p-2 text-text-secondary transition-colors hover:bg-warm-hover hover:text-deep-ink flex"
           >
-            <Search className="h-[18px] w-[18px]" />
+            <Search className="h-[18px] w-[18px] skew-x-6" />
           </Link>
 
           {isSignedIn ? (
             <>
               {/* Notification Bell */}
-              <NotificationBell />
+              <div className="skew-x-6">
+                <NotificationBell />
+              </div>
 
               {/* Post Idea CTA — desktop */}
               <Link href="/dashboard/ideas/new" className="hidden md:block">
@@ -136,17 +140,17 @@ export function Navbar() {
                   size="sm"
                   className="gap-1.5 bg-saffron text-white shadow-none hover:bg-saffron-dark"
                 >
-                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  Post Idea
+                  <Plus className="h-3.5 w-3.5 skew-x-6" strokeWidth={2.5} />
+                  <span className="skew-x-6">Post Idea</span>
                 </Button>
               </Link>
 
               {/* User dropdown — desktop */}
-              <div className="hidden md:block">
+              <div className="hidden md:block -skew-x-6">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2"
+                      className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 skew-x-6"
                       aria-label="User menu"
                     >
                       {userAvatar}
@@ -250,21 +254,21 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/sign-in">
+              <Link href="/sign-in" className="-skew-x-6">
                 <Button
                   variant="ghost"
                   size="sm"
                   className="hidden text-[13px] font-medium text-text-secondary hover:text-deep-ink md:inline-flex"
                 >
-                  Sign In
+                  <span className="skew-x-6">Sign In</span>
                 </Button>
               </Link>
-              <Link href="/sign-up">
+              <Link href="/sign-up" className="-skew-x-6">
                 <Button
                   size="sm"
                   className="gap-1.5 bg-saffron text-white shadow-none hover:bg-saffron-dark"
                 >
-                  Get Started
+                  <span className="skew-x-6">Get Started</span>
                 </Button>
               </Link>
             </>

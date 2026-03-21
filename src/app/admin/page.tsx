@@ -176,7 +176,7 @@ export default function AdminOverviewPage() {
           </div>
 
           {/* Core Metrics Highlight Row */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 pt-6 border-t border-white/10 mt-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-6 border-t border-white/10 mt-6">
             {loading
               ? Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton key={i} className="h-[100px] w-full rounded-2xl bg-white/5" />

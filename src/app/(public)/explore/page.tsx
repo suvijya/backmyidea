@@ -1,12 +1,11 @@
 import { Suspense } from "react";
-import { getExploreFeed } from "@/actions/idea-actions";
+import { getExploreFeed, getExploreSidebarData, getTrendingTopics } from "@/actions/idea-actions";
 import { ExploreSidebarLeft } from "@/components/explore/explore-sidebar-left";
 import { ExploreSidebarRight } from "@/components/explore/explore-sidebar-right";
 import { ExploreFeed } from "@/components/explore/explore-feed";
 import { IdeaSkeletonList } from "@/components/ideas/idea-skeleton";
 import type { IdeaFilters as IdeaFiltersType, SortOption } from "@/types";
 import type { Category, IdeaStage } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
 import { canUserViewGlobalScores } from "@/lib/clerk";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -34,74 +33,30 @@ async function FeedLoader({ filters, page }: { filters: IdeaFiltersType; page: n
 
 // ─── Right Sidebar Loader ───────────────────────────────────────
 async function RightSidebarLoader() {
-  const [activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas] = await Promise.all([
-    prisma.user.count({ where: { votes: { some: {} } } }),
-    prisma.idea.count({
-      where: {
-        createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-      },
-    }),
-    prisma.user.findFirst({
-      orderBy: { points: "desc" },
-      where: { onboarded: true, isBanned: false },
-      select: {
-        name: true,
-        username: true,
-        image: true,
-        level: true,
-        _count: { select: { votes: true } },
-      },
-    }),
-    prisma.idea.findMany({
-      where: { status: "ACTIVE" },
-      select: { tags: true, category: true },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    }),
+  const [sidebarData, trendingTopics] = await Promise.all([
+    getExploreSidebarData(),
+    getTrendingTopics(),
   ]);
 
   const stats = {
-    activeVoters: activeVotersCount,
-    ideasToday: ideasTodayCount,
+    activeVoters: sidebarData.activeVoters,
+    ideasToday: sidebarData.ideasToday,
   };
 
-  const tagCounts: Record<string, number> = {};
-  recentIdeas.forEach((idea: { tags: string[]; category: string }) => {
-    if (idea.tags && idea.tags.length > 0) {
-      idea.tags.forEach((tag: string) => {
-        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-      });
-    } else {
-      const cat = idea.category.toLowerCase().replace(/_/g, "-");
-      tagCounts[cat] = (tagCounts[cat] || 0) + 1;
-    }
-  });
+  const finalTrendingTopics = trendingTopics.length > 0 ? trendingTopics : [
+    { name: "ai-agents", count: 24 },
+    { name: "creator-economy", count: 18 },
+    { name: "quick-commerce", count: 15 },
+    { name: "b2b-saas", count: 12 },
+  ];
 
-  let trendingTopics = Object.entries(tagCounts)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 4);
-
-  if (trendingTopics.length === 0) {
-    trendingTopics = [
-      { name: "ai-agents", count: 24 },
-      { name: "creator-economy", count: 18 },
-      { name: "quick-commerce", count: 15 },
-      { name: "b2b-saas", count: 12 },
-    ];
-  }
-
-  const topValidator = topValidatorRaw
-    ? {
-        name: topValidatorRaw.name,
-        username: topValidatorRaw.username || "",
-        image: topValidatorRaw.image,
-        level: topValidatorRaw.level,
-        reviewCount: topValidatorRaw._count.votes,
-      }
-    : null;
-
-  return <ExploreSidebarRight stats={stats} trendingTopics={trendingTopics} topValidator={topValidator} />;
+  return (
+    <ExploreSidebarRight
+      stats={stats}
+      trendingTopics={finalTrendingTopics}
+      topValidator={sidebarData.topValidator}
+    />
+  );
 }
 
 // function SidebarSkeleton() {
