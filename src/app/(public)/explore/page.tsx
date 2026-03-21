@@ -1,11 +1,12 @@
 import { Suspense } from "react";
-import { getExploreFeed, getExploreSidebarData, getTrendingTopics } from "@/actions/idea-actions";
+import { getExploreFeed } from "@/actions/idea-actions";
 import { ExploreSidebarLeft } from "@/components/explore/explore-sidebar-left";
 import { ExploreSidebarRight } from "@/components/explore/explore-sidebar-right";
 import { ExploreFeed } from "@/components/explore/explore-feed";
 import { IdeaSkeletonList } from "@/components/ideas/idea-skeleton";
 import type { IdeaFilters as IdeaFiltersType, SortOption } from "@/types";
 import type { Category, IdeaStage } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { canUserViewGlobalScores } from "@/lib/clerk";
 import { Skeleton } from "@/components/ui/skeleton";
 import { unstable_cache } from "next/cache";
@@ -75,24 +76,47 @@ async function RightSidebarLoader() {
   const { activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas } = await getCachedSidebarStats();
 
   const stats = {
-    activeVoters: sidebarData.activeVoters,
-    ideasToday: sidebarData.ideasToday,
+    activeVoters: activeVotersCount,
+    ideasToday: ideasTodayCount,
   };
 
-  const finalTrendingTopics = trendingTopics.length > 0 ? trendingTopics : [
-    { name: "ai-agents", count: 24 },
-    { name: "creator-economy", count: 18 },
-    { name: "quick-commerce", count: 15 },
-    { name: "b2b-saas", count: 12 },
-  ];
+  const tagCounts: Record<string, number> = {};
+  recentIdeas.forEach((idea: { tags: string[]; category: string }) => {
+    if (idea.tags && idea.tags.length > 0) {
+      idea.tags.forEach((tag: string) => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+    } else {
+      const cat = idea.category.toLowerCase().replace(/_/g, "-");
+      tagCounts[cat] = (tagCounts[cat] || 0) + 1;
+    }
+  });
 
-  return (
-    <ExploreSidebarRight
-      stats={stats}
-      trendingTopics={finalTrendingTopics}
-      topValidator={sidebarData.topValidator}
-    />
-  );
+  let trendingTopics = Object.entries(tagCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
+
+  if (trendingTopics.length === 0) {
+    trendingTopics = [
+      { name: "ai-agents", count: 24 },
+      { name: "creator-economy", count: 18 },
+      { name: "quick-commerce", count: 15 },
+      { name: "b2b-saas", count: 12 },
+    ];
+  }
+
+  const topValidator = topValidatorRaw
+    ? {
+        name: topValidatorRaw.name,
+        username: topValidatorRaw.username || "",
+        image: topValidatorRaw.image,
+        level: topValidatorRaw.level,
+        reviewCount: topValidatorRaw._count.votes,
+      }
+    : null;
+
+  return <ExploreSidebarRight stats={stats} trendingTopics={trendingTopics} topValidator={topValidator} />;
 }
 
 // function SidebarSkeleton() {
