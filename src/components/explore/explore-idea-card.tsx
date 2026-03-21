@@ -164,7 +164,7 @@ export function ExploreIdeaCard({
         </div>
       </div>
 
-        {/* Additions: Voting buttons on the right / bottom on mobile */}
+      {/* Additions: Voting buttons on the right / bottom on mobile */}
       <div className="shrink-0 flex items-center justify-center w-full sm:w-auto sm:pl-5 sm:border-l sm:border-warm-border pt-4 sm:pt-0 mt-2 sm:mt-0 border-t sm:border-t-0 border-warm-border">
         <VoteButtons
           ideaId={id}

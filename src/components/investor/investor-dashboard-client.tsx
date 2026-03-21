@@ -1,20 +1,180 @@
-import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/clerk";
-import { prisma } from "@/lib/prisma";
-import { InvestorDashboardClient } from "@/components/investor/investor-dashboard-client";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { useState, useEffect, useTransition, useCallback } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import {
+  Bookmark,
+  Send,
+  Loader2,
+  Filter,
+  ArrowUpRight,
+  ChevronDown,
+  Sparkles,
+  BarChart3,
+  Activity,
+  Flame,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import {
+  getInvestorDashboardStats,
+  getInvestorDealFlow,
+  addToWatchlist,
+} from "@/actions/investor-actions";
+import {
+  CATEGORY_LABELS,
+  STAGE_LABELS,
+  SCORE_TIER_LABELS,
+  SCORE_TIER_COLORS,
+} from "@/lib/constants";
+import type { Category, IdeaStage, ScoreTier } from "@prisma/client";
+import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 
-export default async function InvestorDashboardPage() {
-  const user = await requireUser();
+type DealFlowIdea = {
+  id: string;
+  slug: string;
+  title: string;
+  pitch: string;
+  problem: string;
+  solution: string;
+  category: string;
+  stage: string;
+  status: string;
+  totalVotes: number;
+  totalViews: number;
+  totalComments: number;
+  validationScore: number;
+  scoreTier: string;
+  useThisCount: number;
+  maybeCount: number;
+  notForMeCount: number;
+  createdAt: Date;
+  founder: {
+    id: string;
+    name: string;
+    username: string | null;
+    image: string | null;
+    bio: string | null;
+    city: string | null;
+  };
+  _count: { votes: number; comments: number; watchlistItems: number };
+};
 
-  // Check if user has an approved investor profile
-  const profile = await prisma.investorProfile.findUnique({
-    where: { userId: user.id },
-  });
+type DashboardStats = {
+  watchlistCount: number;
+  interestsExpressed: number;
+  interestsAccepted: number;
+  newIdeasThisWeek: number;
+  watchlistAvgScore: number;
+};
 
-  if (!profile) {
-    redirect("/investor/apply");
+// Mock data for the momentum chart
+const momentumData = [
+  { name: "Mon", ideas: 12 },
+  { name: "Tue", ideas: 19 },
+  { name: "Wed", ideas: 15 },
+  { name: "Thu", ideas: 26 },
+  { name: "Fri", ideas: 22 },
+  { name: "Sat", ideas: 30 },
+  { name: "Sun", ideas: 42 },
+];
+
+export function InvestorDashboardClient() {
+  const [isPending, startTransition] = useTransition();
+
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [ideas, setIdeas] = useState<DealFlowIdea[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Filters
+  const [category, setCategory] = useState<string>("");
+  const [stage, setStage] = useState<string>("");
+  const [sort, setSort] = useState<string>("score");
+  const [minScore, setMinScore] = useState<string>("");
+
+  const fetchDealFlow = useCallback(
+    async (cursor?: string) => {
+      const params: Record<string, string | number | undefined> = {
+        sort: sort === "score" ? undefined : sort,
+        category: category && category !== "all" ? category : undefined,
+        stage: stage && stage !== "all" ? stage : undefined,
+        minScore: minScore && minScore !== "none" ? Number(minScore) : undefined,
+        cursor: cursor || undefined,
+      };
+
+      const result = await getInvestorDealFlow(params);
+      if (result.success) {
+        if (cursor) {
+          setIdeas((prev) => [...prev, ...result.data.ideas]);
+        } else {
+          setIdeas(result.data.ideas);
+        }
+        setHasMore(result.data.hasMore);
+        setNextCursor(result.data.nextCursor);
+      }
+    },
+    [sort, category, stage, minScore]
+  );
+
+  // Load stats once
+  useEffect(() => {
+    getInvestorDashboardStats().then((statsResult) => {
+      if (statsResult.success) {
+        setStats(statsResult.data);
+      }
+    });
+  }, []);
+
+  // Load/reload deal flow whenever filters change (also covers initial load)
+  useEffect(() => {
+    let mounted = true;
+    
+    setLoading(true);
+    
+    fetchDealFlow().then(() => {
+      if (mounted) {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [fetchDealFlow]);
+
+  const handleLoadMore = async () => {
+    if (!nextCursor) return;
+    setLoadingMore(true);
+    await fetchDealFlow(nextCursor);
+    setLoadingMore(false);
+  };
+
+  const handleAddToWatchlist = (ideaId: string) => {
+    startTransition(async () => {
+      const result = await addToWatchlist(ideaId);
+      if (result.success) {
+        toast.success("Added to watchlist");
+      } else {
+        toast.error(result.error);
+      }
+    });
+  };
+
+  if (loading) {
+    return <DashboardSkeleton />;
   }
 
   const topIdea = ideas.length > 0 ? ideas[0] : null;
@@ -23,17 +183,17 @@ export default async function InvestorDashboardPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* ─── HERO & STATS ───────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl bg-deep-ink p-4 text-white shadow-2xl sm:p-6 md:p-8">
+      <div className="relative overflow-hidden rounded-3xl bg-deep-ink p-8 text-white shadow-2xl">
         <div className="absolute right-0 top-0 -mr-20 -mt-20 h-96 w-96 rounded-full bg-saffron/20 blur-3xl" />
         <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-80 w-80 rounded-full bg-brand-blue/20 blur-3xl" />
         
         <div className="relative z-10">
-          <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-saffron backdrop-blur-md mb-4 border border-white/10">
                 <Activity className="h-3 w-3" /> Alpha Deal Flow
               </div>
-              <h1 className="font-display text-[28px] leading-tight tracking-tight sm:text-[32px] md:text-[42px]">
+              <h1 className="font-display text-[32px] leading-tight md:text-[42px] tracking-tight">
                 Investor Intelligence
               </h1>
               <p className="mt-2 text-[15px] text-white/60 max-w-xl leading-relaxed">
@@ -42,7 +202,7 @@ export default async function InvestorDashboardPage() {
               </p>
             </div>
             
-            <div className="h-[120px] w-full shrink-0 md:w-[300px]">
+            <div className="h-[120px] w-full md:w-[300px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={momentumData}>
                   <defs>
@@ -111,16 +271,16 @@ export default async function InvestorDashboardPage() {
 
       {/* ─── DEAL FLOW TABLE / FEED ─────────────────────────────────── */}
       <div className="space-y-5">
-          <div className="flex flex-col gap-4 px-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
           <h2 className="font-display text-[22px] text-deep-ink flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-brand-blue" />
             Live Deal Flow
           </h2>
           
           {/* Filters */}
-            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
-              <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="h-9 w-full border-warm-border bg-white text-[13px] shadow-sm sm:w-[130px]">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="h-9 w-[130px] border-warm-border text-[13px] bg-white rounded-xl shadow-sm">
                 <SelectValue placeholder="All Sectors" />
               </SelectTrigger>
               <SelectContent>
@@ -133,8 +293,8 @@ export default async function InvestorDashboardPage() {
               </SelectContent>
             </Select>
 
-              <Select value={stage} onValueChange={setStage}>
-              <SelectTrigger className="h-9 w-full border-warm-border bg-white text-[13px] shadow-sm sm:w-[130px]">
+            <Select value={stage} onValueChange={setStage}>
+              <SelectTrigger className="h-9 w-[130px] border-warm-border text-[13px] bg-white rounded-xl shadow-sm">
                 <SelectValue placeholder="All Stages" />
               </SelectTrigger>
               <SelectContent>
@@ -147,8 +307,8 @@ export default async function InvestorDashboardPage() {
               </SelectContent>
             </Select>
 
-              <Select value={minScore} onValueChange={setMinScore}>
-              <SelectTrigger className="h-9 w-full border-warm-border bg-white text-[13px] shadow-sm sm:w-[110px]">
+            <Select value={minScore} onValueChange={setMinScore}>
+              <SelectTrigger className="h-9 w-[110px] border-warm-border text-[13px] bg-white rounded-xl shadow-sm">
                 <SelectValue placeholder="Min Score" />
               </SelectTrigger>
               <SelectContent>
@@ -160,8 +320,8 @@ export default async function InvestorDashboardPage() {
               </SelectContent>
             </Select>
 
-              <Select value={sort} onValueChange={setSort}>
-              <SelectTrigger className="h-9 w-full border-warm-border bg-white text-[13px] font-medium shadow-sm sm:w-[120px]">
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="h-9 w-[120px] border-warm-border text-[13px] bg-white rounded-xl shadow-sm font-medium">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -417,11 +577,11 @@ function DealFlowCard({
 
 function DashboardSkeleton() {
   return (
-      <div className="space-y-8 pb-12">
-        <Skeleton className="h-[380px] w-full rounded-3xl" />
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-        <Skeleton className="h-[40px] w-full rounded-xl sm:w-[200px]" />
-        <Skeleton className="h-[40px] w-full rounded-xl sm:w-[400px]" />
+    <div className="space-y-8 pb-12">
+      <Skeleton className="h-[380px] w-full rounded-3xl" />
+      <div className="flex justify-between">
+        <Skeleton className="h-[40px] w-[200px] rounded-xl" />
+        <Skeleton className="h-[40px] w-[400px] rounded-xl" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
         <Skeleton key={i} className="h-[180px] w-full rounded-xl" />

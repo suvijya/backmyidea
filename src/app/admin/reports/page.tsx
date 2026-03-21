@@ -288,70 +288,37 @@ export default function AdminReportsPage() {
                   updatingId === report.id && "opacity-60 pointer-events-none"
                 )}
               >
-                <CardContent className="p-5">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    {/* Left: Report Info */}
-                    <div className="flex items-start gap-3 min-w-0">
-                      <Avatar className="h-9 w-9 shrink-0">
-                        <AvatarImage src={report.user.image ?? undefined} />
-                        <AvatarFallback className="bg-warm-subtle text-[13px] font-semibold text-text-secondary">
-                          {report.user.name?.charAt(0) ?? "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[14px] font-semibold text-deep-ink">
-                            {report.user.name}
-                          </span>
-                          <span className="text-[13px] text-text-muted">
-                            @{report.user.username}
-                          </span>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-[11px] font-medium",
-                              STATUS_BADGE_STYLES[report.status]
-                            )}
-                          >
-                            {report.status.replace("_", " ")}
-                          </Badge>
+                <CardContent className="p-4 sm:p-5">
+                  <div className="flex flex-col gap-4">
+                    {/* Header: Reporter + Status */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <Avatar className="h-9 w-9 shrink-0">
+                          <AvatarImage src={report.user.image ?? undefined} />
+                          <AvatarFallback className="bg-warm-subtle text-[13px] font-semibold text-text-secondary">
+                            {report.user.name?.charAt(0) ?? "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[14px] font-bold text-deep-ink truncate">
+                              {report.user.name}
+                            </span>
+                            <span className="text-[12px] text-text-muted truncate">
+                              @{report.user.username}
+                            </span>
+                          </div>
                         </div>
-
-                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[13px]">
-                          <Badge
-                            variant="outline"
-                            className="border-warm-border text-[11px]"
-                          >
-                            <AlertTriangle className="mr-1 h-3 w-3" />
-                            {REASON_LABELS[report.reason]}
-                          </Badge>
-                          <span className="text-text-muted">
-                            {report.entityType}{" "}
-                            <code className="font-data text-[11px]">
-                              #{report.entityId.slice(0, 8)}
-                            </code>
-                          </span>
-                          <span className="flex items-center gap-1 text-text-muted">
-                            <Clock className="h-3 w-3" />
-                            {timeAgo(report.createdAt)}
-                          </span>
-                          {entityLink && (
-                            <Link
-                              href={entityLink}
-                              className="flex items-center gap-1 text-saffron hover:text-saffron-dark transition-colors"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                              View in admin
-                            </Link>
-                          )}
-                        </div>
-
-                        {report.details && (
-                          <p className="mt-2 text-[13px] text-text-secondary leading-relaxed rounded-lg bg-warm-subtle px-3 py-2 border border-warm-border">
-                            &ldquo;{report.details}&rdquo;
-                          </p>
-                        )}
                       </div>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 shrink-0",
+                          STATUS_BADGE_STYLES[report.status]
+                        )}
+                      >
+                        {report.status.replace("_", " ")}
+                      </Badge>
                     </div>
 
                     {/* Right: Actions */}
@@ -378,69 +345,95 @@ export default function AdminReportsPage() {
                               Dismiss
                             </Button>
 
-                            {/* Moderation actions dropdown */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
+                        {/* Right: Actions */}
+                        {(report.status === "PENDING" ||
+                          report.status === "REVIEWED") && (
+                          <div className="flex shrink-0 gap-2">
+                            {updatingId === report.id ? (
+                              <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
+                            ) : (
+                              <>
+                                {/* Quick dismiss */}
                                 <Button
                                   size="sm"
-                                  className="h-8 gap-1.5 bg-brand-red text-[13px] text-white hover:bg-brand-red/90"
+                                  variant="outline"
+                                  className="h-8 gap-1.25 border-warm-border text-[12px] font-bold px-2.5"
+                                  onClick={() =>
+                                    setConfirmDialog({
+                                      report,
+                                      action: "dismiss",
+                                    })
+                                  }
                                 >
-                                  <Check className="h-3.5 w-3.5" />
-                                  Take Action
-                                  <ChevronDown className="ml-1 h-3 w-3" />
+                                  <X className="h-3.5 w-3.5" />
+                                  Dismiss
                                 </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    setConfirmDialog({
-                                      report,
-                                      action: "remove_content",
-                                    })
-                                  }
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  {getActionLabel(
-                                    "remove_content",
-                                    report.entityType
-                                  )}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    setConfirmDialog({
-                                      report,
-                                      action: "ban_user",
-                                    })
-                                  }
-                                >
-                                  <ShieldBan className="mr-2 h-4 w-4" />
-                                  {getActionLabel(
-                                    "ban_user",
-                                    report.entityType
-                                  )}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    setConfirmDialog({
-                                      report,
-                                      action: "remove_and_ban",
-                                    })
-                                  }
-                                  className="text-brand-red focus:text-brand-red"
-                                >
-                                  <AlertTriangle className="mr-2 h-4 w-4" />
-                                  {getActionLabel(
-                                    "remove_and_ban",
-                                    report.entityType
-                                  )}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </>
+
+                                {/* Moderation actions dropdown */}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      className="h-8 gap-1.25 bg-brand-red text-[12px] text-white hover:bg-brand-red/90 font-bold px-2.5"
+                                    >
+                                      <Check className="h-3.5 w-3.5" />
+                                      Action
+                                      <ChevronDown className="h-3 w-3 opacity-70" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        setConfirmDialog({
+                                          report,
+                                          action: "remove_content",
+                                        })
+                                      }
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      {getActionLabel(
+                                        "remove_content",
+                                        report.entityType
+                                      )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        setConfirmDialog({
+                                          report,
+                                          action: "ban_user",
+                                        })
+                                      }
+                                    >
+                                      <ShieldBan className="mr-2 h-4 w-4" />
+                                      {getActionLabel(
+                                        "ban_user",
+                                        report.entityType
+                                      )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        setConfirmDialog({
+                                          report,
+                                          action: "remove_and_ban",
+                                        })
+                                      }
+                                      className="text-brand-red focus:text-brand-red"
+                                    >
+                                      <AlertTriangle className="mr-2 h-4 w-4" />
+                                      {getActionLabel(
+                                        "remove_and_ban",
+                                        report.entityType
+                                      )}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

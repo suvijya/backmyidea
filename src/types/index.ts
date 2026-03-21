@@ -77,9 +77,31 @@ export type IdeaWithFounder = Idea & {
 };
 
 /** Idea in feed list — includes founder + user's vote (if any) */
-export type IdeaFeedItem = Idea & {
+export type IdeaFeedItem = Pick<
+  Idea,
+  | "id"
+  | "slug"
+  | "title"
+  | "pitch"
+  | "category"
+  | "stage"
+  | "validationScore"
+  | "scoreTier"
+  | "totalVotes"
+  | "totalComments"
+  | "totalViews"
+  | "totalShares"
+  | "useThisCount"
+  | "maybeCount"
+  | "notForMeCount"
+  | "createdAt"
+  | "imageUrl"
+  | "status"
+  | "founderId"
+  | "updatedAt"
+> & {
   founder: Pick<User, "id" | "name" | "username" | "image">;
-  votes: Pick<Vote, "type" | "userId">[];
+  votes: { type: VoteType; userId: string }[];
 };
 
 /** Full idea detail page — includes comments count + user's existing vote */
