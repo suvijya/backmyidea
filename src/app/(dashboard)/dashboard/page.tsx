@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 // ─── Stats Loader ───────────────────────────────────────────────
 async function StatsSection({ userId }: { userId: string }) {
-  const stats = await getDashboardStats(userId);
+  const stats = await getDashboardStats(userId, { skipAuthCheck: true });
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
       <StatCard
@@ -42,7 +42,7 @@ async function StatsSection({ userId }: { userId: string }) {
 
 // ─── Ideas Loader ───────────────────────────────────────────────
 async function IdeasSection({ userId }: { userId: string }) {
-  const ideas = await getDashboardIdeas(userId);
+  const ideas = await getDashboardIdeas(userId, { skipAuthCheck: true });
   
   if (ideas.length === 0) {
     return (

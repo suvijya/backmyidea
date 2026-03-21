@@ -1,9 +1,8 @@
 "use client";
 
-import { ClerkProvider, useUser } from "@clerk/nextjs";
+import { ClerkProvider, useAuth } from "@clerk/nextjs";
 import { Toaster } from "sonner";
-import { createContext, useContext, useEffect, useState } from "react";
-import { getMyUsername } from "@/actions/user-actions";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 type DbUser = { username: string | null; isAdmin: boolean; isEmployee: boolean } | null;
 
@@ -14,15 +13,34 @@ export function useDbUser() {
 }
 
 function DbUserProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useAuth();
   const [dbUser, setDbUser] = useState<DbUser>(null);
+  const didFetchRef = useRef(false);
 
   useEffect(() => {
-    if (isSignedIn) {
-      getMyUsername().then(res => setDbUser(res)).catch(() => {});
-    } else {
+    if (!isSignedIn) {
+      didFetchRef.current = false;
       setDbUser(null);
+      return;
     }
+
+    if (didFetchRef.current) {
+      return;
+    }
+
+    didFetchRef.current = true;
+
+    fetch("/api/me", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch db user");
+        }
+        const data = (await res.json()) as { username: string | null; isAdmin: boolean; isEmployee: boolean } | null;
+        setDbUser(data);
+      })
+      .catch(() => {
+        didFetchRef.current = false;
+      });
   }, [isSignedIn]);
 
   return (

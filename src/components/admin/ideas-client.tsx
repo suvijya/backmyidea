@@ -48,7 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { cn, formatDate, formatNumber } from "@/lib/utils";
+import { formatDate, formatNumber } from "@/lib/utils";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import type { IdeaStatus, Category } from "@prisma/client";
 
@@ -249,32 +249,25 @@ export function IdeasClient() {
       </div>
 
       {loading ? (
-        <div className="space-y-4">
-          <div className="lg:hidden space-y-4 px-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={`mob-skel-${i}`} className="h-[120px] w-full rounded-2xl" />
-            ))}
-          </div>
-          <Card className="hidden lg:block border-warm-border">
-            <CardContent className="p-0">
-              <div className="space-y-0">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-4 border-b border-warm-border px-4 py-3"
-                  >
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-4 w-48" />
-                      <Skeleton className="h-3 w-72" />
-                    </div>
-                    <Skeleton className="h-6 w-16" />
-                    <Skeleton className="h-8 w-20" />
+        <Card className="border-warm-border">
+          <CardContent className="p-0">
+            <div className="space-y-0">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 border-b border-warm-border px-4 py-3"
+                >
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-72" />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       ) : ideas.length === 0 ? (
         <div className="rounded-xl border border-warm-border bg-white py-16 text-center">
           <Lightbulb className="mx-auto mb-3 h-10 w-10 text-text-disabled" />
@@ -289,28 +282,7 @@ export function IdeasClient() {
         </div>
       ) : (
         <>
-          <div className="lg:hidden space-y-4 px-4 pb-6">
-            {ideas.map((idea) => (
-              <IdeaMobileCard
-                key={idea.id}
-                idea={idea}
-                onStatusChange={(status) => {
-                  if (status === "REMOVED") {
-                    setConfirmAction({
-                      ideaId: idea.id,
-                      ideaTitle: idea.title,
-                      newStatus: status,
-                    });
-                  } else {
-                    handleStatusChange(idea.id, status);
-                  }
-                }}
-                actionInProgress={actionInProgress === idea.id}
-              />
-            ))}
-          </div>
-
-          <Card className="hidden lg:block border-warm-border overflow-hidden">
+          <Card className="border-warm-border overflow-hidden">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
@@ -507,7 +479,7 @@ export function IdeasClient() {
         open={!!confirmAction}
         onOpenChange={(open) => !open && setConfirmAction(null)}
       >
-        <AlertDialogContent className="shadow-2xl border-warm-border">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove this idea?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -536,108 +508,6 @@ export function IdeasClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-// ─── Mobile Card Component ─────────────────────────────────────────────
-
-function IdeaMobileCard({
-  idea,
-  onStatusChange,
-  actionInProgress,
-}: {
-  idea: AdminIdea;
-  onStatusChange: (status: IdeaStatus) => void;
-  actionInProgress: boolean;
-}) {
-  const actions: { label: string; status: IdeaStatus; icon: typeof Archive; variant?: "default" | "destructive" }[] = [];
-  if (idea.status !== "ACTIVE") actions.push({ label: "Restore", status: "ACTIVE" as IdeaStatus, icon: RotateCcw });
-  if (idea.status !== "ARCHIVED") actions.push({ label: "Archive", status: "ARCHIVED" as IdeaStatus, icon: Archive });
-  if (idea.status !== "REMOVED") actions.push({ label: "Remove", status: "REMOVED" as IdeaStatus, icon: Trash2, variant: "destructive" });
-
-  return (
-    <div className="rounded-2xl border border-warm-border bg-white p-5 shadow-sm active:scale-[0.99] transition-all">
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <div className="min-w-0">
-          <Link
-            href={`/idea/${idea.slug}`}
-            className="text-[17px] font-bold text-deep-ink hover:text-saffron transition-colors block leading-tight mb-1"
-          >
-            {idea.title}
-          </Link>
-          <p className="text-[13px] text-text-secondary line-clamp-2 leading-relaxed">
-            {idea.pitch}
-          </p>
-        </div>
-        <Badge
-          variant="outline"
-          className={cn("text-[10px] shrink-0", STATUS_STYLES[idea.status])}
-        >
-          {idea.status}
-        </Badge>
-      </div>
-
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-warm-subtle flex items-center justify-center text-[10px] font-bold text-text-secondary">
-            {idea.founder.name.charAt(0)}
-          </div>
-          <span className="text-[13px] text-text-secondary font-medium truncate max-w-[100px]">
-            {idea.founder.username ?? idea.founder.name}
-          </span>
-        </div>
-        <div className="h-4 w-[1px] bg-warm-border" />
-        <span className="text-[12px] text-text-muted">
-          {CATEGORY_LABELS[idea.category]}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 mb-4 py-3 border-y border-zinc-50 bg-zinc-50/30 -mx-5 px-5">
-        <div>
-          <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Validation</p>
-          <p className="font-data text-[18px] font-bold text-deep-ink">
-            {idea.totalVotes >= 10 ? idea.validationScore : "--"}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Total Votes</p>
-          <p className="font-data text-[18px] font-bold text-deep-ink">
-            {formatNumber(idea.totalVotes)}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] text-text-muted font-medium">
-          Added {formatDate(idea.createdAt)}
-        </span>
-        <div className="flex items-center gap-2">
-          {actionInProgress ? (
-            <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-[12px] font-bold border-warm-border">
-                  Quick Actions
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {actions.map((action) => (
-                  <DropdownMenuItem
-                    key={action.status}
-                    onClick={() => onStatusChange(action.status)}
-                    className={action.variant === "destructive" ? "text-brand-red focus:text-brand-red" : ""}
-                  >
-                    <action.icon className="mr-2 h-4 w-4" />
-                    {action.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

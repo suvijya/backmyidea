@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/clerk";
 import { Navbar } from "@/components/layout/navbar";
 import { AdminSidebarNav } from "@/components/admin/sidebar-nav";
-import { MobileAdminNav } from "@/components/admin/mobile-admin-nav";
 
 export const dynamic = "force-dynamic";
 

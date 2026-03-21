@@ -38,7 +38,7 @@ export function LeaderboardClient({
     const delays = [0.2, 0.1, 0.3];
 
     return (
-      <div className="mb-12 flex items-end justify-center gap-2 sm:gap-6 pt-10 px-1 sm:px-4 max-w-full overflow-x-auto">
+      <div className="mb-12 flex items-end justify-center gap-2 sm:gap-6 pt-10 px-1 sm:px-4">
         {podiumOrder.map((item, idx) => {
           const rank = ranks[idx];
           const isWinner = rank === 1;
@@ -70,9 +70,9 @@ export function LeaderboardClient({
               {/* Avatar / Idea Icon */}
               <div
                 className={cn(
-                  "relative z-10 -mb-5 sm:-mb-6 rounded-full border-4 border-white bg-white shadow-xl transition-transform hover:scale-105",
+                  "relative z-10 mb-[-20px] sm:mb-[-24px] rounded-full border-4 border-white bg-white shadow-xl transition-transform hover:scale-105",
                   isWinner
-                    ? "h-18 w-18 sm:h-24 sm:w-24"
+                    ? "h-[72px] w-[72px] sm:h-24 sm:w-24"
                     : "h-14 w-14 sm:h-20 sm:w-20",
                 )}
               >
@@ -108,8 +108,8 @@ export function LeaderboardClient({
                   "w-full rounded-t-2xl flex flex-col items-center pt-8 px-2 text-center shadow-lg transition-colors",
                   heights[idx],
                   isWinner
-                    ? "bg-linear-to-t from-saffron/10 to-saffron/30 border-t-2 border-saffron/50"
-                    : "bg-linear-to-t from-warm-subtle to-warm-hover border-t-2 border-warm-border-strong",
+                    ? "bg-gradient-to-t from-saffron/10 to-saffron/30 border-t-2 border-saffron/50"
+                    : "bg-gradient-to-t from-warm-subtle to-warm-hover border-t-2 border-warm-border-strong",
                 )}
               >
                 {type === "users" ? (
@@ -148,10 +148,10 @@ export function LeaderboardClient({
   return (
     <div className="relative min-h-screen pb-24 md:pb-12 overflow-x-hidden">
       {/* Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] h-100 w-100 rounded-full bg-saffron/10 blur-[100px] pointer-events-none" />
-      <div className="absolute top-[20%] right-[-10%] h-75 w-75 rounded-full bg-brand-blue/10 blur-[100px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] h-[400px] w-[400px] rounded-full bg-saffron/10 blur-[100px] pointer-events-none" />
+      <div className="absolute top-[20%] right-[-10%] h-[300px] w-[300px] rounded-full bg-brand-blue/10 blur-[100px] pointer-events-none" />
 
-      <div className="mx-auto max-w-4xl w-full px-4 pt-12 relative z-10">
+      <div className="mx-auto max-w-4xl px-4 pt-12 relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

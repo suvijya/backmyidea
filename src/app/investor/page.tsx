@@ -1,20 +1,196 @@
-import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/clerk";
-import { prisma } from "@/lib/prisma";
-import { InvestorDashboardClient } from "@/components/investor/investor-dashboard-client";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { useState, useEffect, useTransition, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  Bookmark,
+  Send,
+  Loader2,
+  Filter,
+  ArrowUpRight,
+  ChevronDown,
+  Sparkles,
+  BarChart3,
+  Activity,
+  Flame,
+  DollarSign,
+  Network,
+  Zap
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import {
+  getInvestorDashboardStats,
+  getInvestorDealFlow,
+  getMyInvestorStatus,
+  addToWatchlist,
+} from "@/actions/investor-actions";
+import {
+  CATEGORY_LABELS,
+  STAGE_LABELS,
+  SCORE_TIER_LABELS,
+  SCORE_TIER_COLORS,
+} from "@/lib/constants";
+import type { Category, IdeaStage, ScoreTier } from "@prisma/client";
+import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 
-export default async function InvestorDashboardPage() {
-  const user = await requireUser();
+type DealFlowIdea = {
+  id: string;
+  slug: string;
+  title: string;
+  pitch: string;
+  problem: string;
+  solution: string;
+  category: string;
+  stage: string;
+  status: string;
+  totalVotes: number;
+  totalViews: number;
+  totalComments: number;
+  validationScore: number;
+  scoreTier: string;
+  useThisCount: number;
+  maybeCount: number;
+  notForMeCount: number;
+  createdAt: Date;
+  founder: {
+    id: string;
+    name: string;
+    username: string | null;
+    image: string | null;
+    bio: string | null;
+    city: string | null;
+  };
+  _count: { votes: number; comments: number; watchlistItems: number };
+};
 
-  // Check if user has an approved investor profile
-  const profile = await prisma.investorProfile.findUnique({
-    where: { userId: user.id },
-  });
+type DashboardStats = {
+  watchlistCount: number;
+  interestsExpressed: number;
+  interestsAccepted: number;
+  newIdeasThisWeek: number;
+  watchlistAvgScore: number;
+};
 
-  if (!profile) {
-    redirect("/investor/apply");
+// Mock data for the momentum chart
+const momentumData = [
+  { name: "Mon", ideas: 12 },
+  { name: "Tue", ideas: 19 },
+  { name: "Wed", ideas: 15 },
+  { name: "Thu", ideas: 26 },
+  { name: "Fri", ideas: 22 },
+  { name: "Sat", ideas: 30 },
+  { name: "Sun", ideas: 42 },
+];
+
+export default function InvestorDashboardPage() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [ideas, setIdeas] = useState<DealFlowIdea[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Filters
+  const [category, setCategory] = useState<string>("");
+  const [stage, setStage] = useState<string>("");
+  const [sort, setSort] = useState<string>("score");
+  const [minScore, setMinScore] = useState<string>("");
+
+  // Check access
+  useEffect(() => {
+    getMyInvestorStatus().then((result) => {
+      if (result.success && !result.data.hasProfile) {
+        router.replace("/investor/apply");
+      }
+    });
+  }, [router]);
+
+  const fetchDealFlow = useCallback(
+    async (cursor?: string) => {
+      const params: Record<string, string | number | undefined> = {
+        sort: sort === "score" ? undefined : sort,
+        category: category && category !== "all" ? category : undefined,
+        stage: stage && stage !== "all" ? stage : undefined,
+        minScore: minScore && minScore !== "none" ? Number(minScore) : undefined,
+        cursor: cursor || undefined,
+      };
+
+      const result = await getInvestorDealFlow(params);
+      if (result.success) {
+        if (cursor) {
+          setIdeas((prev) => [...prev, ...result.data.ideas]);
+        } else {
+          setIdeas(result.data.ideas);
+        }
+        setHasMore(result.data.hasMore);
+        setNextCursor(result.data.nextCursor);
+      }
+    },
+    [sort, category, stage, minScore]
+  );
+
+  // Load stats once
+  useEffect(() => {
+    getInvestorDashboardStats().then((statsResult) => {
+      if (statsResult.success) {
+        setStats(statsResult.data);
+      }
+    });
+  }, []);
+
+  // Load/reload deal flow whenever filters change (also covers initial load)
+  useEffect(() => {
+    let mounted = true;
+    
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    
+    fetchDealFlow().then(() => {
+      if (mounted) {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [fetchDealFlow]);
+
+  const handleLoadMore = async () => {
+    if (!nextCursor) return;
+    setLoadingMore(true);
+    await fetchDealFlow(nextCursor);
+    setLoadingMore(false);
+  };
+
+  const handleAddToWatchlist = (ideaId: string) => {
+    startTransition(async () => {
+      const result = await addToWatchlist(ideaId);
+      if (result.success) {
+        toast.success("Added to watchlist");
+      } else {
+        toast.error(result.error);
+      }
+    });
+  };
+
+  if (loading) {
+    return <DashboardSkeleton />;
   }
 
   const topIdea = ideas.length > 0 ? ideas[0] : null;

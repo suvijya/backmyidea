@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useTransition } from "react";
+import { useEffect, useState, useCallback, useTransition, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -31,6 +31,7 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [, startTransition] = useTransition();
+  const hasLoadedPopoverRef = useRef(false);
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -66,7 +67,8 @@ export function NotificationBell() {
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
-    if (newOpen) {
+    if (newOpen && !hasLoadedPopoverRef.current) {
+      hasLoadedPopoverRef.current = true;
       loadNotifications();
     }
   };
