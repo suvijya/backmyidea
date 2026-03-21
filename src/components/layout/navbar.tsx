@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
   { href: "/explore", label: "Explore", icon: Compass },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/investor/apply", label: "For Investors", icon: TrendingUp },
+  { href: "/investor", label: "For Investors", icon: TrendingUp },
 ] as const;
 
 export function Navbar() {
@@ -91,7 +91,7 @@ export function Navbar() {
         </Link>
 
         {/* ── Center: Desktop Nav Links ── */}
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden flex-1 items-center justify-center gap-1 pl-64 md:flex">
           {NAV_LINKS.map((link) => {
             const isActive = pathname.startsWith(link.href);
             return (

@@ -282,183 +282,318 @@ export function IdeasClient() {
         </div>
       ) : (
         <>
-          <Card className="border-warm-border overflow-hidden">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-warm-border bg-warm-subtle">
-                      <TableHead className="text-[13px] font-semibold text-text-secondary">
-                        Idea
-                      </TableHead>
-                      <TableHead className="text-[13px] font-semibold text-text-secondary">
-                        Founder
-                      </TableHead>
-                      <TableHead className="text-[13px] font-semibold text-text-secondary">
-                        Category
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Status
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Score
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Votes
-                      </TableHead>
-                      <TableHead className="text-[13px] font-semibold text-text-secondary">
-                        Created
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        AI
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Actions
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {ideas.map((idea) => {
-                      const actions = getAvailableActions(idea);
-                      return (
-                        <TableRow
-                          key={idea.id}
-                          className="border-warm-border hover:bg-warm-subtle/50"
-                        >
-                          <TableCell className="max-w-[240px] sm:max-w-[280px]">
-                            <Link
-                              href={`/idea/${idea.slug}`}
-                              className="flex items-center gap-1 text-[14px] font-medium text-deep-ink hover:text-saffron transition-colors line-clamp-2"
-                            >
-                              {idea.title}
-                              <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
-                            </Link>
-                            <p className="mt-0.5 text-[12px] text-text-muted line-clamp-1">
-                              {idea.pitch}
-                            </p>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1.5">
+        <>
+          <div className="hidden lg:block">
+            <Card className="border-warm-border overflow-hidden">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-warm-border bg-warm-subtle">
+                        <TableHead className="text-[13px] font-semibold text-text-secondary">
+                          Idea
+                        </TableHead>
+                        <TableHead className="text-[13px] font-semibold text-text-secondary">
+                          Founder
+                        </TableHead>
+                        <TableHead className="text-[13px] font-semibold text-text-secondary">
+                          Category
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Status
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Score
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Votes
+                        </TableHead>
+                        <TableHead className="text-[13px] font-semibold text-text-secondary">
+                          Created
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          AI
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ideas.map((idea) => {
+                        const actions = getAvailableActions(idea);
+                        return (
+                          <TableRow
+                            key={idea.id}
+                            className="border-warm-border hover:bg-warm-subtle/50"
+                          >
+                            <TableCell className="max-w-[240px] sm:max-w-[280px]">
                               <Link
-                                href={`/profile/${idea.founder.username}`}
-                                className="text-[13px] text-text-secondary hover:text-saffron transition-colors"
+                                href={`/idea/${idea.slug}`}
+                                className="flex items-center gap-1 text-[14px] font-medium text-deep-ink hover:text-saffron transition-colors line-clamp-2"
                               >
-                                @
-                                {idea.founder.username ?? idea.founder.name}
+                                {idea.title}
+                                <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
                               </Link>
-                              {idea.founder.isBanned && (
-                                <Badge
-                                  variant="outline"
-                                  className="bg-brand-red-light text-brand-red border-brand-red/20 text-[9px] px-1"
+                              <p className="mt-0.5 text-[12px] text-text-muted line-clamp-1">
+                                {idea.pitch}
+                              </p>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1.5">
+                                <Link
+                                  href={`/profile/${idea.founder.username}`}
+                                  className="text-[13px] text-text-secondary hover:text-saffron transition-colors"
                                 >
-                                  Banned
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-[13px] text-text-secondary">
-                              {CATEGORY_LABELS[idea.category]}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center">
+                                  @{idea.founder.username ?? idea.founder.name}
+                                </Link>
+                                {idea.founder.isBanned && (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-brand-red-light text-brand-red border-brand-red/20 text-[9px] px-1"
+                                  >
+                                    Banned
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-[13px] text-text-secondary">
+                                {CATEGORY_LABELS[idea.category]}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge
+                                variant="outline"
+                                className={`text-[11px] ${STATUS_STYLES[idea.status]}`}
+                              >
+                                {idea.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-data text-[14px] font-medium text-deep-ink">
+                                {idea.totalVotes >= 10
+                                  ? idea.validationScore
+                                  : "--"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-data text-[14px] text-text-secondary">
+                                {formatNumber(idea.totalVotes)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-[13px] text-text-muted">
+                                {formatDate(idea.createdAt)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                {idea.isSpam && (
+                                  <span
+                                    title="Flagged as spam"
+                                    className="inline-block h-2 w-2 rounded-full bg-brand-red"
+                                  />
+                                )}
+                                {idea.isDuplicate && (
+                                  <span
+                                    title="Possible duplicate"
+                                    className="inline-block h-2 w-2 rounded-full bg-brand-amber"
+                                  />
+                                )}
+                                {!idea.isSpam && !idea.isDuplicate && (
+                                  <span className="inline-block h-2 w-2 rounded-full bg-brand-green" />
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {actionInProgress === idea.id ? (
+                                <Loader2 className="mx-auto h-4 w-4 animate-spin text-text-muted" />
+                              ) : actions.length > 0 ? (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 text-[12px] border-warm-border"
+                                    >
+                                      Actions
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    {actions.map((action) => (
+                                      <DropdownMenuItem
+                                        key={action.status}
+                                        onClick={() => {
+                                          if (action.status === "REMOVED") {
+                                            setConfirmAction({
+                                              ideaId: idea.id,
+                                              ideaTitle: idea.title,
+                                              newStatus: action.status,
+                                            });
+                                          } else {
+                                            handleStatusChange(
+                                              idea.id,
+                                              action.status
+                                            );
+                                          }
+                                        }}
+                                        className={
+                                          action.variant === "destructive"
+                                            ? "text-brand-red focus:text-brand-red"
+                                            : ""
+                                        }
+                                      >
+                                        <action.icon className="mr-2 h-4 w-4" />
+                                        {action.label}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              ) : null}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="grid grid-cols-1 gap-4 lg:hidden">
+            {ideas.map((idea) => {
+              const actions = getAvailableActions(idea);
+              return (
+                <Card key={idea.id} className="border-warm-border overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          href={`/idea/${idea.slug}`}
+                          className="text-[16px] font-bold text-deep-ink hover:text-saffron transition-colors line-clamp-1"
+                        >
+                          {idea.title}
+                        </Link>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Link
+                            href={`/profile/${idea.founder.username}`}
+                            className="text-[12px] text-text-secondary"
+                          >
+                            @{idea.founder.username ?? idea.founder.name}
+                          </Link>
+                          {idea.founder.isBanned && (
                             <Badge
                               variant="outline"
-                              className={`text-[11px] ${STATUS_STYLES[idea.status]}`}
+                              className="bg-brand-red-light text-brand-red border-brand-red/20 text-[9px] px-1 py-0"
                             >
-                              {idea.status}
+                              Banned
                             </Badge>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span className="font-data text-[14px] font-medium text-deep-ink">
-                              {idea.totalVotes >= 10
-                                ? idea.validationScore
-                                : "--"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span className="font-data text-[14px] text-text-secondary">
+                          )}
+                        </div>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${STATUS_STYLES[idea.status]}`}
+                      >
+                        {idea.status}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 py-3 border-y border-warm-border my-3">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-1">Validation</p>
+                        <div className="flex items-center gap-4">
+                          <div>
+                            <p className="text-[16px] font-bold text-deep-ink">
+                              {idea.totalVotes >= 10 ? idea.validationScore : "--"}
+                            </p>
+                            <p className="text-[10px] text-text-muted">Score</p>
+                          </div>
+                          <div>
+                            <p className="text-[16px] font-bold text-deep-ink">
                               {formatNumber(idea.totalVotes)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-[13px] text-text-muted">
-                              {formatDate(idea.createdAt)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              {idea.isSpam && (
-                                <span
-                                  title="Flagged as spam"
-                                  className="inline-block h-2 w-2 rounded-full bg-brand-red"
-                                />
-                              )}
-                              {idea.isDuplicate && (
-                                <span
-                                  title="Possible duplicate"
-                                  className="inline-block h-2 w-2 rounded-full bg-brand-amber"
-                                />
-                              )}
-                              {!idea.isSpam && !idea.isDuplicate && (
-                                <span className="inline-block h-2 w-2 rounded-full bg-brand-green" />
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {actionInProgress === idea.id ? (
-                              <Loader2 className="mx-auto h-4 w-4 animate-spin text-text-muted" />
-                            ) : actions.length > 0 ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-7 text-[12px] border-warm-border"
-                                  >
-                                    Actions
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {actions.map((action) => (
-                                    <DropdownMenuItem
-                                      key={action.status}
-                                      onClick={() => {
-                                        if (action.status === "REMOVED") {
-                                          setConfirmAction({
-                                            ideaId: idea.id,
-                                            ideaTitle: idea.title,
-                                            newStatus: action.status,
-                                          });
-                                        } else {
-                                          handleStatusChange(
-                                            idea.id,
-                                            action.status
-                                          );
-                                        }
-                                      }}
-                                      className={
-                                        action.variant === "destructive"
-                                          ? "text-brand-red focus:text-brand-red"
-                                          : ""
-                                      }
-                                    >
-                                      <action.icon className="mr-2 h-4 w-4" />
-                                      {action.label}
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : null}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                            </p>
+                            <p className="text-[10px] text-text-muted">Votes</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-1">Details</p>
+                        <p className="text-[13px] text-text-secondary truncate">{CATEGORY_LABELS[idea.category]}</p>
+                        <p className="text-[10px] text-text-muted">{formatDate(idea.createdAt)}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">AI Integrity:</p>
+                        <div className="flex gap-1">
+                          {idea.isSpam && (
+                            <span title="Flagged as spam" className="h-2 w-2 rounded-full bg-brand-red" />
+                          )}
+                          {idea.isDuplicate && (
+                            <span title="Possible duplicate" className="h-2 w-2 rounded-full bg-brand-amber" />
+                          )}
+                          {!idea.isSpam && !idea.isDuplicate && (
+                            <span className="h-2 w-2 rounded-full bg-brand-green" />
+                          )}
+                        </div>
+                      </div>
+                      
+                      {actionInProgress === idea.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-text-muted" />
+                      ) : actions.length > 0 ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-[12px] border-warm-border px-3"
+                            >
+                              Actions
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {actions.map((action) => (
+                              <DropdownMenuItem
+                                key={action.status}
+                                onClick={() => {
+                                  if (action.status === "REMOVED") {
+                                    setConfirmAction({
+                                      ideaId: idea.id,
+                                      ideaTitle: idea.title,
+                                      newStatus: action.status,
+                                    });
+                                  } else {
+                                    handleStatusChange(
+                                      idea.id,
+                                      action.status
+                                    );
+                                  }
+                                }}
+                                className={
+                                  action.variant === "destructive"
+                                    ? "text-brand-red focus:text-brand-red"
+                                    : ""
+                                }
+                              >
+                                <action.icon className="mr-2 h-4 w-4" />
+                                {action.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : null}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </>
 
           {hasMore && (
             <div className="mt-4 text-center">

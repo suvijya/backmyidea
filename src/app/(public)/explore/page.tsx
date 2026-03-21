@@ -9,6 +9,7 @@ import type { Category, IdeaStage } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canUserViewGlobalScores } from "@/lib/clerk";
 import { Skeleton } from "@/components/ui/skeleton";
+import { redis } from "@/lib/redis";
 import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
@@ -34,46 +35,66 @@ async function FeedLoader({ filters, page }: { filters: IdeaFiltersType; page: n
 }
 
 // Cache the expensive sidebar queries to revalidate only every 5 minutes (300 seconds)
-const getCachedSidebarStats = unstable_cache(
-  async () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const [activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas] = await Promise.all([
-      prisma.user.count({ where: { votes: { some: {} } } }),
-      prisma.idea.count({
-        where: {
-          createdAt: { gte: today },
-        },
-      }),
-      prisma.user.findFirst({
-        orderBy: { points: "desc" },
-        where: { onboarded: true, isBanned: false },
-        select: {
-          name: true,
-          username: true,
-          image: true,
-          level: true,
-          _count: { select: { votes: true } },
-        },
-      }),
-      prisma.idea.findMany({
-        where: { status: "ACTIVE" },
-        select: { tags: true, category: true },
-        orderBy: { createdAt: "desc" },
-        take: 200,
-      }),
-    ]);
+async function getSidebarStats() {
+  const CACHE_KEY = "explore:sidebar_stats";
+  
+  try {
+    const cached = await redis.get(CACHE_KEY);
+    if (cached) {
+      return cached as {
+        activeVotersCount: number;
+        ideasTodayCount: number;
+        topValidatorRaw: any;
+        recentIdeas: any[];
+      };
+    }
+  } catch (err) {
+    console.error("Redis error fetching sidebar stats:", err);
+  }
 
-    return { activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas };
-  },
-  ['explore-sidebar-stats'],
-  { revalidate: 300, tags: ['sidebar-stats'] }
-);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const [activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas] = await Promise.all([
+    prisma.user.count({ where: { votes: { some: {} } } }),
+    prisma.idea.count({
+      where: {
+        createdAt: { gte: today },
+      },
+    }),
+    prisma.user.findFirst({
+      orderBy: { points: "desc" },
+      where: { onboarded: true, isBanned: false },
+      select: {
+        name: true,
+        username: true,
+        image: true,
+        level: true,
+        _count: { select: { votes: true } },
+      },
+    }),
+    prisma.idea.findMany({
+      where: { status: "ACTIVE" },
+      select: { tags: true, category: true },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
+  ]);
+
+  const stats = { activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas };
+
+  try {
+    await redis.set(CACHE_KEY, stats, { ex: 300 }); // 5 minutes
+  } catch (err) {
+    console.error("Redis error saving sidebar stats:", err);
+  }
+
+  return stats;
+}
 
 // ─── Right Sidebar Loader ───────────────────────────────────────
 async function RightSidebarLoader() {
-  const { activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas } = await getCachedSidebarStats();
+  const { activeVotersCount, ideasTodayCount, topValidatorRaw, recentIdeas } = await getSidebarStats();
 
   const stats = {
     activeVoters: activeVotersCount,

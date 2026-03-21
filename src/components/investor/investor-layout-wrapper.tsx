@@ -46,7 +46,7 @@ export function InvestorLayoutWrapper({
         )}
 
         {/* Main content */}
-        <main className={cn("min-w-0 pb-[76px] md:pb-0", !showSidebar && "lg:col-span-full")}>
+        <main className={cn("min-w-0", !showSidebar && "lg:col-span-full")}>
           {children}
         </main>
       </div>
