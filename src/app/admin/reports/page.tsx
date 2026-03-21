@@ -233,7 +233,7 @@ export default function AdminReportsPage() {
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v as ReportStatus)}
         >
-          <SelectTrigger className="w-[180px] border-warm-border">
+          <SelectTrigger className="w-full border-warm-border sm:w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -321,45 +321,29 @@ export default function AdminReportsPage() {
                       </Badge>
                     </div>
 
-                    {/* Content: Reason + Entity + Date */}
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-2 text-[12px]">
-                        <Badge
-                          variant="outline"
-                          className="border-warm-border text-[11px] font-medium bg-zinc-50"
-                        >
-                          <AlertTriangle className="mr-1 h-3 w-3 text-brand-amber" />
-                          {REASON_LABELS[report.reason]}
-                        </Badge>
-                        <span className="text-text-secondary">
-                          {report.entityType}{" "}
-                          <code className="font-data text-[10px] bg-warm-subtle px-1 rounded">
-                            #{report.entityId.slice(0, 8)}
-                          </code>
-                        </span>
-                        <div className="h-1 w-1 rounded-full bg-warm-border" />
-                        <span className="flex items-center gap-1 text-text-muted">
-                          <Clock className="h-3 w-3" />
-                          {timeAgo(report.createdAt)}
-                        </span>
-                      </div>
-
-                      {report.details && (
-                        <p className="text-[13px] text-text-secondary leading-relaxed rounded-xl bg-warm-subtle/40 px-3.5 py-2.5 border border-warm-border/50 italic">
-                          &ldquo;{report.details}&rdquo;
-                        </p>
-                      )}
-
-                      <div className="flex items-center justify-between gap-2 pt-1">
-                        {entityLink ? (
-                          <Link
-                            href={entityLink}
-                            className="flex items-center gap-1.5 text-[12px] font-bold text-saffron hover:text-saffron-dark transition-colors"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            View in Admin
-                          </Link>
-                        ) : <div />}
+                    {/* Right: Actions */}
+                    {(report.status === "PENDING" ||
+                      report.status === "REVIEWED") && (
+                      <div className="flex shrink-0 flex-wrap gap-2 sm:flex-nowrap">
+                        {updatingId === report.id ? (
+                          <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
+                        ) : (
+                          <>
+                            {/* Quick dismiss */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 gap-1.5 border-warm-border text-[13px]"
+                              onClick={() =>
+                                setConfirmDialog({
+                                  report,
+                                  action: "dismiss",
+                                })
+                              }
+                            >
+                              <X className="h-3.5 w-3.5" />
+                              Dismiss
+                            </Button>
 
                         {/* Right: Actions */}
                         {(report.status === "PENDING" ||

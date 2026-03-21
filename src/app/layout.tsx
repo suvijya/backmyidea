@@ -93,7 +93,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${plusJakarta.variable} ${dmMono.variable} antialiased`}
+        className={`${plusJakarta.variable} ${dmMono.variable} antialiased overflow-x-hidden`}
       >
         <Providers>{children}</Providers>
       </body>

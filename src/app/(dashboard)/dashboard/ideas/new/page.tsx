@@ -235,7 +235,7 @@ export default function NewIdeaPage() {
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               variant="outline"
               onClick={() => router.push(`/dashboard/ideas`)}
@@ -263,7 +263,7 @@ export default function NewIdeaPage() {
       </p>
 
       {/* Step indicator */}
-      <div className="mt-6 flex items-center gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
         {STEPS.map((s, i) => (
           <div key={s.id} className="flex items-center gap-2">
             <button
@@ -505,7 +505,7 @@ export default function NewIdeaPage() {
                 <Label className="text-[13px] font-semibold text-deep-ink">
                   Tags (up to {MAX_TAGS})
                 </Label>
-                <div className="mt-1.5 flex gap-2">
+                <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
                   <Input
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
@@ -551,7 +551,7 @@ export default function NewIdeaPage() {
               </div>
 
               {/* Donations toggle */}
-              <div className="flex items-center justify-between rounded-xl border border-warm-border bg-white p-4">
+              <div className="flex flex-col gap-3 rounded-xl border border-warm-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <Label htmlFor="donations" className="text-[13px] font-semibold text-deep-ink">
                     Accept Donations
@@ -593,7 +593,7 @@ export default function NewIdeaPage() {
       </AnimatePresence>
 
       {/* Navigation */}
-      <div className="mt-8 flex items-center justify-between border-t border-warm-border pt-6">
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-warm-border pt-6">
         {step > 0 ? (
           <Button
             variant="outline"

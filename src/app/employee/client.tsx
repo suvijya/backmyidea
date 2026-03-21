@@ -61,7 +61,7 @@ export function EmployeeDashboardClient({ initialIdeas }: { initialIdeas: any[] 
           <Table>
             <TableHeader>
               <TableRow className="border-warm-border bg-warm-subtle">
-                <TableHead className="text-[13px] font-semibold text-text-secondary w-[300px]">
+                <TableHead className="w-[240px] text-[13px] font-semibold text-text-secondary sm:w-[300px]">
                   Idea
                 </TableHead>
                 <TableHead className="text-[13px] font-semibold text-text-secondary">
@@ -84,7 +84,7 @@ export function EmployeeDashboardClient({ initialIdeas }: { initialIdeas: any[] 
                   key={idea.id}
                   className="border-warm-border hover:bg-warm-subtle/50"
                 >
-                  <TableCell className="max-w-[300px]">
+                  <TableCell className="max-w-[240px] sm:max-w-[300px]">
                     <Link
                       href={`/idea/${idea.slug}`}
                       target="_blank"
@@ -120,7 +120,7 @@ export function EmployeeDashboardClient({ initialIdeas }: { initialIdeas: any[] 
                     {actionInProgress === idea.id ? (
                       <Loader2 className="ml-auto h-4 w-4 animate-spin text-text-muted" />
                     ) : (
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5 sm:gap-2">
                         <Button
                           size="sm"
                           variant="outline"

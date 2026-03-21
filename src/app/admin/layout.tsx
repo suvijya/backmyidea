@@ -17,14 +17,19 @@ export default async function AdminLayout({
     <>
       <Navbar />
       <div className="mx-auto max-w-[1400px] px-4 py-6 lg:px-8">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-brand-red animate-pulse" />
             <span className="text-[13px] font-semibold uppercase tracking-wider text-brand-red">
               Admin Panel
             </span>
           </div>
-          <MobileAdminNav />
+          {/* Mobile Admin Nav - Horizontal scroll */}
+          <div className="lg:hidden w-full overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+            <div className="flex gap-2 min-w-max">
+              <AdminSidebarNav horizontal />
+            </div>
+          </div>
         </div>
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
           {/* Sidebar — desktop only */}

@@ -39,11 +39,11 @@ const NAV_ITEMS = [
   },
 ] as const;
 
-export function DashboardSidebarNav() {
+export function DashboardSidebarNav({ horizontal }: { horizontal?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <nav className="space-y-1">
+    <nav className={cn(horizontal ? "flex gap-2" : "space-y-1")}>
       {NAV_ITEMS.map((item) => {
         const isActive =
           pathname === item.href ||
@@ -54,13 +54,14 @@ export function DashboardSidebarNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium transition-colors",
+              "flex items-center gap-2 rounded-lg px-3 py-2 text-[14px] font-medium transition-colors",
               isActive
                 ? "bg-saffron-light text-saffron"
-                : "text-text-secondary hover:bg-warm-hover hover:text-deep-ink"
+                : "text-text-secondary hover:bg-warm-hover hover:text-deep-ink",
+              horizontal && "shrink-0 whitespace-nowrap"
             )}
           >
-            <item.icon className="h-[18px] w-[18px]" />
+            <item.icon className="h-[16px] w-[16px]" />
             {item.label}
           </Link>
         );

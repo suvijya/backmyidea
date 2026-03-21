@@ -53,7 +53,7 @@ export function LeaderboardClient({
                 type: "spring",
                 stiffness: 100,
               }}
-              className="relative flex w-[32%] min-w-22.5 max-w-35 flex-col items-center sm:w-35"
+              className="relative flex w-[32%] min-w-[80px] max-w-[140px] flex-col items-center sm:w-[140px]"
             >
               {/* Crown for #1 */}
               {isWinner && (
@@ -146,7 +146,7 @@ export function LeaderboardClient({
   const remainingItems = listItems.slice(3);
 
   return (
-    <div className="relative min-h-screen pb-20 overflow-x-hidden">
+    <div className="relative min-h-screen pb-24 md:pb-12 overflow-x-hidden">
       {/* Background Orbs */}
       <div className="absolute top-[-10%] left-[-10%] h-100 w-100 rounded-full bg-saffron/10 blur-[100px] pointer-events-none" />
       <div className="absolute top-[20%] right-[-10%] h-75 w-75 rounded-full bg-brand-blue/10 blur-[100px] pointer-events-none" />
