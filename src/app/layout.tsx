@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, DM_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -96,6 +97,7 @@ export default function RootLayout({
         className={`${plusJakarta.variable} ${dmMono.variable} antialiased overflow-x-hidden`}
       >
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
