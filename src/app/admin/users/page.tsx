@@ -9,10 +9,6 @@ import {
   Users as UsersIcon,
   Loader2,
   ExternalLink,
-  MoreVertical,
-  UserPlus,
-  UserMinus,
-  UserCheck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,6 +38,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  MoreVertical,
+  UserPlus,
+  UserMinus,
+} from "lucide-react";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -53,7 +54,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { cn, formatDate, formatNumber } from "@/lib/utils";
+import { formatDate, formatNumber } from "@/lib/utils";
 import { LEVEL_LABELS } from "@/lib/constants";
 import type { UserLevel, UserRole } from "@prisma/client";
 
@@ -244,34 +245,25 @@ export default function AdminUsersPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-4 pt-2">
-          <div className="lg:hidden space-y-4 pt-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={`user-mob-skel-${i}`} className="h-[100px] w-full rounded-2xl" />
-            ))}
-          </div>
-          <Card className="hidden lg:block border-warm-border">
-            <CardContent className="p-0">
-              <div className="space-y-0">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-4 border-b border-warm-border px-4 py-3"
-                  >
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-4 w-40" />
-                      <Skeleton className="h-3 w-32" />
-                    </div>
-                    <Skeleton className="h-6 w-20" />
-                    <Skeleton className="h-6 w-24" />
-                    <Skeleton className="h-8 w-8" />
+        <Card className="border-warm-border">
+          <CardContent className="p-0">
+            <div className="space-y-0">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 border-b border-warm-border px-4 py-3"
+                >
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       ) : users.length === 0 ? (
         <div className="rounded-xl border border-warm-border bg-white py-16 text-center">
           <UsersIcon className="mx-auto mb-3 h-10 w-10 text-text-disabled" />
@@ -286,18 +278,7 @@ export default function AdminUsersPage() {
         </div>
       ) : (
         <>
-          <div className="lg:hidden space-y-4 pt-2">
-            {users.map((user) => (
-              <UserMobileCard
-                key={user.id}
-                user={user}
-                onAction={(userId, action) => handleAction(userId, action)}
-                actionInProgress={actionInProgress === user.id}
-              />
-            ))}
-          </div>
-
-          <Card className="hidden lg:block border-warm-border overflow-hidden">
+          <Card className="border-warm-border overflow-hidden">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
@@ -512,112 +493,6 @@ function SummaryChip({
       >
         {value}
       </span>
-    </div>
-  );
-}
-
-// ─── Mobile Card Component ─────────────────────────────────────────────
-
-function UserMobileCard({
-  user,
-  onAction,
-  actionInProgress,
-}: {
-  user: AdminUser;
-  onAction: (userId: string, action: string) => void;
-  actionInProgress: boolean;
-}) {
-  return (
-    <div className="rounded-2xl border border-warm-border bg-white p-5 shadow-sm active:scale-[0.99] transition-all">
-      <div className="flex items-center justify-between gap-4 mb-4">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={user.image ?? undefined} />
-            <AvatarFallback className="bg-warm-subtle text-[14px] font-bold text-text-secondary">
-              {user.name?.charAt(0) ?? "?"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <Link
-              href={user.username ? `/profile/${user.username}` : "#"}
-              className="text-[16px] font-bold text-deep-ink hover:text-saffron transition-colors block leading-tight truncate"
-            >
-              {user.name}
-            </Link>
-            <p className="text-[12px] text-text-muted truncate">
-              {user.username ? `@${user.username}` : user.email}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {user.isAdmin && (
-            <Badge variant="outline" className="bg-brand-blue-light text-brand-blue border-brand-blue/20 text-[9px] px-1.5">Admin</Badge>
-          )}
-          {user.isBanned && (
-            <Badge variant="outline" className="bg-brand-red-light text-brand-red border-brand-red/20 text-[9px] px-1.5">Banned</Badge>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 py-3 border-y border-zinc-50 bg-zinc-50/30 -mx-5 px-5 mb-4">
-        <div className="text-center">
-          <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Level</p>
-          <p className="text-[12px] font-bold text-deep-ink truncate">{LEVEL_LABELS[user.level]}</p>
-        </div>
-        <div className="text-center border-x border-warm-border/50">
-          <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Points</p>
-          <p className="font-data text-[14px] font-bold text-deep-ink">{formatNumber(user.points)}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Ideas</p>
-          <p className="font-data text-[14px] font-bold text-deep-ink">{user._count.ideas}</p>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] text-text-muted font-medium">Joined {formatDate(user.createdAt)}</span>
-        <div className="flex items-center gap-2">
-          {actionInProgress ? (
-            <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-[12px] font-bold border-warm-border">
-                  Manage User
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {!user.isAdmin && (
-                  <DropdownMenuItem onClick={() => onAction(user.id, "make_admin")}>
-                    <UserPlus className="mr-2 h-4 w-4" /> Make Admin
-                  </DropdownMenuItem>
-                )}
-                {user.isAdmin && (
-                  <DropdownMenuItem onClick={() => onAction(user.id, "remove_admin")} className="text-brand-red">
-                    <UserMinus className="mr-2 h-4 w-4" /> Remove Admin
-                  </DropdownMenuItem>
-                )}
-                {!user.isEmployee && !user.isAdmin && (
-                  <DropdownMenuItem onClick={() => onAction(user.id, "make_employee")}>
-                    <UserPlus className="mr-2 h-4 w-4" /> Make Employee
-                  </DropdownMenuItem>
-                )}
-                {user.isEmployee && !user.isAdmin && (
-                  <DropdownMenuItem onClick={() => onAction(user.id, "remove_employee")}>
-                    <UserMinus className="mr-2 h-4 w-4" /> Remove Employee
-                  </DropdownMenuItem>
-                )}
-                {!user.isAdmin && (
-                  <DropdownMenuItem onClick={() => onAction(user.id, user.isBanned ? "unban" : "ban")} className={user.isBanned ? "text-brand-green" : "text-brand-red"}>
-                    {user.isBanned ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldBan className="mr-2 h-4 w-4" />}
-                    {user.isBanned ? "Unban User" : "Ban User"}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
