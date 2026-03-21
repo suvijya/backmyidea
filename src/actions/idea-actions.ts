@@ -404,7 +404,26 @@ export async function getIdeasFeed(
 
   const ideas = await prisma.idea.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      pitch: true,
+      category: true,
+      stage: true,
+      totalVotes: true,
+      totalComments: true,
+      totalViews: true,
+      totalShares: true,
+      useThisCount: true,
+      maybeCount: true,
+      notForMeCount: true,
+      validationScore: true,
+      scoreTier: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      editedAt: true,
       founder: {
         select: { id: true, name: true, username: true, image: true },
       },
@@ -487,7 +506,26 @@ export async function getExploreFeed(
         prisma.idea.count({ where }),
         prisma.idea.findMany({
           where,
-          include: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            pitch: true,
+            category: true,
+            stage: true,
+            totalVotes: true,
+            totalComments: true,
+            totalViews: true,
+            totalShares: true,
+            useThisCount: true,
+            maybeCount: true,
+            notForMeCount: true,
+            validationScore: true,
+            scoreTier: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            editedAt: true,
             founder: {
               select: { id: true, name: true, username: true, image: true },
             },
@@ -629,7 +667,26 @@ export async function getIdeasByUser(
 
   const ideas = await prisma.idea.findMany({
     where: { founderId: userId, status: statusFilter },
-    include: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      pitch: true,
+      category: true,
+      stage: true,
+      totalVotes: true,
+      totalComments: true,
+      totalViews: true,
+      totalShares: true,
+      useThisCount: true,
+      maybeCount: true,
+      notForMeCount: true,
+      validationScore: true,
+      scoreTier: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      editedAt: true,
       founder: {
         select: { id: true, name: true, username: true, image: true },
       },

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useTransition, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Bookmark,
@@ -33,7 +32,6 @@ import { cn } from "@/lib/utils";
 import {
   getInvestorDashboardStats,
   getInvestorDealFlow,
-  getMyInvestorStatus,
   addToWatchlist,
 } from "@/actions/investor-actions";
 import {
@@ -94,8 +92,7 @@ const momentumData = [
   { name: "Sun", ideas: 42 },
 ];
 
-export default function InvestorDashboardPage() {
-  const router = useRouter();
+export default function InvestorDashboardClient() {
   const [isPending, startTransition] = useTransition();
 
   const [loading, setLoading] = useState(true);
@@ -110,15 +107,6 @@ export default function InvestorDashboardPage() {
   const [stage, setStage] = useState<string>("");
   const [sort, setSort] = useState<string>("score");
   const [minScore, setMinScore] = useState<string>("");
-
-  // Check access
-  useEffect(() => {
-    getMyInvestorStatus().then((result) => {
-      if (result.success && !result.data.hasProfile) {
-        router.replace("/investor/apply");
-      }
-    });
-  }, [router]);
 
   const fetchDealFlow = useCallback(
     async (cursor?: string) => {
@@ -157,7 +145,6 @@ export default function InvestorDashboardPage() {
   useEffect(() => {
     let mounted = true;
     
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     
     fetchDealFlow().then(() => {
@@ -401,8 +388,6 @@ export default function InvestorDashboardPage() {
   );
 }
 
-// ─── Premium Stat Card ──────────────────────────────────
-
 function PremiumStatCard({
   label,
   value,
@@ -437,8 +422,6 @@ function PremiumStatCard({
   );
 }
 
-// ─── Deal Flow Card ──────────────────────────────
-
 function DealFlowCard({
   idea,
   onWatchlist,
@@ -467,7 +450,6 @@ function DealFlowCard({
       isSpotlight ? "border-0" : "border border-warm-border hover:border-warm-border-strong shadow-sm hover:shadow-card"
     )}>
       <div className="flex-1 min-w-0 flex flex-col justify-center">
-        {/* Meta row */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Badge
             variant="secondary"
@@ -483,7 +465,6 @@ function DealFlowCard({
           </Badge>
         </div>
 
-        {/* Title + Pitch */}
         <Link
           href={`/idea/${idea.slug}`}
           className="inline-block"
@@ -502,12 +483,10 @@ function DealFlowCard({
           {idea.pitch}
         </p>
 
-        {/* Founder */}
         <div className="mt-4 flex items-center gap-3">
           <Link href={`/profile/${idea.founder.username ?? ""}`}>
             <div className={cn("overflow-hidden rounded-full border border-warm-border bg-warm-subtle hover:ring-2 hover:ring-saffron/30 transition-all", isSpotlight ? "h-8 w-8" : "h-6 w-6")}>
               {idea.founder.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={idea.founder.image}
                   alt={idea.founder.name}
@@ -533,9 +512,7 @@ function DealFlowCard({
         </div>
       </div>
 
-      {/* Score + Actions */}
       <div className={cn("flex md:w-[160px] md:shrink-0 flex-col items-center md:items-end justify-between md:justify-center gap-4 mt-4 md:mt-0 md:pl-6 md:border-l border-warm-border", isSpotlight && "md:w-[200px] md:pl-8")}>
-        {/* Score ring */}
         <div className="flex items-center gap-4 md:flex-col md:gap-1 w-full justify-between md:justify-center">
           <div
             className={cn("flex shrink-0 items-center justify-center rounded-full border-[4px] bg-white shadow-inner", isSpotlight ? "h-16 w-16" : "h-14 w-14")}
@@ -563,7 +540,6 @@ function DealFlowCard({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="grid grid-cols-2 md:grid-cols-1 w-full gap-2 mt-3 md:mt-2">
           <Button
             variant="outline"
@@ -588,8 +564,6 @@ function DealFlowCard({
     </div>
   );
 }
-
-// ─── Skeleton ──────────────────────────────────
 
 function DashboardSkeleton() {
   return (

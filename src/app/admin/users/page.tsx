@@ -278,180 +278,329 @@ export default function AdminUsersPage() {
         </div>
       ) : (
         <>
-          <Card className="border-warm-border overflow-hidden">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-warm-border bg-warm-subtle">
-                      <TableHead className="text-[13px] font-semibold text-text-secondary">
-                        User
-                      </TableHead>
-                      <TableHead className="text-[13px] font-semibold text-text-secondary">
-                        Role
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Level
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Points
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Ideas
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Votes
-                      </TableHead>
-                      <TableHead className="text-[13px] font-semibold text-text-secondary">
-                        Joined
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Status
-                      </TableHead>
-                      <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
-                        Actions
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow
-                        key={user.id}
-                        className="border-warm-border hover:bg-warm-subtle/50"
-                      >
+        <>
+          <div className="hidden lg:block">
+            <Card className="border-warm-border overflow-hidden">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-warm-border bg-warm-subtle">
+                        <TableHead className="text-[13px] font-semibold text-text-secondary">
+                          User
+                        </TableHead>
+                        <TableHead className="text-[13px] font-semibold text-text-secondary">
+                          Role
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Level
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Points
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Ideas
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Votes
+                        </TableHead>
+                        <TableHead className="text-[13px] font-semibold text-text-secondary">
+                          Joined
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Status
+                        </TableHead>
+                        <TableHead className="text-center text-[13px] font-semibold text-text-secondary">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow
+                          key={user.id}
+                          className="border-warm-border hover:bg-warm-subtle/50"
+                        >
                           <TableCell className="max-w-[240px] sm:max-w-none">
                             <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={user.image ?? undefined} />
-                              <AvatarFallback className="bg-warm-subtle text-[12px] font-semibold text-text-secondary">
-                                {user.name?.charAt(0) ?? "?"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <Link
-                                href={
-                                  user.username
-                                    ? `/profile/${user.username}`
-                                    : "#"
-                                }
-                                className="flex items-center gap-1 text-[14px] font-medium text-deep-ink hover:text-saffron transition-colors"
-                              >
-                                <span className="truncate">{user.name}</span>
-                                <ExternalLink className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100" />
-                              </Link>
-                              <p className="truncate text-[12px] text-text-muted">
-                                {user.username
-                                  ? `@${user.username}`
-                                  : user.email ?? "No username"}
-                              </p>
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.image ?? undefined} />
+                                <AvatarFallback className="bg-warm-subtle text-[12px] font-semibold text-text-secondary">
+                                  {user.name?.charAt(0) ?? "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <Link
+                                  href={
+                                    user.username
+                                      ? `/profile/${user.username}`
+                                      : "#"
+                                  }
+                                  className="flex items-center gap-1 text-[14px] font-medium text-deep-ink hover:text-saffron transition-colors"
+                                >
+                                  <span className="truncate">{user.name}</span>
+                                  <ExternalLink className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100" />
+                                </Link>
+                                <p className="truncate text-[12px] text-text-muted">
+                                  {user.username
+                                    ? `@${user.username}`
+                                    : user.email ?? "No username"}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-[13px] text-text-secondary capitalize">
-                            {user.role.toLowerCase()}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="text-[13px] text-text-secondary">
-                            {LEVEL_LABELS[user.level]}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="font-data text-[13px] text-text-secondary">
-                            {formatNumber(user.points)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="font-data text-[13px] text-text-secondary">
-                            {user._count.ideas}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="font-data text-[13px] text-text-secondary">
-                            {user._count.votes}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-[13px] text-text-muted">
-                            {formatDate(user.createdAt)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            {user.isAdmin && (
-                              <Badge
-                                variant="outline"
-                                className="bg-brand-blue-light text-brand-blue border-brand-blue/20 text-[10px]"
-                              >
-                                Admin
-                              </Badge>
-                            )}
-                            {user.isEmployee && !user.isAdmin && (
-                              <Badge
-                                variant="outline"
-                                className="bg-saffron-light text-saffron border-saffron/20 text-[10px]"
-                              >
-                                Employee
-                              </Badge>
-                            )}
-                            {user.isBanned && (
-                              <Badge
-                                variant="outline"
-                                className="bg-brand-red-light text-brand-red border-brand-red/20 text-[10px]"
-                              >
-                                Banned
-                              </Badge>
-                            )}
-                            {!user.isAdmin && !user.isBanned && (
-                              <span className="inline-block h-2 w-2 rounded-full bg-brand-green" />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={actionInProgress === user.id}>
-                                {actionInProgress === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              {!user.isAdmin && (
-                                <DropdownMenuItem onClick={() => handleAction(user.id, "make_admin")}>
-                                  <UserPlus className="mr-2 h-4 w-4" /> Make Admin
-                                </DropdownMenuItem>
-                              )}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-[13px] text-text-secondary capitalize">
+                              {user.role.toLowerCase()}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="text-[13px] text-text-secondary">
+                              {LEVEL_LABELS[user.level]}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="font-data text-[13px] text-text-secondary">
+                              {formatNumber(user.points)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="font-data text-[13px] text-text-secondary">
+                              {user._count.ideas}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="font-data text-[13px] text-text-secondary">
+                              {user._count.votes}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-[13px] text-text-muted">
+                              {formatDate(user.createdAt)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-1.5">
                               {user.isAdmin && (
-                                <DropdownMenuItem onClick={() => handleAction(user.id, "remove_admin")} className="text-brand-red">
-                                  <UserMinus className="mr-2 h-4 w-4" /> Remove Admin
-                                </DropdownMenuItem>
-                              )}
-                              {!user.isEmployee && !user.isAdmin && (
-                                <DropdownMenuItem onClick={() => handleAction(user.id, "make_employee")}>
-                                  <UserPlus className="mr-2 h-4 w-4" /> Make Employee
-                                </DropdownMenuItem>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-brand-blue-light text-brand-blue border-brand-blue/20 text-[10px]"
+                                >
+                                  Admin
+                                </Badge>
                               )}
                               {user.isEmployee && !user.isAdmin && (
-                                <DropdownMenuItem onClick={() => handleAction(user.id, "remove_employee")}>
-                                  <UserMinus className="mr-2 h-4 w-4" /> Remove Employee
-                                </DropdownMenuItem>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-saffron-light text-saffron border-saffron/20 text-[10px]"
+                                >
+                                  Employee
+                                </Badge>
                               )}
-                              {!user.isAdmin && (
-                                <DropdownMenuItem onClick={() => handleAction(user.id, user.isBanned ? "unban" : "ban")} className={user.isBanned ? "text-brand-green" : "text-brand-red"}>
-                                  {user.isBanned ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldBan className="mr-2 h-4 w-4" />}
-                                  {user.isBanned ? "Unban User" : "Ban User"}
-                                </DropdownMenuItem>
+                              {user.isBanned && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-brand-red-light text-brand-red border-brand-red/20 text-[10px]"
+                                >
+                                  Banned
+                                </Badge>
                               )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                              {!user.isAdmin && !user.isBanned && (
+                                <span className="inline-block h-2 w-2 rounded-full bg-brand-green" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  disabled={actionInProgress === user.id}
+                                >
+                                  {actionInProgress === user.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <MoreVertical className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                {!user.isAdmin && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleAction(user.id, "make_admin")
+                                    }
+                                  >
+                                    <UserPlus className="mr-2 h-4 w-4" /> Make
+                                    Admin
+                                  </DropdownMenuItem>
+                                )}
+                                {user.isAdmin && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleAction(user.id, "remove_admin")
+                                    }
+                                    className="text-brand-red"
+                                  >
+                                    <UserMinus className="mr-2 h-4 w-4" />{" "}
+                                    Remove Admin
+                                  </DropdownMenuItem>
+                                )}
+                                {!user.isEmployee && !user.isAdmin && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleAction(user.id, "make_employee")
+                                    }
+                                  >
+                                    <UserPlus className="mr-2 h-4 w-4" /> Make
+                                    Employee
+                                  </DropdownMenuItem>
+                                )}
+                                {user.isEmployee && !user.isAdmin && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleAction(user.id, "remove_employee")
+                                    }
+                                  >
+                                    <UserMinus className="mr-2 h-4 w-4" />{" "}
+                                    Remove Employee
+                                  </DropdownMenuItem>
+                                )}
+                                {!user.isAdmin && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleAction(
+                                        user.id,
+                                        user.isBanned ? "unban" : "ban"
+                                      )
+                                    }
+                                    className={
+                                      user.isBanned
+                                        ? "text-brand-green"
+                                        : "text-brand-red"
+                                    }
+                                  >
+                                    {user.isBanned ? (
+                                      <ShieldCheck className="mr-2 h-4 w-4" />
+                                    ) : (
+                                      <ShieldBan className="mr-2 h-4 w-4" />
+                                    )}
+                                    {user.isBanned ? "Unban User" : "Ban User"}
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:hidden">
+            {users.map((user) => (
+              <Card key={user.id} className="border-warm-border overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={user.image ?? undefined} />
+                        <AvatarFallback className="bg-warm-subtle text-sm font-semibold text-text-secondary">
+                          {user.name?.charAt(0) ?? "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <Link
+                          href={user.username ? `/profile/${user.username}` : "#"}
+                          className="block text-[15px] font-bold text-deep-ink hover:text-saffron truncate"
+                        >
+                          {user.name}
+                        </Link>
+                        <p className="text-[12px] text-text-muted truncate">
+                          {user.username ? `@${user.username}` : user.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {user.isAdmin && (
+                        <Badge variant="outline" className="bg-brand-blue-light text-brand-blue border-brand-blue/20 text-[9px] py-0 h-5">Admin</Badge>
+                      )}
+                      {user.isBanned && (
+                        <Badge variant="outline" className="bg-brand-red-light text-brand-red border-brand-red/20 text-[9px] py-0 h-5">Banned</Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 py-3 border-y border-warm-border my-4">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1">Engagement</p>
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <p className="text-[14px] font-bold text-deep-ink">{user._count.ideas}</p>
+                          <p className="text-[9px] text-text-muted">Ideas</p>
+                        </div>
+                        <div>
+                          <p className="text-[14px] font-bold text-deep-ink">{user._count.votes}</p>
+                          <p className="text-[9px] text-text-muted">Votes</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1">Status</p>
+                      <p className="text-[13px] text-text-secondary font-medium">{LEVEL_LABELS[user.level]}</p>
+                      <p className="text-[11px] text-text-muted">{formatNumber(user.points)} pts</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-text-muted">Joined {formatDate(user.createdAt)}</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-[12px] border-warm-border" disabled={actionInProgress === user.id}>
+                          {actionInProgress === user.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <MoreVertical className="h-3 w-3" />}
+                          Manage
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        {!user.isAdmin && (
+                          <DropdownMenuItem onClick={() => handleAction(user.id, "make_admin")}>
+                            <UserPlus className="mr-2 h-4 w-4" /> Make Admin
+                          </DropdownMenuItem>
+                        )}
+                        {user.isAdmin && (
+                          <DropdownMenuItem onClick={() => handleAction(user.id, "remove_admin")} className="text-brand-red">
+                            <UserMinus className="mr-2 h-4 w-4" /> Remove Admin
+                          </DropdownMenuItem>
+                        )}
+                        {!user.isEmployee && !user.isAdmin && (
+                          <DropdownMenuItem onClick={() => handleAction(user.id, "make_employee")}>
+                            <UserPlus className="mr-2 h-4 w-4" /> Make Employee
+                          </DropdownMenuItem>
+                        )}
+                        {user.isEmployee && !user.isAdmin && (
+                          <DropdownMenuItem onClick={() => handleAction(user.id, "remove_employee")}>
+                            <UserMinus className="mr-2 h-4 w-4" /> Remove Employee
+                          </DropdownMenuItem>
+                        )}
+                        {!user.isAdmin && (
+                          <DropdownMenuItem onClick={() => handleAction(user.id, user.isBanned ? "unban" : "ban")} className={user.isBanned ? "text-brand-green" : "text-brand-red"}>
+                            {user.isBanned ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldBan className="mr-2 h-4 w-4" />}
+                            {user.isBanned ? "Unban User" : "Ban User"}
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
 
           {hasMore && (
             <div className="mt-4 text-center">

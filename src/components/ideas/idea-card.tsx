@@ -77,13 +77,13 @@ export function IdeaCard({
       )}
     >
       {/* Header row: avatar + name + time + category */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 overflow-hidden">
+        <div className="flex items-center gap-1.5 min-w-0">
           <Link
             href={`/profile/${founder.username ?? ""}`}
             className="flex-shrink-0"
           >
-            <div className="h-7 w-7 overflow-hidden rounded-full bg-warm-subtle">
+            <div className="h-6 w-6 overflow-hidden rounded-full bg-warm-subtle">
               {founder.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -92,22 +92,22 @@ export function IdeaCard({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-text-secondary">
+                <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-text-secondary">
                   {founder.name.charAt(0)}
                 </div>
               )}
             </div>
           </Link>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 min-w-0">
             <Link
               href={`/profile/${founder.username ?? ""}`}
-              className="text-[13px] font-medium text-deep-ink hover:underline"
+              className="text-[12px] font-medium text-deep-ink hover:underline truncate"
             >
               {founder.name}
             </Link>
             {founder.isVerified && (
               <svg
-                className="h-3.5 w-3.5 text-brand-green"
+                className="h-3 w-3 shrink-0 text-brand-green"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -118,11 +118,11 @@ export function IdeaCard({
                 />
               </svg>
             )}
-            <span className="text-[12px] text-text-muted">&middot;</span>
-            <span className="text-[12px] text-text-muted">{timeStr}</span>
+            <span className="text-[11px] text-text-muted shrink-0">&middot;</span>
+            <span className="text-[11px] text-text-muted shrink-0 whitespace-nowrap">{timeStr}</span>
           </div>
         </div>
-        <span className="rounded-full border border-warm-border bg-warm-subtle px-2 py-0.5 text-[11px] font-medium text-text-secondary">
+        <span className="shrink-0 rounded-full border border-warm-border bg-warm-subtle px-1.5 py-0.5 text-[10px] font-medium text-text-secondary">
           {CATEGORY_EMOJIS[category]} {CATEGORY_LABELS[category]}
         </span>
       </div>
