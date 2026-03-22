@@ -36,6 +36,25 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
+  // Prevent direct browser navigation to API routes (hide API from users in production)
+  if (req.nextUrl.pathname.startsWith('/api/')) {
+    // The validation-card endpoint generates an image meant to be opened in browsers
+    const isAllowedDirectRoute = req.nextUrl.pathname.startsWith('/api/validation-card/');
+    
+    if (!isAllowedDirectRoute && req.method === 'GET') {
+      const acceptHeader = req.headers.get('accept') || '';
+      const secFetchDest = req.headers.get('sec-fetch-dest') || '';
+      
+      // If the request is looking for an HTML document (i.e. a user typed the URL into the browser)
+      const isBrowserRequest = secFetchDest === 'document' || (acceptHeader.includes('text/html') && !acceptHeader.includes('application/json'));
+      
+      if (isBrowserRequest) {
+        // Redirect to home page instead of showing raw JSON
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+    }
+  }
+
   // Forward the current URL so server components can read it via headers()
   const response = NextResponse.next();
   response.headers.set("x-url", req.nextUrl.pathname);
