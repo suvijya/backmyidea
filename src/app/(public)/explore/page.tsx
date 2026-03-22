@@ -175,7 +175,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr_260px] items-start">
         {/* Left Sidebar (Desktop) / Top Filters (Mobile) */}
-        <aside className="lg:sticky lg:top-24">
+        <aside className="lg:sticky lg:top-24 min-w-0 overflow-hidden">
           <ExploreSidebarLeft />
         </aside>
 

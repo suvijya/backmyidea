@@ -8,17 +8,13 @@ export async function GET() {
     return NextResponse.json({ count: 0 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { id: true },
-  });
-  if (!user) {
+  try {
+    const count = await prisma.notification.count({
+      where: { user: { clerkId }, isRead: false },
+    });
+
+    return NextResponse.json({ count });
+  } catch (error) {
     return NextResponse.json({ count: 0 });
   }
-
-  const count = await prisma.notification.count({
-    where: { userId: user.id, isRead: false },
-  });
-
-  return NextResponse.json({ count });
 }

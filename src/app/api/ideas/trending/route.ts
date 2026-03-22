@@ -6,11 +6,6 @@ import { auth } from "@clerk/nextjs/server";
 export async function GET(req: Request) {
   try {
     const { userId: clerkId } = await auth();
-    let currentUserId: string | null = null;
-    if (clerkId) {
-      const user = await prisma.user.findUnique({ where: { clerkId }, select: { id: true } });
-      if (user) currentUserId = user.id;
-    }
 
     const { searchParams } = new URL(req.url);
     const cursor = searchParams.get("cursor") ?? undefined;
@@ -35,8 +30,8 @@ export async function GET(req: Request) {
         founder: {
           select: { id: true, name: true, username: true, image: true },
         },
-        votes: currentUserId ? {
-          where: { userId: currentUserId },
+        votes: clerkId ? {
+          where: { user: { clerkId } },
           select: { type: true, userId: true },
         } : false,
       },

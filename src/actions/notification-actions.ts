@@ -1,5 +1,6 @@
 "use server";
 
+import { getCachedUserPermissions } from "@/lib/clerk";
 import { prisma } from "@/lib/prisma";
 import type { ActionResult, NotificationItem } from "@/types";
 import { auth } from "@clerk/nextjs/server";
@@ -21,16 +22,8 @@ export async function getNotifications(
     return { notifications: [], hasMore: false };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { id: true },
-  });
-  if (!user) {
-    return { notifications: [], hasMore: false };
-  }
-
   const notifications = await prisma.notification.findMany({
-    where: { userId: user.id },
+    where: { user: { clerkId } },
     select: {
       id: true,
       type: true,
@@ -60,14 +53,8 @@ export async function getUnreadNotificationCount(): Promise<number> {
   const { userId: clerkId } = await auth();
   if (!clerkId) return 0;
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { id: true },
-  });
-  if (!user) return 0;
-
   return prisma.notification.count({
-    where: { userId: user.id, isRead: false },
+    where: { user: { clerkId }, isRead: false },
   });
 }
 
@@ -83,19 +70,11 @@ export async function markNotificationRead(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { id: true },
-  });
-  if (!user) {
-    return { success: false, error: "User not found" };
-  }
-
   const notification = await prisma.notification.findUnique({
     where: { id: notificationId },
-    select: { userId: true },
+    select: { userId: true, user: { select: { clerkId: true } } },
   });
-  if (!notification || notification.userId !== user.id) {
+  if (!notification || notification.user.clerkId !== clerkId) {
     return { success: false, error: "Notification not found" };
   }
 
@@ -117,10 +96,7 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { id: true },
-  });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user) {
     return { success: false, error: "User not found" };
   }

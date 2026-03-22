@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
+import { getCachedUserPermissions } from "@/lib/clerk";
 import { prisma } from "@/lib/prisma";
 import { commentLimiter, upvoteLimiter } from "@/lib/redis";
 import { createCommentSchema } from "@/lib/validations";
@@ -24,7 +25,7 @@ export async function createComment(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user || !user.onboarded) {
     return { success: false, error: "Complete onboarding first" };
   }
@@ -190,7 +191,7 @@ export async function togglePinComment(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user) {
     return { success: false, error: "User not found" };
   }
@@ -229,7 +230,7 @@ export async function toggleHideComment(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user) {
     return { success: false, error: "User not found" };
   }
@@ -267,7 +268,7 @@ export async function upvoteComment(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user || !user.onboarded) {
     return { success: false, error: "Complete onboarding first" };
   }

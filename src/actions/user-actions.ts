@@ -2,6 +2,7 @@
 
 import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { getCachedUserPermissions } from "@/lib/clerk";
 import { onboardingSchema, updateProfileSchema } from "@/lib/validations";
 import type { ActionResult, UserProfile, DashboardStats, DashboardIdea } from "@/types";
 import type { User } from "@prisma/client";
@@ -16,10 +17,7 @@ export async function getMyUsername(): Promise<{ username: string | null; isAdmi
   const { userId: clerkId } = await auth();
   if (!clerkId) return null;
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { username: true, isAdmin: true, isEmployee: true },
-  });
+  const user = await getCachedUserPermissions(clerkId);
 
   if (!user) return null;
 
@@ -152,7 +150,7 @@ export async function updateProfile(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user || !user.onboarded) {
     return { success: false, error: "User not found or not onboarded" };
   }
@@ -256,7 +254,7 @@ export async function getDashboardStats(
     if (!clerkId) {
       throw new Error("Not authenticated");
     }
-    const currentUser = await prisma.user.findUnique({ where: { clerkId }, select: { id: true, isAdmin: true } });
+    const currentUser = await getCachedUserPermissions(clerkId);
     if (!currentUser || (currentUser.id !== userId && !currentUser.isAdmin)) {
       throw new Error("Not authorized");
     }
@@ -303,7 +301,7 @@ export async function getDashboardIdeas(
     if (!clerkId) {
       throw new Error("Not authenticated");
     }
-    const currentUser = await prisma.user.findUnique({ where: { clerkId }, select: { id: true, isAdmin: true } });
+    const currentUser = await getCachedUserPermissions(clerkId);
     if (!currentUser || (currentUser.id !== userId && !currentUser.isAdmin)) {
       throw new Error("Not authorized");
     }

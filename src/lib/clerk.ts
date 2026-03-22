@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "./prisma";
 import type { User } from "@prisma/client";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 
 /**
  * Get the current Prisma user from Clerk session.
@@ -56,14 +57,25 @@ export async function requireAdmin(): Promise<User> {
   return user;
 }
 
+export const getCachedUserPermissions = unstable_cache(
+  async (clerkId: string) => {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true, name: true, username: true, createdAt: true, isAdmin: true, isEmployee: true, onboarded: true, investorProfile: { select: { id: true } } },
+    });
+    return user;
+  },
+  ["user-permissions"],
+  { revalidate: 300 } // Cache for 5 minutes
+);
+
 export async function canUserViewGlobalScores(): Promise<boolean> {
-  const user = await getCurrentUser();
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return false;
+  
+  const user = await getCachedUserPermissions(clerkId);
+  
   if (!user) return false;
   if (user.isAdmin || user.isEmployee) return true;
-  
-  const investorProfile = await prisma.investorProfile.findUnique({
-    where: { userId: user.id },
-  });
-  
-  return !!investorProfile;
+  return !!user.investorProfile;
 }

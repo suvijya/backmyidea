@@ -28,7 +28,7 @@ export async function createIdea(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user || !user.onboarded) {
     return { success: false, error: "Complete onboarding first" };
   }
@@ -163,7 +163,7 @@ export async function updateIdea(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user) {
     return { success: false, error: "User not found" };
   }
@@ -241,7 +241,7 @@ export async function updateIdeaStatus(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user) {
     return { success: false, error: "User not found" };
   }
@@ -273,9 +273,18 @@ export async function updateIdeaStatus(
 export async function getIdeaBySlug(
   slug: string
 ): Promise<ActionResult<IdeaDetail>> {
-  const user = await getCurrentUser();
-  const currentUserId = user?.id || null;
-  const isAdminOrEmployee = user ? (user.isAdmin || user.isEmployee) : false;
+  const { userId: clerkId } = await auth();
+  
+  let currentUserId: string | null = null;
+  let isPrivileged = false;
+  
+  if (clerkId) {
+    const u = await getCachedUserPermissions(clerkId);
+    if (u) {
+      currentUserId = u.id;
+      isPrivileged = u.isAdmin || u.isEmployee;
+    }
+  }
 
   const idea = await prisma.idea.findUnique({
     where: { slug },
@@ -283,8 +292,8 @@ export async function getIdeaBySlug(
       founder: {
         select: { id: true, name: true, username: true, image: true, bio: true, city: true },
       },
-      votes: currentUserId ? {
-        where: { userId: currentUserId },
+      votes: clerkId ? {
+        where: { user: { clerkId } },
         select: { id: true, type: true, userId: true },
       } : false,
       _count: {
@@ -300,7 +309,7 @@ export async function getIdeaBySlug(
   // If idea is not active, restrict access
   if (idea.status !== "ACTIVE") {
     const isFounder = currentUserId && idea.founder.id === currentUserId;
-    const canView = isFounder || isAdminOrEmployee;
+    const canView = isFounder || isPrivileged;
 
     if (!canView) {
       return { success: false, error: "Idea not found" };
@@ -334,7 +343,7 @@ export async function getIdeaById(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user) {
     return { success: false, error: "User not found" };
   }
@@ -359,8 +368,7 @@ export async function getIdeasFeed(
   filters: IdeaFilters,
   cursor?: string
 ): Promise<PaginatedResponse<IdeaFeedItem>> {
-  const user = await getCurrentUser();
-  const currentUserId = user?.id || null;
+  const { userId: clerkId } = await auth();
 
   const where: Prisma.IdeaWhereInput = {
     status: "ACTIVE",
@@ -427,8 +435,8 @@ export async function getIdeasFeed(
       founder: {
         select: { id: true, name: true, username: true, image: true },
       },
-      votes: currentUserId ? {
-        where: { userId: currentUserId },
+      votes: clerkId ? {
+        where: { user: { clerkId } },
         select: { type: true, userId: true },
       } : false,
     },
@@ -449,14 +457,13 @@ export async function getIdeasFeed(
   return { items, nextCursor, hasMore };
 }
 
-import { getCurrentUser } from "@/lib/clerk";
+import { getCurrentUser, getCachedUserPermissions } from "@/lib/clerk";
 
 export async function getExploreFeed(
   filters: IdeaFilters,
   page: number = 1
 ): Promise<{ items: IdeaFeedItem[]; totalPages: number; currentPage: number; totalCount: number }> {
-  const user = await getCurrentUser();
-  const currentUserId = user?.id || null;
+  const { userId: clerkId } = await auth();
 
   // Create a stable cache key string based on filters and page
   const cacheKey = JSON.stringify({ ...filters, page });
@@ -549,11 +556,11 @@ export async function getExploreFeed(
 
   // If user is logged in, fetch their votes for these specific ideas
   let userVotes: Record<string, { type: VoteType; userId: string }> = {};
-  if (currentUserId && baseIdeas.length > 0) {
+  if (clerkId && baseIdeas.length > 0) {
     const ideaIds = baseIdeas.map((idea: any) => idea.id);
     const votes = await prisma.vote.findMany({
       where: {
-        userId: currentUserId,
+        user: { clerkId },
         ideaId: { in: ideaIds },
       },
       select: { ideaId: true, type: true, userId: true },
@@ -626,7 +633,7 @@ export async function incrementShareCount(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user) {
     return { success: false, error: "User not found" };
   }
@@ -657,9 +664,15 @@ export async function getIdeasByUser(
   userId: string
 ): Promise<IdeaFeedItem[]> {
   // Determine if current user is the owner — if not, only show ACTIVE ideas
-  const user = await getCurrentUser();
-  const currentUserId = user?.id || null;
-  const isOwner = user ? (user.id === userId || user.isAdmin === true) : false;
+  const { userId: clerkId } = await auth();
+  
+  let isOwner = false;
+  if (clerkId) {
+    const user = await getCachedUserPermissions(clerkId);
+    if (user && (user.id === userId || user.isAdmin)) {
+      isOwner = true;
+    }
+  }
 
   const statusFilter: Prisma.IdeaWhereInput["status"] = isOwner
     ? { not: "REMOVED" }
@@ -690,8 +703,8 @@ export async function getIdeasByUser(
       founder: {
         select: { id: true, name: true, username: true, image: true },
       },
-      votes: currentUserId ? {
-        where: { userId: currentUserId },
+      votes: clerkId ? {
+        where: { user: { clerkId } },
         select: { type: true, userId: true },
       } : false,
     },

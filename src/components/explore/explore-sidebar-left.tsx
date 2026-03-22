@@ -46,13 +46,13 @@ export function ExploreSidebarLeft() {
   );
 
   return (
-    <div className="flex flex-col space-y-6 lg:space-y-8">
+    <div className="flex flex-col space-y-6 lg:space-y-8 w-full min-w-0">
       {/* Categories */}
-      <div>
+      <div className="min-w-0">
         <h2 className="mb-3 px-1 lg:px-3 text-[11px] font-bold tracking-wider text-text-disabled uppercase">
           CATEGORIES
         </h2>
-        <nav className="flex overflow-x-auto pb-2 scrollbar-none lg:flex-col lg:space-y-1 lg:overflow-visible lg:pb-0">
+        <nav className="flex overflow-x-auto pb-2 scrollbar-none lg:flex-col lg:space-y-1 lg:overflow-visible lg:pb-0 w-full">
           {SIDEBAR_CATEGORIES.map((item) => {
             const Icon = item.icon;
             let isActive = false;
@@ -84,11 +84,11 @@ export function ExploreSidebarLeft() {
       </div>
 
       {/* Stages */}
-      <div>
+      <div className="min-w-0">
         <h3 className="mb-3 px-1 lg:px-3 text-[11px] font-bold tracking-wider text-text-disabled uppercase">
           STAGE
         </h3>
-        <nav className="flex overflow-x-auto pb-2 scrollbar-none lg:flex-col lg:space-y-1 lg:overflow-visible lg:pb-0">
+        <nav className="flex overflow-x-auto pb-2 scrollbar-none lg:flex-col lg:space-y-1 lg:overflow-visible lg:pb-0 w-full">
           {SIDEBAR_STAGES.map((stage) => {
             const isActive = currentStage === stage.id;
             return (

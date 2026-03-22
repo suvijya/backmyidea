@@ -7,6 +7,13 @@ import { cn } from "@/lib/utils";
 import { ExploreIdeaCard } from "@/components/explore/explore-idea-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { IdeaFeedItem } from "@/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FeaturedIdeaCard } from "./featured-idea-card";
 
 interface ExploreFeedProps {
@@ -75,22 +82,26 @@ export function ExploreFeed({ ideas, totalPages, currentPage, canViewGlobalScore
         </div>
         
         {/* Sort Dropdown */}
-        <select
+        <Select
           value={searchParams.get("sort") || "trending"}
-          onChange={(e) => {
+          onValueChange={(value) => {
             const params = new URLSearchParams(searchParams.toString());
-            if (e.target.value === "trending") params.delete("sort");
-            else params.set("sort", e.target.value);
+            if (value === "trending") params.delete("sort");
+            else params.set("sort", value);
             params.delete("page");
             router.push(`${pathname}?${params.toString()}`);
           }}
-          className="h-9 rounded-lg border border-warm-border bg-white px-3 text-[13px] font-medium text-text-secondary outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
         >
-          <option value="newest">Most Recent</option>
-          <option value="trending">Trending</option>
-          <option value="top">Top Rated</option>
-          <option value="hot">Most Votes</option>
-        </select>
+          <SelectTrigger className="h-10 w-full md:h-9 md:w-[140px] rounded-lg border border-warm-border bg-white px-3 text-[14px] md:text-[13px] font-medium text-text-secondary outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue shrink-0">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent className="bg-white z-50">
+            <SelectItem value="newest">Most Recent</SelectItem>
+            <SelectItem value="trending">Trending</SelectItem>
+            <SelectItem value="top">Top Rated</SelectItem>
+            <SelectItem value="hot">Most Votes</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-4">

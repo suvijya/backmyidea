@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
+import { getCachedUserPermissions } from "@/lib/clerk";
 import { prisma } from "@/lib/prisma";
 import { voteLimiter } from "@/lib/redis";
 import { castVoteSchema } from "@/lib/validations";
@@ -25,7 +26,7 @@ export async function castVote(
     return { success: false, error: "Not authenticated" };
   }
 
-  const user = await prisma.user.findUnique({ where: { clerkId } });
+  const user = await getCachedUserPermissions(clerkId);
   if (!user || !user.onboarded) {
     return { success: false, error: "Complete onboarding first" };
   }

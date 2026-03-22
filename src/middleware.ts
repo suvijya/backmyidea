@@ -4,6 +4,10 @@ import { NextResponse } from "next/server";
 // Routes that do not require authentication
 const isPublicRoute = createRouteMatcher([
   "/",
+  "/manifest.json",
+  "/icon.png",
+  "/apple-icon.png",
+  "/favicon.ico",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/me(.*)",
