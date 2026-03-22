@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -42,6 +43,57 @@ export default async function IdeaDetailDashboardPage({
   params,
 }: IdeaDetailDashboardPageProps) {
   const { id } = await params;
+  
+  return (
+    <Suspense fallback={<IdeaDetailSkeleton />}>
+      <IdeaDetailDashboardLoader id={id} />
+    </Suspense>
+  );
+}
+
+function IdeaDetailSkeleton() {
+  return (
+    <div className="pb-20 animate-pulse">
+      <div className="mb-5 h-4 w-32 bg-warm-subtle rounded"></div>
+      
+      {/* Header Skeleton */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-24 rounded-full bg-warm-subtle"></div>
+            <div className="h-6 w-24 rounded-full bg-warm-subtle"></div>
+          </div>
+          <div className="h-8 w-3/4 bg-warm-subtle rounded-md"></div>
+          <div className="h-4 w-full bg-warm-subtle rounded"></div>
+          <div className="h-4 w-5/6 bg-warm-subtle rounded"></div>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <div className="h-9 w-24 rounded-md bg-warm-subtle"></div>
+          <div className="h-9 w-24 rounded-md bg-warm-subtle"></div>
+          <div className="h-9 w-24 rounded-md bg-warm-subtle"></div>
+        </div>
+      </div>
+
+      {/* Stats Row Skeleton */}
+      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-xl border border-warm-border bg-white p-4 h-24">
+            <div className="h-4 w-16 bg-warm-subtle rounded mb-2"></div>
+            <div className="h-8 w-12 bg-warm-subtle rounded mt-2"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Main Content Skeleton */}
+      <div className="mt-8 space-y-4">
+        <div className="h-64 w-full bg-warm-subtle rounded-xl"></div>
+        <div className="h-40 w-full bg-warm-subtle rounded-xl mt-12"></div>
+      </div>
+    </div>
+  );
+}
+
+async function IdeaDetailDashboardLoader({ id }: { id: string }) {
   const user = await requireUser();
   const result = await getIdeaById(id);
 

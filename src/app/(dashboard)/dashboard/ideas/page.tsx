@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   Plus,
   Vote,
@@ -32,6 +33,7 @@ import {
 import { formatNumber, timeAgo } from "@/lib/utils";
 import type { Category, IdeaStatus, ScoreTier } from "@prisma/client";
 import { IdeaStatusActions } from "@/components/dashboard/idea-status-actions";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_STYLES: Record<
   IdeaStatus,
@@ -48,9 +50,8 @@ const STATUS_STYLES: Record<
   REJECTED: { label: "Rejected", className: "bg-red-500/10 text-red-600" },
 };
 
-export default async function MyIdeasPage() {
-  const user = await requireUser();
-  const ideas = await getDashboardIdeas(user.id, { skipAuthCheck: true });
+async function MyIdeasLoader({ userId }: { userId: string }) {
+  const ideas = await getDashboardIdeas(userId, { skipAuthCheck: true });
 
   const activeIdeas = ideas.filter((i) => i.status === "ACTIVE");
   const pendingIdeas = ideas.filter((i) => i.status === "PENDING");
@@ -59,8 +60,7 @@ export default async function MyIdeasPage() {
   const draftIdeas = ideas.filter((i) => i.status === "DRAFT");
 
   return (
-    <div>
-      {/* Header */}
+    <>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-[28px] leading-tight text-deep-ink">
@@ -147,6 +147,33 @@ export default async function MyIdeasPage() {
           )}
         </div>
       )}
+    </>
+  );
+}
+
+export default async function MyIdeasPage() {
+  const user = await requireUser();
+
+  return (
+    <div>
+      <Suspense fallback={
+        <div>
+          <div className="flex items-center justify-between">
+            <div>
+              <Skeleton className="h-[34px] w-40 mb-2" />
+              <Skeleton className="h-5 w-24" />
+            </div>
+            <Skeleton className="h-10 w-28" />
+          </div>
+          <div className="mt-8 space-y-4">
+            <Skeleton className="h-[90px] w-full rounded-xl" />
+            <Skeleton className="h-[90px] w-full rounded-xl" />
+            <Skeleton className="h-[90px] w-full rounded-xl" />
+          </div>
+        </div>
+      }>
+        <MyIdeasLoader userId={user.id} />
+      </Suspense>
     </div>
   );
 }

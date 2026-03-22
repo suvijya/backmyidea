@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Vote, ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import {
   CATEGORY_EMOJIS,
   MIN_VOTES_FOR_SCORE,
 } from "@/lib/constants";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const dynamic = "force-dynamic";
 import { timeAgo, formatNumber } from "@/lib/utils";
@@ -23,14 +25,12 @@ const VOTE_COLORS: Record<VoteType, string> = {
   NOT_FOR_ME: "bg-brand-red-light text-brand-red border-brand-red/20",
 };
 
-export default async function MyVotesPage() {
-  const user = await requireUser();
-  const votes = await getUserVotes(user.id);
+async function VotesLoader({ userId }: { userId: string }) {
+  const votes = await getUserVotes(userId);
 
   return (
-    <div>
-      {/* Header */}
-      <div>
+    <>
+      <div className="mb-6">
         <h1 className="font-display text-[28px] leading-tight text-deep-ink">
           My Votes
         </h1>
@@ -116,6 +116,30 @@ export default async function MyVotesPage() {
           ))}
         </div>
       )}
+    </>
+  );
+}
+
+export default async function MyVotesPage() {
+  const user = await requireUser();
+
+  return (
+    <div>
+      <Suspense fallback={
+        <div>
+          <div className="mb-6">
+            <Skeleton className="h-[34px] w-48 mb-1" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+          <div className="space-y-3">
+            <Skeleton className="h-[74px] w-full rounded-xl" />
+            <Skeleton className="h-[74px] w-full rounded-xl" />
+            <Skeleton className="h-[74px] w-full rounded-xl" />
+          </div>
+        </div>
+      }>
+        <VotesLoader userId={user.id} />
+      </Suspense>
     </div>
   );
 }
