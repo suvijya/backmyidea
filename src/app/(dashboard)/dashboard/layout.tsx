@@ -7,7 +7,7 @@ import {
   Bell,
   Settings,
 } from "lucide-react";
-import { requireUser } from "@/lib/clerk";
+import { auth } from "@clerk/nextjs/server";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,11 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireUser();
+  // We only check auth here, not the full DB user, to prevent blocking the layout
+  const { userId } = await auth();
+  if (!userId) {
+    redirect("/sign-in");
+  }
 
   return (
     <>

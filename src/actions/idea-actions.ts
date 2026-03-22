@@ -370,91 +370,116 @@ export async function getIdeasFeed(
 ): Promise<PaginatedResponse<IdeaFeedItem>> {
   const { userId: clerkId } = await auth();
 
-  const where: Prisma.IdeaWhereInput = {
-    status: "ACTIVE",
-  };
+  // Create a stable cache key
+  const cacheKey = JSON.stringify({ ...filters, cursor: cursor || "start" });
 
-  if (filters.category) {
-    where.category = filters.category;
-  }
-  if (filters.stage) {
-    where.stage = filters.stage;
-  }
-  if (filters.targetAudience) {
-    where.targetAudience = { has: filters.targetAudience };
-  }
-  if (filters.search) {
-    where.OR = [
-      { title: { contains: filters.search, mode: "insensitive" } },
-      { pitch: { contains: filters.search, mode: "insensitive" } },
-      { tags: { has: filters.search.toLowerCase() } },
-    ];
-  }
+  const getCachedBaseData = unstable_cache(
+    async (cacheFilters: IdeaFilters, cacheCursor?: string) => {
+      const where: Prisma.IdeaWhereInput = {
+        status: "ACTIVE",
+      };
 
-  // Determine sort order
-  let orderBy: Prisma.IdeaOrderByWithRelationInput;
-  switch (filters.sort) {
-    case "newest":
-      orderBy = { createdAt: "desc" };
-      break;
-    case "top":
-      orderBy = { validationScore: "desc" };
-      break;
-    case "hot":
-      orderBy = { totalVotes: "desc" };
-      break;
-    case "trending":
-    default:
-      // Trending = combination of recency and votes
-      orderBy = { totalVotes: "desc" };
-      break;
-  }
+      if (cacheFilters.category) {
+        where.category = cacheFilters.category;
+      }
+      if (cacheFilters.stage) {
+        where.stage = cacheFilters.stage;
+      }
+      if (cacheFilters.targetAudience) {
+        where.targetAudience = { has: cacheFilters.targetAudience };
+      }
+      if (cacheFilters.search) {
+        where.OR = [
+          { title: { contains: cacheFilters.search, mode: "insensitive" } },
+          { pitch: { contains: cacheFilters.search, mode: "insensitive" } },
+          { tags: { has: cacheFilters.search.toLowerCase() } },
+        ];
+      }
 
-  const ideas = await prisma.idea.findMany({
-    where,
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      pitch: true,
-      category: true,
-      stage: true,
-      totalVotes: true,
-      totalComments: true,
-      totalViews: true,
-      totalShares: true,
-      useThisCount: true,
-      maybeCount: true,
-      notForMeCount: true,
-      validationScore: true,
-      scoreTier: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-      editedAt: true,
-      founder: {
-        select: { id: true, name: true, username: true, image: true },
-      },
-      votes: clerkId ? {
-        where: { user: { clerkId } },
-        select: { type: true, userId: true },
-      } : false,
+      // Determine sort order
+      let orderBy: Prisma.IdeaOrderByWithRelationInput;
+      switch (cacheFilters.sort) {
+        case "newest":
+          orderBy = { createdAt: "desc" };
+          break;
+        case "top":
+          orderBy = { validationScore: "desc" };
+          break;
+        case "hot":
+          orderBy = { totalVotes: "desc" };
+          break;
+        case "trending":
+        default:
+          orderBy = { totalVotes: "desc" };
+          break;
+      }
+
+      const ideas = await prisma.idea.findMany({
+        where,
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          pitch: true,
+          category: true,
+          stage: true,
+          totalVotes: true,
+          totalComments: true,
+          totalViews: true,
+          totalShares: true,
+          useThisCount: true,
+          maybeCount: true,
+          notForMeCount: true,
+          validationScore: true,
+          scoreTier: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          editedAt: true,
+          founder: {
+            select: { id: true, name: true, username: true, image: true },
+          },
+        },
+        orderBy,
+        take: FEED_PAGE_SIZE + 1,
+        ...(cacheCursor ? { cursor: { id: cacheCursor }, skip: 1 } : {}),
+      });
+
+      return ideas;
     },
-    orderBy,
-    take: FEED_PAGE_SIZE + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-  });
+    [`ideas-feed-${cacheKey}`],
+    { revalidate: 30, tags: ["ideas-feed"] }
+  );
 
-  const formattedIdeas = ideas.map((idea: any) => ({
+  const baseIdeas = await getCachedBaseData(filters, cursor);
+
+  // If user is logged in, fetch their votes for these specific ideas
+  let userVotes: Record<string, { type: VoteType; userId: string }> = {};
+  if (clerkId && baseIdeas.length > 0) {
+    const ideaIds = baseIdeas.map((idea: any) => idea.id);
+    const votes = await prisma.vote.findMany({
+      where: {
+        user: { clerkId },
+        ideaId: { in: ideaIds },
+      },
+      select: { ideaId: true, type: true, userId: true },
+    });
+    
+    votes.forEach((v: any) => {
+      userVotes[v.ideaId] = { type: v.type, userId: v.userId };
+    });
+  }
+
+  const formattedIdeas = baseIdeas.map((idea: any) => ({
     ...idea,
-    votes: idea.votes || []
+    votes: userVotes[idea.id] ? [userVotes[idea.id]] : [],
   }));
 
   const hasMore = formattedIdeas.length > FEED_PAGE_SIZE;
   const items = hasMore ? formattedIdeas.slice(0, FEED_PAGE_SIZE) : formattedIdeas;
   const nextCursor = hasMore ? items[items.length - 1]?.id : undefined;
 
-  return { items, nextCursor, hasMore };
+  return { items: items as unknown as IdeaFeedItem[], nextCursor, hasMore };
 }
 
 import { getCurrentUser, getCachedUserPermissions } from "@/lib/clerk";

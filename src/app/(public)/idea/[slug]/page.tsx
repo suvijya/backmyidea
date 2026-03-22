@@ -27,7 +27,8 @@ import { DonationSection } from "@/components/payments/donation-section";
 import { ExpressInterestButton } from "@/components/investor/express-interest-button";
 import { EmployeeReviewBanner } from "@/components/ideas/employee-review-banner";
 import { getPublicDonors } from "@/actions/payment-actions";
-import { getCurrentUser, canUserViewGlobalScores } from "@/lib/clerk";
+import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser, canUserViewGlobalScores, getCachedUserPermissions } from "@/lib/clerk";
 import {
   CATEGORY_LABELS,
   CATEGORY_EMOJIS,
@@ -72,7 +73,13 @@ export async function generateMetadata({
 }
 
 async function IdeaDetailLoader({ slug }: { slug: string }) {
-  const result = await getIdeaBySlug(slug);
+  const { userId: clerkId } = await auth();
+
+  // Fetch idea and cached user permissions concurrently
+  const [result, user] = await Promise.all([
+    getIdeaBySlug(slug),
+    clerkId ? getCachedUserPermissions(clerkId) : Promise.resolve(null)
+  ]);
 
   if (!result.success) {
     notFound();
@@ -80,8 +87,6 @@ async function IdeaDetailLoader({ slug }: { slug: string }) {
 
   const idea = result.data;
   
-  const user = await getCurrentUser();
-
   // Find current user's vote
   let userVote: VoteType | null = null;
   let currentUserId: string | null = user?.id || null;
@@ -93,37 +98,36 @@ async function IdeaDetailLoader({ slug }: { slug: string }) {
   }
 
   const isOwnIdea = currentUserId === idea.founderId;
-  const canViewGlobalScores = await canUserViewGlobalScores();
+  const canViewGlobalScores = user ? (user.isAdmin || user.isEmployee || !!user.investorProfile) : false;
   const canViewScore = canViewGlobalScores || isOwnIdea;
   const showScore = idea.totalVotes >= MIN_VOTES_FOR_SCORE && canViewScore;
 
-  // Check if current user is an approved investor (for express interest button)
+  // Fetch dependent data concurrently: Investor interest and Public donors
   let isInvestor = false;
   let hasExpressedInterest = false;
-  if (currentUserId && !isOwnIdea) {
-    const investorProfile = await prisma.investorProfile.findUnique({
-      where: { userId: currentUserId },
-      select: { id: true },
-    });
-    if (investorProfile) {
-      isInvestor = true;
-      const existingInterest = await prisma.investorInterest.findUnique({
-        where: {
-          investorId_ideaId: {
-            investorId: investorProfile.id,
-            ideaId: idea.id,
-          },
-        },
-        select: { id: true },
-      });
-      hasExpressedInterest = !!existingInterest;
-    }
+  
+  if (user?.investorProfile) {
+    isInvestor = true;
   }
 
-  // Fetch public donors for the supporter wall (only if donations enabled)
-  const publicDonors = idea.donationsEnabled
-    ? await getPublicDonors(idea.id, 10)
-    : [];
+  const [investorInterest, publicDonors] = await Promise.all([
+    (isInvestor && !isOwnIdea && user?.investorProfile)
+      ? prisma.investorInterest.findUnique({
+          where: {
+            investorId_ideaId: {
+              investorId: user.investorProfile.id,
+              ideaId: idea.id,
+            },
+          },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
+    (idea.donationsEnabled)
+      ? getPublicDonors(idea.id, 10)
+      : Promise.resolve([]),
+  ]);
+
+  hasExpressedInterest = !!investorInterest;
 
   return (
     <>
