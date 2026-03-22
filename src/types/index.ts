@@ -215,6 +215,10 @@ export type ScoreInput = {
   totalViews: number;
   totalShares: number;
   qualityScore: number | null;
+  founderComments?: number;
+  hasImageOrLink?: boolean;
+  profileCompleteness?: number;
+  isSuspicious?: boolean;
 };
 
 // ═══════════════════════════════

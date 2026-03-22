@@ -881,7 +881,18 @@ UserRole, UserLevel, Category (16 sectors), IdeaStage, IdeaStatus, TargetAudienc
   - Added specific static and dynamic `metadata` exports to key public pages: `/explore`, `/leaderboard`, `/search`, and `/profile/[username]`.
   - Added base metadata to authenticated routes like `/dashboard` and `/onboarding` for better tab labeling.
   - Verified robust global metadata in `src/app/layout.tsx` (OpenGraph, Twitter cards, keywords, templates) and dynamic metadata for `/idea/[slug]`.
-- **Validation Card Image Generation Fix:** Resolved Next.js `ImageResponse` 500 errors by explicitly adding `display: "flex"` to all nested elements inside Satori's layout, allowing users to successfully generate and download Shareable Validation Cards.
+- **Advanced Validation Scoring Logic:** Rewrote `calculateValidationScore` to accurately match the specified algorithmic weights:
+  - **Vote Composition (40%)**: Adjusted for `USE_THIS` ratio and severely penalized ideas with >80% `NOT_FOR_ME` votes.
+  - **Engagement Depth (25%)**: Factored in comment-to-view ratio, share-to-view ratio, and awarded bonus points for founder replies.
+  - **Reach & Traction (20%)**: Factored in unique viewers (log scale) and voter-to-viewer conversion ratio.
+  - **Idea Quality (15%)**: Factored in AI readability check, presence of external links/images, and founder profile completeness.
+- **Anti-Gaming Measures (Voting & Sharing):**
+  - Defended the share count by tracking unique shares via Redis `set(cacheKey)` with a 30-day expiry. Users can no longer spam the share button to artificially boost their engagement score.
+  - Placed IP-tracking on the `Vote` model (using a SHA256 hashed `x-forwarded-for` header).
+  - Built an automatic flagging system that creates a system Admin `Report` if >20 votes arrive from the same IP hash within 1 hour.
+  - Built a fast-vote bombing detector that raises a `Report` if 50+ "Use This" votes arrive in 10 minutes without a single comment.
+  - Applied a dynamic vote weighting system: Brand new accounts receive fractional vote weight, while verified active accounts (5+ past votes) receive boosted weight (1.2x).
+  - Integrated a 50% raw score penalty in the score recalculator if an idea has an active "Suspicious" report on its record.
 - **Comment Moderation Expansion:**
   - Implemented the ability for users to Edit their own comments within a 15-minute time limit window.
   - Implemented the ability for users to Delete their own comments anytime.

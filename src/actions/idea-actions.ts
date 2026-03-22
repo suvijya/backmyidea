@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { ideaLimiter, shareLimiter } from "@/lib/redis";
+import { ideaLimiter, shareLimiter, redis } from "@/lib/redis";
 import { createIdeaSchema, updateIdeaSchema } from "@/lib/validations";
 import { generateSlug } from "@/lib/utils";
 import { checkIdeaQuality, checkDuplicateIdea } from "@/lib/gemini";
@@ -594,6 +594,8 @@ export async function recalculateScore(ideaId: string): Promise<void> {
   const idea = await prisma.idea.findUnique({
     where: { id: ideaId },
     select: {
+      id: true,
+      founderId: true,
       totalVotes: true,
       useThisCount: true,
       maybeCount: true,
@@ -602,12 +604,48 @@ export async function recalculateScore(ideaId: string): Promise<void> {
       totalViews: true,
       totalShares: true,
       qualityScore: true,
+      imageUrl: true,
+      linkUrl: true,
+      founder: {
+        select: {
+          bio: true,
+          city: true,
+          linkedinUrl: true,
+        },
+      },
+      _count: {
+        select: {
+          reports: {
+            where: {
+              reason: "OTHER",
+              details: { startsWith: "Suspicious" },
+            },
+          },
+        },
+      },
     },
   });
 
   if (!idea) return;
 
-  const { totalScore, tier } = calculateValidationScore(idea);
+  const founderComments = await prisma.comment.count({
+    where: { ideaId, userId: idea.founderId },
+  });
+
+  let profileCompleteness = 0.5; // base
+  if (idea.founder.bio) profileCompleteness += 0.2;
+  if (idea.founder.city) profileCompleteness += 0.1;
+  if (idea.founder.linkedinUrl) profileCompleteness += 0.2;
+
+  const input = {
+    ...idea,
+    founderComments,
+    hasImageOrLink: !!(idea.imageUrl || idea.linkUrl),
+    profileCompleteness,
+    isSuspicious: idea._count.reports > 0,
+  };
+
+  const { totalScore, tier } = calculateValidationScore(input);
 
   await prisma.idea.update({
     where: { id: ideaId },
@@ -638,6 +676,17 @@ export async function incrementShareCount(
     return { success: false, error: "User not found" };
   }
 
+  const cacheKey = `shared:${user.id}:${ideaId}`;
+  
+  try {
+    const alreadyShared = await redis.get(cacheKey);
+    if (alreadyShared) {
+      return { success: true, data: undefined };
+    }
+  } catch {
+    // ignore redis error on fetch
+  }
+
   // Rate limit
   const { success: withinLimit } = await shareLimiter.limit(user.id);
   if (!withinLimit) {
@@ -650,6 +699,16 @@ export async function incrementShareCount(
       data: { totalShares: { increment: 1 } },
     });
     trackDailyStat(ideaId, "shares").catch(console.error);
+    
+    try {
+      await redis.set(cacheKey, "1", { ex: 60 * 60 * 24 * 30 }); // Expiry 30 days
+    } catch {
+      // ignore redis error
+    }
+    
+    // Recalculate score after share to boost engagement score
+    recalculateScore(ideaId).catch(console.error);
+    
     return { success: true, data: undefined };
   } catch {
     return { success: false, error: "Failed to update share count" };

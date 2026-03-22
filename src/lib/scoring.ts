@@ -24,6 +24,10 @@ export function calculateValidationScore(input: ScoreInput): ScoreBreakdown {
     totalViews,
     totalShares,
     qualityScore: aiQualityScore,
+    founderComments = 0,
+    hasImageOrLink = false,
+    profileCompleteness = 0.5,
+    isSuspicious = false,
   } = input;
 
   // Below threshold — return early
@@ -46,33 +50,64 @@ export function calculateValidationScore(input: ScoreInput): ScoreBreakdown {
   const maxWeightedVotes = totalVotes * 1.0;
   // Normalize to 0-100 (shift the range since negatives are possible)
   const minWeightedVotes = totalVotes * -0.5;
-  const voteScore = Math.round(
+  
+  let voteScore = Math.round(
     ((weightedVotes - minWeightedVotes) / (maxWeightedVotes - minWeightedVotes)) * 100
   );
 
+  // Penalize heavily if >80% are "Not For Me"
+  if (notForMeCount / totalVotes > 0.8) {
+    voteScore = Math.max(0, voteScore - 30);
+  }
+
   // ── Engagement Score (25%) ────────────────────
-  // Comment-to-vote ratio. 0.5+ ratio = perfect score. Shares boost.
-  const commentRatio = totalVotes > 0 ? totalComments / totalVotes : 0;
-  const commentScore = Math.min(commentRatio / 0.5, 1) * 80;
-  const shareBonus = Math.min(totalShares / 20, 1) * 20;
-  const engagementScore = Math.round(commentScore + shareBonus);
+  // Comment-to-view ratio. 0.05 ratio = perfect base score (5%).
+  const commentRatio = totalViews > 0 ? totalComments / totalViews : 0;
+  let commentScore = Math.min(commentRatio / 0.05, 1) * 60;
+  
+  // Share-to-view ratio. 0.02 ratio = perfect share score (2%).
+  const shareRatio = totalViews > 0 ? totalShares / totalViews : 0;
+  const shareScore = Math.min(shareRatio / 0.02, 1) * 30;
+
+  // Founder reply bonus (up to 10 points for replying to feedback)
+  const founderReplyBonus = Math.min(founderComments / 5, 1) * 10;
+  
+  const engagementScore = Math.round(commentScore + shareScore + founderReplyBonus);
 
   // ── Reach Score (20%) ─────────────────────────
-  // Logarithmic scale. 500 votes = ~100, 100 views = modest boost.
-  const voteReach = Math.min(Math.log10(Math.max(totalVotes, 1)) / Math.log10(500), 1) * 70;
-  const viewReach = Math.min(Math.log10(Math.max(totalViews, 1)) / Math.log10(10000), 1) * 30;
-  const reachScore = Math.round(voteReach + viewReach);
+  // Total unique viewers log scale
+  const viewReach = Math.min(Math.log10(Math.max(totalViews, 1)) / Math.log10(10000), 1) * 60;
+  
+  // Voter-to-viewer ratio (high = good). 0.2 ratio = perfect conversion (20%).
+  const conversionRatio = totalViews > 0 ? totalVotes / totalViews : 0;
+  const conversionScore = Math.min(conversionRatio / 0.2, 1) * 40;
+  
+  const reachScore = Math.round(viewReach + conversionScore);
 
-  // ── Quality Score (15%) ───────────────────────
-  // Directly from AI quality check. Default to 50 if AI unavailable.
-  const qualityScore = aiQualityScore ?? 50;
+  // ── Idea Quality (15%) ───────────────────────
+  // Clarity score from AI
+  const baseAiScore = aiQualityScore ?? 50;
+  
+  // Has image/link (bonus)
+  const imageLinkBonus = hasImageOrLink ? 10 : 0;
+  
+  // Profile completeness (multiplier 0.5 to 1.0 applied to remaining points)
+  const profileBonus = profileCompleteness * 15;
+  
+  // Normalize quality score back to 100 scale
+  const qualityScore = Math.round(Math.min((baseAiScore * 0.75) + imageLinkBonus + profileBonus, 100));
 
   // ── Final Score ───────────────────────────────
-  const rawScore =
+  let rawScore =
     voteScore * SCORE_WEIGHTS.vote +
     engagementScore * SCORE_WEIGHTS.engagement +
     reachScore * SCORE_WEIGHTS.reach +
     qualityScore * SCORE_WEIGHTS.quality;
+
+  // Apply penalty for suspicious gaming
+  if (isSuspicious) {
+    rawScore = rawScore * 0.5; // Halve the score if flagged
+  }
 
   const totalScore = Math.round(Math.max(0, Math.min(100, rawScore)));
   const tier = getScoreTier(totalScore);

@@ -14,6 +14,9 @@ import type { ActionResult } from "@/types";
 import type { Vote, VoteType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
+import { headers } from "next/headers";
+import { createHash } from "crypto";
+
 // ═══════════════════════════════
 // CAST / CHANGE VOTE
 // ═══════════════════════════════
@@ -65,9 +68,25 @@ export async function castVote(
     return { success: false, error: "Too many votes. Try again later." };
   }
 
-  // Calculate vote weight (new accounts get reduced weight)
+  // Anti-Gaming: Calculate vote weight
+  const userVoteCount = await prisma.vote.count({ where: { userId: user.id } });
   const accountAge = Date.now() - new Date(user.createdAt).getTime();
-  const weight = accountAge < NEW_ACCOUNT_THRESHOLD_MS ? NEW_ACCOUNT_VOTE_WEIGHT : 1.0;
+  let weight = 1.0;
+  
+  // Penalize brand new accounts
+  if (accountAge < NEW_ACCOUNT_THRESHOLD_MS) {
+    weight = NEW_ACCOUNT_VOTE_WEIGHT;
+  }
+  
+  // Reward active voters (voted on 5+ ideas)
+  if (userVoteCount >= 5) {
+    weight = Math.max(weight, 1.2);
+  }
+
+  // Capture IP Hash
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for") || "unknown";
+  const ipHash = createHash("sha256").update(ip).digest("hex");
 
   // Check for existing vote
   const existingVote = await prisma.vote.findUnique({
@@ -86,7 +105,7 @@ export async function castVote(
     const [vote] = await prisma.$transaction([
       prisma.vote.update({
         where: { id: existingVote.id },
-        data: { type: type as VoteType, reason: reason || null, weight },
+        data: { type: type as VoteType, reason: reason || null, weight, ipHash },
       }),
       prisma.idea.update({
         where: { id: ideaId },
@@ -119,6 +138,7 @@ export async function castVote(
         type: type as VoteType,
         reason: reason || null,
         weight,
+        ipHash,
       },
     }),
     prisma.idea.update({
@@ -131,6 +151,60 @@ export async function castVote(
       },
     }),
   ]);
+
+  // Anti-Gaming Checks (Fire-and-forget)
+  Promise.resolve().then(async () => {
+    try {
+      const now = Date.now();
+      
+      // 1. IP Spam Check
+      const oneHourAgo = new Date(now - 60 * 60 * 1000);
+      const recentIpVotes = await prisma.vote.count({
+        where: { ideaId, ipHash, createdAt: { gte: oneHourAgo } }
+      });
+
+      if (recentIpVotes > 20) {
+        // Create an alert report
+        await prisma.report.create({
+          data: {
+            reason: "OTHER",
+            details: "Suspicious voting pattern: >20 votes from same IP in 1 hour",
+            entityType: "idea",
+            entityId: ideaId,
+            userId: user.id, // Logged against the latest voter triggering the threshold
+          }
+        });
+      }
+
+      // 2. Fast Vote Bombing Check (50 USE_THIS votes in 10 mins with no comments)
+      if (type === "USE_THIS") {
+        const tenMinsAgo = new Date(now - 10 * 60 * 1000);
+        const recentVotes = await prisma.vote.count({
+          where: { ideaId, type: "USE_THIS", createdAt: { gte: tenMinsAgo } }
+        });
+
+        if (recentVotes >= 50) {
+          const recentComments = await prisma.comment.count({
+            where: { ideaId, createdAt: { gte: tenMinsAgo } }
+          });
+          
+          if (recentComments === 0) {
+            await prisma.report.create({
+              data: {
+                reason: "OTHER",
+                details: "Suspicious voting pattern: 50+ USE_THIS votes in 10 mins without comments",
+                entityType: "idea",
+                entityId: ideaId,
+                userId: user.id,
+              }
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Anti-gaming check failed", err);
+    }
+  });
 
   // Fire-and-forget: scoring, gamification, notifications, daily stats
   recalculateScore(ideaId).catch(console.error);
