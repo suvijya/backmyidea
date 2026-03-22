@@ -60,10 +60,12 @@ export function ShareModal({ ideaId, title, slug, children }: ShareModalProps) {
     }
   };
 
+  const [timestamp, setTimestamp] = useState(Date.now());
+
   const handleDownload = async () => {
     try {
       toast.info("Generating card...");
-      const res = await fetch(`/api/validation-card/${ideaId}`);
+      const res = await fetch(`/api/validation-card/${ideaId}?t=${timestamp}`);
       if (!res.ok) throw new Error("Failed to fetch card");
       const blob = await res.blob();
       const blobUrl = window.URL.createObjectURL(blob);
@@ -80,6 +82,11 @@ export function ShareModal({ ideaId, title, slug, children }: ShareModalProps) {
       console.error(e);
       toast.error("Failed to download card");
     }
+  };
+
+  const handleRegenerate = () => {
+    setTimestamp(Date.now());
+    toast.success("Preview updated with current data!");
   };
 
   const handleInstagramShare = async (e: React.MouseEvent) => {
@@ -125,7 +132,7 @@ export function ShareModal({ ideaId, title, slug, children }: ShareModalProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="font-display text-[20px] text-deep-ink">
             Share this idea
@@ -137,7 +144,7 @@ export function ShareModal({ ideaId, title, slug, children }: ShareModalProps) {
           <Input
             readOnly
             value={url}
-            className="text-[13px] text-text-secondary"
+            className="text-[13px] text-text-secondary w-full"
           />
           <Button
             onClick={handleCopy}
@@ -159,23 +166,30 @@ export function ShareModal({ ideaId, title, slug, children }: ShareModalProps) {
         </div>
 
         {/* Card Preview */}
-        <div className="mt-4 overflow-hidden rounded-xl border border-warm-border bg-warm-subtle">
+        <div className="mt-4 flex justify-center overflow-hidden rounded-xl border border-warm-border bg-warm-subtle">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
-            src={`/api/validation-card/${ideaId}`} 
+            src={`/api/validation-card/${ideaId}?t=${timestamp}`} 
             alt="Validation Card Preview" 
-            className="w-full h-auto object-cover"
+            className="w-full max-h-[350px] object-contain bg-white"
           />
         </div>
 
-        {/* Download Button */}
-        <div className="mt-3">
+        {/* Buttons */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Button
+            onClick={handleRegenerate}
+            variant="outline"
+            className="w-full gap-2 border-warm-border text-text-secondary hover:bg-warm-hover"
+          >
+            Refresh Preview
+          </Button>
           <Button
             onClick={handleDownload}
             className="w-full gap-2 bg-saffron text-white hover:bg-saffron-dark"
           >
             <Download className="h-4 w-4" />
-            Download Validation Card
+            Download Card
           </Button>
         </div>
 
