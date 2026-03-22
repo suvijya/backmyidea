@@ -1,6 +1,16 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { Metadata } from "next";
+
+export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
+  const { username } = await params;
+  return {
+    title: `@${username} | Piqd Profile`,
+    description: `Check out ${username}'s profile on Piqd. See their startup ideas and validation activity.`,
+  };
+}
+
 export const dynamic = "force-dynamic";
 import { getUserProfile } from "@/actions/user-actions";
 import { getIdeasByUser } from "@/actions/idea-actions";

@@ -9,6 +9,13 @@ import { MIN_VOTES_FOR_SCORE } from "@/lib/constants";
 import { formatNumber, timeAgo } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard | Piqd",
+  description: "Manage your startup ideas, view your validation scores, and track your engagement.",
+};
+
 export const dynamic = "force-dynamic";
 
 // ─── Stats Loader ───────────────────────────────────────────────

@@ -7,6 +7,13 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { canUserViewGlobalScores } from "@/lib/clerk";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Search Ideas | Piqd",
+  description: "Search for startup ideas, founders, and concepts on Piqd. Find exactly what you're looking for.",
+};
+
 export const dynamic = "force-dynamic";
 import type { IdeaFilters as IdeaFiltersType } from "@/types";
 import type { Category, IdeaStage } from "@prisma/client";

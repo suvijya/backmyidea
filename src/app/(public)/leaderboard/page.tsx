@@ -3,6 +3,13 @@ import { LEADERBOARD_PAGE_SIZE } from "@/lib/constants";
 import { LeaderboardClient } from "@/components/leaderboard/leaderboard-client";
 import { unstable_cache } from "next/cache";
 
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Leaderboard | Piqd",
+  description: "See the top startup ideas and the most active community members on Piqd. Check out the highest-scored projects and top validators.",
+};
+
 // Cache leaderboard results for 5 minutes (300 seconds)
 const getCachedLeaderboard = unstable_cache(
   async () => {

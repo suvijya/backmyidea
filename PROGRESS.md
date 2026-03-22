@@ -874,7 +874,13 @@ UserRole, UserLevel, Category (16 sectors), IdeaStage, IdeaStatus, TargetAudienc
 - All admin routes use proper 403 status codes
 - All atomic operations use `$transaction`
 - Mobile responsiveness fixes applied
-- TypeScript strict mode: **zero errors** (`npx tsc --noEmit` clean)
+- Database Optimization: Expanded the `getCachedUserPermissions` utility in `src/lib/clerk.ts` to cache key user data (`id`, `username`, `isAdmin`, `isEmployee`, `onboarded`) via Next.js `unstable_cache`. This replaced raw `prisma.user.findUnique` lookups across major server actions (`vote-actions`, `comment-actions`, `idea-actions`, `user-actions`), eliminating redundant N+1 queries.
+- API Route Security: Direct browser navigation to API routes was successfully blocked in `src/middleware.ts` by inspecting the `sec-fetch-dest` and `accept` headers. Standard frontend `fetch` requests still function perfectly, preventing unwanted public visibility of endpoints.
+- SEO Audit & Fixes: Installed the `seo-audit` skill and conducted a comprehensive codebase review.
+  - Verified presence and configuration of `sitemap.ts` and `robots.ts`.
+  - Added specific static and dynamic `metadata` exports to key public pages: `/explore`, `/leaderboard`, `/search`, and `/profile/[username]`.
+  - Added base metadata to authenticated routes like `/dashboard` and `/onboarding` for better tab labeling.
+  - Verified robust global metadata in `src/app/layout.tsx` (OpenGraph, Twitter cards, keywords, templates) and dynamic metadata for `/idea/[slug]`.
 
 ### Rate Limiters Active
 | Limiter | Limit | Prefix |

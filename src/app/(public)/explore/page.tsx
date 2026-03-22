@@ -12,6 +12,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { redis } from "@/lib/redis";
 import { unstable_cache } from "next/cache";
 
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Explore Startup Ideas | Piqd",
+  description: "Browse, filter, and discover the latest startup ideas. Find out what's trending, vote on concepts, and see what people really want.",
+};
+
 export const dynamic = "force-dynamic";
 
 interface ExplorePageProps {
