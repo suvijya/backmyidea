@@ -445,7 +445,7 @@ export async function getIdeasFeed(
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
 
-  const formattedIdeas = ideas.map(idea => ({
+  const formattedIdeas = ideas.map((idea: any) => ({
     ...idea,
     votes: idea.votes || []
   }));
@@ -566,7 +566,7 @@ export async function getExploreFeed(
       select: { ideaId: true, type: true, userId: true },
     });
     
-    votes.forEach((v) => {
+    votes.forEach((v: any) => {
       userVotes[v.ideaId] = { type: v.type, userId: v.userId };
     });
   }
@@ -711,7 +711,7 @@ export async function getIdeasByUser(
     orderBy: { createdAt: "desc" },
   });
 
-  return ideas.map(idea => ({
+  return ideas.map((idea: any) => ({
     ...idea,
     votes: idea.votes || []
   }));

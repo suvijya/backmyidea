@@ -257,6 +257,115 @@ export async function toggleHideComment(
 }
 
 // ═══════════════════════════════
+// DELETE COMMENT (admin/employee or author)
+// ═══════════════════════════════
+
+export async function deleteComment(commentId: string): Promise<ActionResult> {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const user = await getCachedUserPermissions(clerkId);
+  if (!user) {
+    return { success: false, error: "Not authorized" };
+  }
+
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
+    include: { 
+      idea: { select: { slug: true, id: true } },
+      _count: { select: { replies: true } } 
+    },
+  });
+
+  if (!comment) {
+    return { success: false, error: "Comment not found" };
+  }
+
+  const isAuthor = comment.userId === user.id;
+  if (!isAuthor && !user.isAdmin && !user.isEmployee) {
+    return { success: false, error: "Not authorized" };
+  }
+
+  const totalToDelete = 1 + comment._count.replies;
+
+  // Delete comment and its replies, and update the idea count
+  await prisma.$transaction([
+    prisma.comment.deleteMany({
+      where: { parentId: commentId },
+    }),
+    prisma.comment.delete({
+      where: { id: commentId },
+    }),
+    prisma.idea.update({
+      where: { id: comment.idea.id },
+      data: { totalComments: { decrement: totalToDelete } },
+    }),
+  ]);
+
+  revalidatePath(`/idea/${comment.idea.slug}`);
+  return { success: true, data: undefined };
+}
+
+// ═══════════════════════════════
+// EDIT COMMENT
+// ═══════════════════════════════
+
+export async function editComment(
+  commentId: string,
+  newContent: string
+): Promise<ActionResult> {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const user = await getCachedUserPermissions(clerkId);
+  if (!user) {
+    return { success: false, error: "Not authorized" };
+  }
+
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
+    include: { idea: { select: { slug: true } } },
+  });
+
+  if (!comment) {
+    return { success: false, error: "Comment not found" };
+  }
+
+  if (comment.userId !== user.id) {
+    return { success: false, error: "Not authorized to edit this comment" };
+  }
+
+  // 15-minute limit (15 * 60 * 1000 = 900,000 ms)
+  const FIFTEEN_MINUTES = 15 * 60 * 1000;
+  const now = new Date().getTime();
+  const createdAt = new Date(comment.createdAt).getTime();
+
+  if (now - createdAt > FIFTEEN_MINUTES) {
+    return { success: false, error: "Comments can only be edited within 15 minutes of posting" };
+  }
+
+  const trimmedContent = newContent.trim();
+  if (!trimmedContent || trimmedContent.length < 2) {
+    return { success: false, error: "Comment is too short" };
+  }
+  if (trimmedContent.length > 1000) {
+    return { success: false, error: "Comment is too long" };
+  }
+
+  await prisma.comment.update({
+    where: { id: commentId },
+    data: { content: trimmedContent },
+  });
+
+  revalidatePath(`/idea/${comment.idea.slug}`);
+  return { success: true, data: undefined };
+}
+
+// ═══════════════════════════════
 // UPVOTE COMMENT
 // ═══════════════════════════════
 

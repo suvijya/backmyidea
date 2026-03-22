@@ -164,7 +164,7 @@ export async function checkAndAwardBadges(userId: string): Promise<void> {
   });
   if (!user) return;
 
-  const earnedSlugs = new Set(user.badges.map((b) => b.badge.slug));
+  const earnedSlugs = new Set(user.badges.map((b: any) => b.badge.slug));
 
   const badgesToAward: string[] = [];
 

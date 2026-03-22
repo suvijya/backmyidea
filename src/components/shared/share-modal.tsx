@@ -9,6 +9,8 @@ import {
   Linkedin,
   MessageCircle,
   Share2,
+  Instagram,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +60,34 @@ export function ShareModal({ ideaId, title, slug, children }: ShareModalProps) {
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      toast.info("Generating card...");
+      const res = await fetch(`/api/validation-card/${ideaId}`);
+      if (!res.ok) throw new Error("Failed to fetch card");
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `piqd-${slug}-card.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success("Card downloaded successfully!");
+      incrementShareCount(ideaId).catch(console.error);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to download card");
+    }
+  };
+
+  const handleInstagramShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await handleDownload();
+    toast("Card downloaded! You can now share it to your Instagram Story.");
+  };
+
   const shareLinks = [
     {
       name: "Twitter / X",
@@ -74,6 +104,12 @@ export function ShareModal({ ideaId, title, slug, children }: ShareModalProps) {
       icon: MessageCircle,
       url: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${url}`)}`,
     },
+    {
+      name: "Instagram",
+      icon: Instagram,
+      url: "#",
+      onClick: handleInstagramShare,
+    }
   ];
 
   return (
@@ -122,21 +158,45 @@ export function ShareModal({ ideaId, title, slug, children }: ShareModalProps) {
           </Button>
         </div>
 
-        {/* Social share buttons */}
-        <div className="mt-4 grid grid-cols-3 gap-2">
+        {/* Card Preview */}
+        <div className="mt-4 overflow-hidden rounded-xl border border-warm-border bg-warm-subtle">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={`/api/validation-card/${ideaId}`} 
+            alt="Validation Card Preview" 
+            className="w-full h-auto object-cover"
+          />
+        </div>
+
+        {/* Download Button */}
+        <div className="mt-3">
+          <Button
+            onClick={handleDownload}
+            className="w-full gap-2 bg-saffron text-white hover:bg-saffron-dark"
+          >
+            <Download className="h-4 w-4" />
+            Download Validation Card
+          </Button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-4 gap-2">
           {shareLinks.map((link) => (
             <a
               key={link.name}
               href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => {
-                incrementShareCount(ideaId).catch(console.error);
+              target={link.url !== "#" ? "_blank" : undefined}
+              rel={link.url !== "#" ? "noopener noreferrer" : undefined}
+              onClick={(e) => {
+                if (link.onClick) {
+                  link.onClick(e);
+                } else {
+                  incrementShareCount(ideaId).catch(console.error);
+                }
               }}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-warm-border p-3 text-text-secondary transition-colors hover:border-saffron hover:bg-saffron-light hover:text-saffron"
+              className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-warm-border p-2 text-text-secondary transition-colors hover:border-saffron hover:bg-saffron-light hover:text-saffron"
             >
               <link.icon className="h-5 w-5" />
-              <span className="text-[11px] font-medium">{link.name}</span>
+              <span className="text-[10px] font-medium text-center leading-tight">{link.name}</span>
             </a>
           ))}
         </div>

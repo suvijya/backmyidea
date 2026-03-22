@@ -7,7 +7,11 @@ import {
   Vote,
   MessageSquare,
   Eye,
+  Share2,
+  CalendarDays,
 } from "lucide-react";
+import { differenceInDays } from "date-fns";
+import { Category, IdeaStage } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +23,9 @@ import { getDonationStats } from "@/actions/payment-actions";
 import { ScoreBadge } from "@/components/ideas/score-ring";
 import { DonationsToggle } from "@/components/payments/donations-toggle";
 import { InvestorInterestList } from "@/components/investor/interest-list";
+import { IdeaAnalytics } from "@/components/dashboard/idea-analytics";
+import { CommentList } from "@/components/comments/comment-list";
+import { ShareModal } from "@/components/shared/share-modal";
 import {
   CATEGORY_LABELS,
   CATEGORY_EMOJIS,
@@ -46,6 +53,7 @@ export default async function IdeaDetailDashboardPage({
 
   // Only the founder (or admin) should see this page — getIdeaById already checks
   const showScore = idea.totalVotes >= MIN_VOTES_FOR_SCORE;
+  const daysSincePosted = Math.max(0, differenceInDays(new Date(), idea.createdAt));
 
   // Fetch donation stats if donations are enabled
   const donationStatsResult = idea.donationsEnabled
@@ -97,15 +105,39 @@ export default async function IdeaDetailDashboardPage({
       },
     },
   });
+  
+  // Fetch Analytics data
+  const dailyStats = await prisma.ideaDailyStat.findMany({
+    where: { ideaId: idea.id },
+    orderBy: { date: "asc" },
+  });
+  
+  const rawVotes = await prisma.vote.findMany({
+    where: { ideaId: idea.id },
+    select: {
+      user: {
+        select: {
+          city: true,
+          college: true,
+          role: true,
+        }
+      }
+    }
+  });
+  
+  const demographics = rawVotes.map((v: any) => ({
+    city: v.user.city,
+    isStudent: Boolean(v.user.college && v.user.college.length > 0) || v.user.role === 'EXPLORER',
+  }));
 
   // Serialize dates to strings for the client component
-  const serializedInterests = investorInterests.map((interest) => ({
+  const serializedInterests = investorInterests.map((interest: any) => ({
     ...interest,
     createdAt: interest.createdAt.toISOString(),
   }));
 
   return (
-    <div>
+    <div className="pb-20">
       {/* Back to ideas list */}
       <Link
         href="/dashboard/ideas"
@@ -120,11 +152,11 @@ export default async function IdeaDetailDashboardPage({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="rounded-full border border-warm-border bg-warm-subtle px-2.5 py-1 text-[12px] font-medium text-text-secondary">
-              {CATEGORY_EMOJIS[idea.category]}{" "}
-              {CATEGORY_LABELS[idea.category]}
+              {CATEGORY_EMOJIS[idea.category as Category]}{" "}
+              {CATEGORY_LABELS[idea.category as Category]}
             </span>
             <span className="rounded-full border border-warm-border bg-warm-subtle px-2.5 py-1 text-[12px] font-medium text-text-secondary">
-              {STAGE_LABELS[idea.stage]}
+              {STAGE_LABELS[idea.stage as IdeaStage]}
             </span>
           </div>
           <h1 className="mt-3 font-display text-[28px] leading-tight text-deep-ink">
@@ -140,6 +172,16 @@ export default async function IdeaDetailDashboardPage({
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {showScore && <ScoreBadge score={idea.validationScore} />}
+          <ShareModal ideaId={idea.id} title={idea.title} slug={idea.slug}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-warm-border text-text-secondary hover:bg-warm-hover"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Share Card
+            </Button>
+          </ShareModal>
           <Link href={`/idea/${idea.slug}`}>
             <Button
               variant="outline"
@@ -147,7 +189,7 @@ export default async function IdeaDetailDashboardPage({
               className="gap-1.5 border-warm-border text-text-secondary hover:bg-warm-hover"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              View
+              View Public
             </Button>
           </Link>
           <Link href={`/dashboard/ideas/${idea.id}/edit`}>
@@ -163,21 +205,16 @@ export default async function IdeaDetailDashboardPage({
       </div>
 
       {/* Stats row */}
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          label="Votes"
-          value={formatNumber(idea.totalVotes)}
-          icon={<Vote className="h-4 w-4 text-saffron" />}
-        />
-        <StatCard
-          label="Comments"
-          value={formatNumber(idea.totalComments)}
-          icon={<MessageSquare className="h-4 w-4 text-saffron" />}
-        />
+      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard
           label="Views"
           value={formatNumber(idea.totalViews)}
           icon={<Eye className="h-4 w-4 text-saffron" />}
+        />
+        <StatCard
+          label="Votes"
+          value={formatNumber(idea.totalVotes)}
+          icon={<Vote className="h-4 w-4 text-saffron" />}
         />
         <StatCard
           label="Score"
@@ -187,6 +224,32 @@ export default async function IdeaDetailDashboardPage({
               S
             </div>
           }
+        />
+        <StatCard
+          label="Comments"
+          value={formatNumber(idea.totalComments)}
+          icon={<MessageSquare className="h-4 w-4 text-saffron" />}
+        />
+        <StatCard
+          label="Shares"
+          value={formatNumber(idea.totalShares)}
+          icon={<Share2 className="h-4 w-4 text-saffron" />}
+        />
+        <StatCard
+          label="Days Live"
+          value={`${daysSincePosted}`}
+          icon={<CalendarDays className="h-4 w-4 text-saffron" />}
+        />
+      </div>
+      
+      {/* Analytics Section */}
+      <div className="mt-8">
+        <IdeaAnalytics 
+          useThisCount={idea.useThisCount}
+          maybeCount={idea.maybeCount}
+          notForMeCount={idea.notForMeCount}
+          dailyStats={dailyStats}
+          demographics={demographics}
         />
       </div>
 
@@ -237,6 +300,23 @@ export default async function IdeaDetailDashboardPage({
           </div>
         </div>
       )}
+
+      {/* Public Comments */}
+      <div className="mt-12 rounded-xl border border-warm-border bg-white p-5 lg:p-8">
+        <h2 className="mb-4 text-[18px] font-bold text-deep-ink">
+          Public Comments
+        </h2>
+        <p className="mb-6 text-[14px] text-text-secondary">
+          Reply to community feedback, pin helpful comments, and report spam.
+        </p>
+        <CommentList 
+          ideaId={idea.id} 
+          ideaFounderId={idea.founderId} 
+          currentUserId={user.id}
+          totalComments={idea.totalComments} 
+          isAdminOrEmployee={user.isAdmin || user.isEmployee}
+        />
+      </div>
 
       {/* Donations Section */}
       {idea.status === "ACTIVE" && (
@@ -353,7 +433,7 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-warm-border bg-white p-4">
+    <div className="rounded-xl border border-warm-border bg-white p-4 shadow-card">
       <div className="flex items-center gap-2">
         {icon}
         <span className="text-[12px] text-text-muted">{label}</span>

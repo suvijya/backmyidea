@@ -38,7 +38,7 @@ import {
   APP_NAME,
 } from "@/lib/constants";
 import { formatDate, formatNumber } from "@/lib/utils";
-import type { VoteType, TargetAudience } from "@prisma/client";
+import type { VoteType, TargetAudience, Category, IdeaStage, ScoreTier } from "@prisma/client";
 import IdeaDetailLoading from "./loading";
 
 interface IdeaDetailPageProps {
@@ -88,7 +88,7 @@ async function IdeaDetailLoader({ slug }: { slug: string }) {
   let isEmployeeOrAdmin = user ? (user.isEmployee || user.isAdmin) : false;
   
   if (user) {
-    const vote = idea.votes.find((v) => v.userId === user.id);
+    const vote = idea.votes.find((v: any) => v.userId === user.id);
     userVote = vote?.type ?? null;
   }
 
@@ -149,10 +149,10 @@ async function IdeaDetailLoader({ slug }: { slug: string }) {
           {/* Category + Stage */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-warm-border bg-warm-subtle px-2.5 py-1 text-[12px] font-medium text-text-secondary">
-              {CATEGORY_EMOJIS[idea.category]} {CATEGORY_LABELS[idea.category]}
+              {CATEGORY_EMOJIS[idea.category as Category]} {CATEGORY_LABELS[idea.category as Category]}
             </span>
             <span className="rounded-full border border-warm-border bg-warm-subtle px-2.5 py-1 text-[12px] font-medium text-text-secondary">
-              {STAGE_LABELS[idea.stage]}
+              {STAGE_LABELS[idea.stage as IdeaStage]}
             </span>
             {idea.status === "ARCHIVED" && (
               <span className="rounded-full border border-brand-amber/30 bg-brand-amber-light px-2.5 py-1 text-[12px] font-medium text-brand-amber">
@@ -267,7 +267,7 @@ async function IdeaDetailLoader({ slug }: { slug: string }) {
           {idea.tags.length > 0 && (
             <section className="mt-5">
               <div className="flex flex-wrap gap-2">
-                {idea.tags.map((tag) => (
+                {idea.tags.map((tag: string) => (
                   <span
                     key={tag}
                     className="flex items-center gap-1 rounded-md border border-warm-border bg-warm-subtle px-2 py-0.5 text-[12px] text-text-muted"
@@ -302,7 +302,9 @@ async function IdeaDetailLoader({ slug }: { slug: string }) {
           <CommentList
             ideaId={idea.id}
             ideaFounderId={idea.founderId}
+            currentUserId={currentUserId}
             totalComments={idea._count.comments}
+            isAdminOrEmployee={isEmployeeOrAdmin}
           />
         </div>
 
@@ -321,7 +323,7 @@ async function IdeaDetailLoader({ slug }: { slug: string }) {
                         score={idea.validationScore}
                         size={120}
                         strokeWidth={10}
-                        tier={SCORE_TIER_LABELS[idea.scoreTier]}
+                        tier={SCORE_TIER_LABELS[idea.scoreTier as ScoreTier]}
                       />
                       <p className="mt-3 text-center text-[12px] leading-relaxed text-text-muted">
                         Based on {formatNumber(idea.totalVotes)} votes

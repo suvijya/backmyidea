@@ -881,6 +881,12 @@ UserRole, UserLevel, Category (16 sectors), IdeaStage, IdeaStatus, TargetAudienc
   - Added specific static and dynamic `metadata` exports to key public pages: `/explore`, `/leaderboard`, `/search`, and `/profile/[username]`.
   - Added base metadata to authenticated routes like `/dashboard` and `/onboarding` for better tab labeling.
   - Verified robust global metadata in `src/app/layout.tsx` (OpenGraph, Twitter cards, keywords, templates) and dynamic metadata for `/idea/[slug]`.
+- **Validation Card Image Generation Fix:** Resolved Next.js `ImageResponse` 500 errors by explicitly adding `display: "flex"` to all nested elements inside Satori's layout, allowing users to successfully generate and download Shareable Validation Cards.
+- **Comment Moderation Expansion:**
+  - Implemented the ability for users to Edit their own comments within a 15-minute time limit window.
+  - Implemented the ability for users to Delete their own comments anytime.
+  - Ensured idea comment counters update consistently (`decrement` based on main comment + replies) via Prisma `$transaction`.
+- Resolved global strict TypeScript implicit `any` and Prisma `$transaction` structural type mismatch errors caused by Prisma version conflicts (locked versions to `^6.4.1`).
 
 ### Rate Limiters Active
 | Limiter | Limit | Prefix |
@@ -1043,3 +1049,4 @@ Major bottlenecks were identified across all server actions where `prisma.user.f
 | `src/actions/user-actions.ts` | Rewrote `getMyUsername`, `getDashboardStats`, and `getDashboardIdeas` to use the memoized cached properties instead of hitting the database on every load. |
 | `src/app/api/me/route.ts` | Replaced unoptimized raw `prisma.user.findUnique` query with `getCachedUserPermissions`. |
 | Search & Trending APIs | Updated `/api/ideas/search/route.ts` and `/api/ideas/trending/route.ts` to use relational query `where: { user: { clerkId } }` inside the returned votes relationship instead of blocking to fetch the `currentUserId`. |
+"- Dashboard Enhancements: Added comprehensive Idea Dashboard analytics (Vote Breakdown pie chart, Voter demographics, Votes over time line chart, expanded Overview card)." 

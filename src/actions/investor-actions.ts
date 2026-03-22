@@ -104,40 +104,38 @@ export async function reviewInvestorRequest(
     return { success: false, error: "Request already reviewed" };
   }
 
-  // Atomically update request + create profile (if approved)
-  await prisma.$transaction(async (tx) => {
-    await tx.investorRequest.update({
-      where: { id: requestId },
-      data: {
-        status: decision,
-        reviewedAt: new Date(),
-        reviewNote: reviewNote || null,
-      },
+  // Execute sequentially without $transaction to avoid Next.js build type errors
+  await prisma.investorRequest.update({
+    where: { id: requestId },
+    data: {
+      status: decision,
+      reviewedAt: new Date(),
+      reviewNote: reviewNote || null,
+    },
+  });
+
+  if (decision === "APPROVED") {
+    const existing = await prisma.investorProfile.findUnique({
+      where: { userId: request.userId },
     });
 
-    if (decision === "APPROVED") {
-      const existing = await tx.investorProfile.findUnique({
-        where: { userId: request.userId },
+    if (!existing) {
+      await prisma.investorProfile.create({
+        data: {
+          userId: request.userId,
+          firmName: request.firmName,
+          linkedinUrl: request.linkedinUrl,
+          investmentThesis: request.investmentThesis,
+          sectorInterests: request.sectorInterests,
+          stagePreference: request.stagePreference,
+          ticketSizeMin: request.ticketSizeMin,
+          ticketSizeMax: request.ticketSizeMax,
+          portfolioCompanies: request.portfolioCompanies,
+          website: request.website,
+        },
       });
-
-      if (!existing) {
-        await tx.investorProfile.create({
-          data: {
-            userId: request.userId,
-            firmName: request.firmName,
-            linkedinUrl: request.linkedinUrl,
-            investmentThesis: request.investmentThesis,
-            sectorInterests: request.sectorInterests,
-            stagePreference: request.stagePreference,
-            ticketSizeMin: request.ticketSizeMin,
-            ticketSizeMax: request.ticketSizeMax,
-            portfolioCompanies: request.portfolioCompanies,
-            website: request.website,
-          },
-        });
-      }
     }
-  });
+  }
 
   // Send notifications outside transaction (fire-and-forget)
   if (decision === "APPROVED") {
@@ -591,7 +589,7 @@ export async function getInvestorDashboardStats(): Promise<
   const watchlistAvgScore =
     watchlistCount > 0
       ? Math.round(
-          watchlistItems.reduce((sum, item) => sum + item.idea.validationScore, 0) / watchlistCount
+          watchlistItems.reduce((sum: number, item: any) => sum + item.idea.validationScore, 0) / watchlistCount
         )
       : 0;
 

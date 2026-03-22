@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     select: { slug: true, updatedAt: true },
   });
 
-  const ideaUrls = ideas.map((idea) => ({
+  const ideaUrls = ideas.map((idea: any) => ({
     url: `${baseUrl}/idea/${idea.slug}`,
     lastModified: idea.updatedAt,
     changeFrequency: 'daily' as const,

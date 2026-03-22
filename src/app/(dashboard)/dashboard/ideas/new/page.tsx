@@ -145,7 +145,7 @@ export default function NewIdeaPage() {
           }
           if (hasDuplicateWarning) {
             setDuplicateWarning(
-              idea.duplicateResult!.similarIdeas.map((s) => ({
+              idea.duplicateResult!.similarIdeas.map((s: any) => ({
                 title: s.title,
                 slug: s.slug,
               }))

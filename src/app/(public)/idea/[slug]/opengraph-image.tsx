@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/prisma";
 import { SCORE_TIER_LABELS, SCORE_TIER_COLORS, APP_NAME } from "@/lib/constants";
 import { getVotePercentages } from "@/lib/utils";
+import type { ScoreTier } from "@prisma/client";
 
 export const alt = "Piqd - Idea Validation Card";
 export const size = { width: 1200, height: 630 };
@@ -54,8 +55,8 @@ export default async function OGImage({
     );
   }
 
-  const tierColor = SCORE_TIER_COLORS[idea.scoreTier];
-  const tierLabel = SCORE_TIER_LABELS[idea.scoreTier];
+  const tierColor = SCORE_TIER_COLORS[idea.scoreTier as ScoreTier];
+  const tierLabel = SCORE_TIER_LABELS[idea.scoreTier as ScoreTier];
   const percentages = getVotePercentages(
     idea.useThisCount,
     idea.maybeCount,

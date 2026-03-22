@@ -32,20 +32,24 @@ export async function toggleUserBan(
   }
 
   // Atomic: ban user + archive their ideas together
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
+  const actions = [
+    prisma.user.update({
       where: { id: userId },
       data: { isBanned: ban },
-    });
+    }),
+  ];
 
-    // If banning, also archive all their active ideas
-    if (ban) {
-      await tx.idea.updateMany({
+  // If banning, also archive all their active ideas
+  if (ban) {
+    actions.push(
+      prisma.idea.updateMany({
         where: { founderId: userId, status: "ACTIVE" },
         data: { status: "REMOVED" },
-      });
-    }
-  });
+      }) as any
+    );
+  }
+
+  await prisma.$transaction(actions);
 
   revalidatePath("/admin/users");
   revalidatePath("/admin/ideas");

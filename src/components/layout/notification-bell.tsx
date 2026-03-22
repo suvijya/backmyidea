@@ -144,7 +144,7 @@ export function NotificationBell() {
                 )}
               >
                 <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-warm-subtle">
-                  {NOTIFICATION_ICONS[notification.type]}
+                  {NOTIFICATION_ICONS[notification.type as NotificationType]}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className={cn("text-[13px] truncate", notification.isRead ? "text-deep-ink" : "text-deep-ink font-medium")}>

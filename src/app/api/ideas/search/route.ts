@@ -76,7 +76,7 @@ export async function GET(req: Request) {
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
-    const formattedIdeas = ideas.map(idea => ({
+    const formattedIdeas = ideas.map((idea: any) => ({
       ...idea,
       votes: idea.votes || []
     }));

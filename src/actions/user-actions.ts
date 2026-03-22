@@ -270,12 +270,12 @@ export async function getDashboardStats(
   });
 
   const totalIdeas = ideas.length;
-  const totalVotesReceived = ideas.reduce((sum, i) => sum + i.totalVotes, 0);
-  const totalCommentsReceived = ideas.reduce((sum, i) => sum + i.totalComments, 0);
+  const totalVotesReceived = ideas.reduce((sum: number, i: any) => sum + i.totalVotes, 0);
+  const totalCommentsReceived = ideas.reduce((sum: number, i: any) => sum + i.totalComments, 0);
   const averageScore =
     totalIdeas > 0
       ? Math.round(
-          ideas.reduce((sum, i) => sum + i.validationScore, 0) / totalIdeas
+          ideas.reduce((sum: number, i: any) => sum + i.validationScore, 0) / totalIdeas
         )
       : 0;
 

@@ -310,7 +310,7 @@ export default function AdminReportsPage() {
                             variant="outline"
                             className={cn(
                               "text-[11px] font-medium",
-                              STATUS_BADGE_STYLES[report.status]
+                              STATUS_BADGE_STYLES[report.status as ReportStatus]
                             )}
                           >
                             {report.status.replace("_", " ")}
@@ -323,7 +323,7 @@ export default function AdminReportsPage() {
                             className="border-warm-border text-[11px]"
                           >
                             <AlertTriangle className="mr-1 h-3 w-3" />
-                            {REASON_LABELS[report.reason]}
+                            {REASON_LABELS[report.reason as ReportReason]}
                           </Badge>
                           <span className="text-text-muted">
                             {report.entityType}{" "}

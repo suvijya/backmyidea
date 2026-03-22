@@ -58,7 +58,7 @@ export default async function MyVotesPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-3">
-          {votes.map((vote) => (
+          {votes.map((vote: any) => (
             <Link
               key={vote.id}
               href={`/idea/${vote.idea.slug}`}
@@ -66,11 +66,11 @@ export default async function MyVotesPage() {
             >
               {/* Vote type badge */}
               <div
-                className={`flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium ${VOTE_COLORS[vote.type]}`}
+                className={`flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium ${VOTE_COLORS[vote.type as VoteType]}`}
               >
-                <span>{VOTE_TYPE_EMOJIS[vote.type]}</span>
+                <span>{VOTE_TYPE_EMOJIS[vote.type as VoteType]}</span>
                 <span className="hidden sm:inline">
-                  {VOTE_TYPE_LABELS[vote.type]}
+                  {VOTE_TYPE_LABELS[vote.type as VoteType]}
                 </span>
               </div>
 

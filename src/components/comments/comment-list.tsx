@@ -11,15 +11,19 @@ import { cn } from "@/lib/utils";
 interface CommentListProps {
   ideaId: string;
   ideaFounderId: string;
+  currentUserId: string | null;
   totalComments: number;
   className?: string;
+  isAdminOrEmployee?: boolean;
 }
 
 export function CommentList({
   ideaId,
   ideaFounderId,
+  currentUserId,
   totalComments,
   className,
+  isAdminOrEmployee = false,
 }: CommentListProps) {
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [cursor, setCursor] = useState<string | undefined>();
@@ -76,15 +80,21 @@ export function CommentList({
               comment={comment}
               ideaId={ideaId}
               ideaFounderId={ideaFounderId}
+              currentUserId={currentUserId}
+              isAdminOrEmployee={isAdminOrEmployee}
+              onDeleted={() => loadComments()}
             />
             {/* Replies */}
-            {comment.replies.map((reply) => (
+            {comment.replies.map((reply: any) => (
               <CommentItem
                 key={reply.id}
                 comment={reply}
                 ideaId={ideaId}
                 ideaFounderId={ideaFounderId}
+                currentUserId={currentUserId}
                 isReply
+                isAdminOrEmployee={isAdminOrEmployee}
+                onDeleted={() => loadComments()}
               />
             ))}
           </div>

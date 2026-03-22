@@ -120,7 +120,7 @@ export async function getPlatformDailyStats(
     orderBy: { date: "asc" },
   });
 
-  return stats.map((row) => ({
+  return stats.map((row: any) => ({
     date: row.date.toISOString().split("T")[0],
     views: row._sum.views ?? 0,
     votes: row._sum.votes ?? 0,
