@@ -9,7 +9,9 @@ export const metadata: Metadata = {
   description: "Complete your profile to start validating and discovering startup ideas on Piqd.",
 };
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const searchParams = await props.searchParams;
+  const returnTo = searchParams?.returnTo;
   const { userId: clerkId } = await auth();
 
   // Not signed in — shouldn't happen (middleware protects this route)
@@ -20,7 +22,8 @@ export default async function OnboardingPage() {
   // Check if user is already onboarded in Prisma
   const user = await getCurrentUser();
   if (user?.onboarded) {
-    redirect("/api/sync-onboarding");
+    const returnToQuery = returnTo && typeof returnTo === "string" ? `?returnTo=${encodeURIComponent(returnTo)}` : "";
+    redirect(`/api/sync-onboarding${returnToQuery}`);
   }
 
   return <OnboardingForm />;

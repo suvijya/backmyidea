@@ -30,7 +30,12 @@ export async function GET(req: Request) {
   }
 
   if (user.onboarded) {
-    const response = NextResponse.redirect(new URL("/explore", req.url));
+    // If they were sent here just to sync the cookie, try to send them back where they came from,
+    // otherwise fallback to explore page
+    const requestUrl = new URL(req.url);
+    const returnTo = requestUrl.searchParams.get("returnTo") || "/explore";
+    
+    const response = NextResponse.redirect(new URL(returnTo, req.url));
     response.cookies.set("onboarded", "true", {
       maxAge: 60 * 60 * 24 * 365,
       httpOnly: true,

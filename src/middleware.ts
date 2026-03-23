@@ -4,6 +4,14 @@ import { NextResponse } from "next/server";
 // Routes that do not require authentication
 const isPublicRoute = createRouteMatcher([
   "/",
+  "/explore",
+  "/search",
+  "/leaderboard",
+  "/idea/(.*)",
+  "/profile/(.*)",
+  "/about",
+  "/privacy",
+  "/terms",
   "/manifest.json",
   "/icon.png",
   "/apple-icon.png",
@@ -12,7 +20,12 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/api/me(.*)",
   "/api/webhooks/clerk(.*)",
-  "/api/uploadthing(.*)"
+  "/api/uploadthing(.*)",
+  "/api/ideas/search(.*)",
+  "/api/ideas/trending(.*)",
+  "/api/ideas/(.*)/vote",
+  "/api/ideas/(.*)/comments",
+  "/api/validation-card/(.*)"
 ]);
 
 const isOnboardingRoute = createRouteMatcher([
@@ -30,6 +43,7 @@ export default clerkMiddleware(async (auth, req) => {
         // Only redirect if it's not an API route
         if (!req.nextUrl.pathname.startsWith("/api/")) {
           const url = new URL("/onboarding", req.url);
+          url.searchParams.set("returnTo", req.nextUrl.pathname + req.nextUrl.search);
           return NextResponse.redirect(url);
         }
       }

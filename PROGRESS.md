@@ -898,6 +898,17 @@ UserRole, UserLevel, Category (16 sectors), IdeaStage, IdeaStatus, TargetAudienc
   - Implemented the ability for users to Delete their own comments anytime.
   - Ensured idea comment counters update consistently (`decrement` based on main comment + replies) via Prisma `$transaction`.
 - Resolved global strict TypeScript implicit `any` and Prisma `$transaction` structural type mismatch errors caused by Prisma version conflicts (locked versions to `^6.4.1`).
+- **Major Server-Side Performance Optimizations:**
+  - Parallelized Prisma queries across the dashboard and public idea pages.
+  - Implemented Next.js `unstable_cache` for infinite feeds to greatly reduce latency.
+- **Redesigned Share Validation Card:**
+  - Completely redesigned the `/api/validation-card/[id]` route using `@vercel/og` (Satori).
+  - Adopted a 1080x1920 portrait layout optimized for Instagram Stories.
+  - Applied massive typography using the custom `Instrument Serif` font, warm brand colors, and integrated a robust, properly scaled QR code pointing strictly to `piqd.tech`.
+  - Upgraded `share-modal.tsx` to bust the browser cache by appending a timestamp (`?t=timestamp`), allowing users to "Refresh Preview" instantly. Fixed grid layouts on mobile to prevent overflow.
+- **Fixed Persistent Mobile Routing/Redirect Loop:**
+  - Addressed a major bug where clicking mobile navigation links (like Dashboard or Rank) wrongfully redirected users to the Explore page.
+  - Resolved missing cookie `returnTo` state losses across `middleware.ts`, `onboard/page.tsx`, and `sync-onboarding/route.ts`. The exact requested path is now properly tracked and respected after the onboarding flow finishes or validates.
 
 ### Rate Limiters Active
 | Limiter | Limit | Prefix |
