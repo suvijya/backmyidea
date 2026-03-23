@@ -66,7 +66,16 @@ export async function GET(
       idea.notForMeCount
     );
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://piqd.tech";
+    const reqUrl = new URL(req.url);
+    // Use the actual request origin, but force piqd.tech in production if it somehow resolves to localhost
+    let appUrl = reqUrl.origin;
+    if (process.env.NODE_ENV === "production" && appUrl.includes("localhost")) {
+      appUrl = "https://piqd.tech";
+    } else if (process.env.NODE_ENV === "production" && !appUrl.includes("piqd.tech")) {
+       // Optional: force the main domain if you don't want vercel preview URLs in the QR code
+       appUrl = "https://piqd.tech";
+    }
+
     const ideaUrl = `${appUrl}/idea/${idea.slug}`;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&color=181311&bgcolor=F8F6F4&data=${encodeURIComponent(ideaUrl)}`;
 
