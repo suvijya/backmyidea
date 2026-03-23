@@ -66,14 +66,11 @@ export async function GET(
       idea.notForMeCount
     );
 
-    const reqUrl = new URL(req.url);
-    // Use the actual request origin, but force piqd.tech in production if it somehow resolves to localhost
-    let appUrl = reqUrl.origin;
-    if (process.env.NODE_ENV === "production" && appUrl.includes("localhost")) {
-      appUrl = "https://piqd.tech";
-    } else if (process.env.NODE_ENV === "production" && !appUrl.includes("piqd.tech")) {
-       // Optional: force the main domain if you don't want vercel preview URLs in the QR code
-       appUrl = "https://piqd.tech";
+    // Always force the domain to piqd.tech in production
+    let appUrl = "https://piqd.tech";
+    
+    if (process.env.NODE_ENV === "development") {
+      appUrl = "http://localhost:3000";
     }
 
     const ideaUrl = `${appUrl}/idea/${idea.slug}`;
