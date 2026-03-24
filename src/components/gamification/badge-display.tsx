@@ -21,7 +21,6 @@ const BADGE_ICONS: Record<string, React.ReactNode> = {
   "critic": <MessageSquare className="w-5 h-5 text-amber-500" />,
   "early-believer": <Star className="w-5 h-5 text-yellow-500" />,
   "streak-7": <Flame className="w-5 h-5 text-orange-500" />,
-  "streak-30": <Flame className="w-5 h-5 text-red-500" />,
   "idea-maker": <Lightbulb className="w-5 h-5 text-yellow-400" />,
   "validated-founder": <CheckCircle className="w-5 h-5 text-emerald-500" />,
   "og": <Zap className="w-5 h-5 text-cyan-500" />,

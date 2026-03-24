@@ -72,8 +72,8 @@ export const SCORE_TIER_COLORS: Record<ScoreTier, string> = {
 // ═══════════════════════════════
 
 export const POINTS = {
-  VOTE: 5,
-  COMMENT: 10,
+  VOTE: 1,
+  COMMENT: 5,
   COMMENT_UPVOTED: 2,
   DAILY_STREAK: 15,
   IDEA_POSTED: 20,
@@ -86,7 +86,7 @@ export const LEVEL_THRESHOLDS: Record<UserLevel, [number, number]> = {
   EXPLORER_LEVEL: [101, 500],
   VALIDATOR: [501, 1500],
   TASTEMAKER: [1501, 5000],
-  ORACLE: [5001, Infinity],
+  ORACLE: [5000, Infinity],
 };
 
 export const LEVEL_LABELS: Record<UserLevel, string> = {

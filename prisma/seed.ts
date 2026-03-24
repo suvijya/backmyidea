@@ -53,17 +53,10 @@ async function main() {
       category: "SPECIAL" as const,
     },
     {
-      name: "Week Warrior",
+      name: "Streak Master",
       slug: "streak-7",
       description: "Maintained a 7-day voting streak",
       icon: "🔥",
-      category: "STREAK" as const,
-    },
-    {
-      name: "Streak Master",
-      slug: "streak-30",
-      description: "Maintained a 30-day voting streak",
-      icon: "⚡",
       category: "STREAK" as const,
     },
     {
@@ -81,9 +74,9 @@ async function main() {
       category: "FOUNDING" as const,
     },
     {
-      name: "OG",
+      name: "OG Validator",
       slug: "og",
-      description: "One of the first 100 users on the platform",
+      description: "One of the first 1000 users on the platform",
       icon: "👑",
       category: "SPECIAL" as const,
     },

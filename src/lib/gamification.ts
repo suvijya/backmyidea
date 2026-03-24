@@ -196,9 +196,6 @@ export async function checkAndAwardBadges(userId: string): Promise<void> {
   if (!earnedSlugs.has("streak-7") && user.currentStreak >= 7) {
     badgesToAward.push("streak-7");
   }
-  if (!earnedSlugs.has("streak-30") && user.currentStreak >= 30) {
-    badgesToAward.push("streak-30");
-  }
 
   // Founder validation badge (has an idea with score > 60)
   if (!earnedSlugs.has("validated-founder")) {
