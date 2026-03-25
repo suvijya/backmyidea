@@ -232,3 +232,35 @@ export const INVESTOR_REQUEST_STATUS_LABELS: Record<InvestorRequestStatus, strin
   APPROVED: "Approved",
   REJECTED: "Rejected",
 };
+
+// ═══════════════════════════════
+// RESEARCH CONSTANTS
+// ═══════════════════════════════
+
+export const RESEARCH_CONFIG = {
+  CACHE_TTL_SECONDS: 7 * 24 * 60 * 60, // 7 days
+  MAX_COMPETITORS: 8,
+  MAX_REDDIT_POSTS: 10,
+  MAX_NEWS_ARTICLES: 8,
+  MAX_RELATED_KEYWORDS: 8,
+  MAX_EXISTING_SOLUTIONS: 6,
+  MIN_VOTES_FOR_RESEARCH: 0,  // allow research immediately
+  FREE_RESEARCH_PER_DAY: 3,   // per user
+  GENERATION_TIMEOUT_MS: 60000, // 60 seconds max
+} as const
+
+export const RESEARCH_SIGNALS = {
+  STRONG: { label: "Strong Signal", color: "text-green-600", bg: "bg-green-50", emoji: "🟢" },
+  PROMISING: { label: "Promising", color: "text-blue-600", bg: "bg-blue-50", emoji: "🔵" },
+  MODERATE: { label: "Moderate", color: "text-amber-600", bg: "bg-amber-50", emoji: "🟡" },
+  WEAK: { label: "Weak Signal", color: "text-orange-600", bg: "bg-orange-50", emoji: "🟠" },
+  RISKY: { label: "High Risk", color: "text-red-600", bg: "bg-red-50", emoji: "🔴" },
+} as const
+
+export const RESEARCH_SOURCES = [
+  { id: "gemini", label: "AI Analysis", icon: "🤖" },
+  { id: "reddit", label: "Reddit", icon: "💬" },
+  { id: "google_trends", label: "Google Trends", icon: "📈" },
+  { id: "web_search", label: "Web Search", icon: "🔍" },
+  { id: "piqd_crowd", label: "PIQD Crowd", icon: "👥" },
+] as const

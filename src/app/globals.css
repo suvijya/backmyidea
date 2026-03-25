@@ -178,6 +178,67 @@
 }
 
 /* ═══════════════════════════════════════════════
+   PRINT STYLES (PDF EXPORT)
+   ═══════════════════════════════════════════════ */
+@media print {
+  /* Hide UI elements that shouldn't be printed */
+  nav, footer, .print-hidden, button {
+    display: none !important;
+  }
+  
+  /* Isolation for Research Report */
+  body * {
+    visibility: hidden;
+  }
+  #research-report-printable, #research-report-printable * {
+    visibility: visible;
+  }
+  #research-report-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure all content is expanded and visible */
+  [data-state="closed"] {
+    display: block !important;
+  }
+  .accordion-content {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Remove shadows and adjust margins */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .shadow-sm, .shadow-md, .shadow-card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+  
+  /* Page breaks */
+  h2, h3, .AccordionItem {
+    page-break-after: auto;
+    page-break-inside: avoid;
+  }
+  
+  img {
+    page-break-inside: avoid;
+  }
+  
+  .border, .border-t {
+    border-color: #ddd !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════
    CUSTOM UTILITIES
    ═══════════════════════════════════════════════ */
 @layer utilities {

@@ -30,12 +30,14 @@ import type {
   InvestorStagePreference,
   WatchlistStatus,
   InterestStatus,
+  IdeaResearch,
 } from "@prisma/client";
 
 // Re-export Prisma types for convenience
 export type {
   User,
   Idea,
+  IdeaResearch,
   Vote,
   Comment,
   CommentUpvote,
@@ -107,6 +109,7 @@ export type IdeaFeedItem = Pick<
 export type IdeaDetail = Idea & {
   founder: Pick<User, "id" | "name" | "username" | "image" | "bio" | "city">;
   votes: Pick<Vote, "id" | "type" | "userId">[];
+  research?: IdeaResearch | null;
   _count: {
     comments: number;
     votes: number;

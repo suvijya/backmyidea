@@ -881,6 +881,9 @@ UserRole, UserLevel, Category (16 sectors), IdeaStage, IdeaStatus, TargetAudienc
   - Added specific static and dynamic `metadata` exports to key public pages: `/explore`, `/leaderboard`, `/search`, and `/profile/[username]`.
   - Added base metadata to authenticated routes like `/dashboard` and `/onboarding` for better tab labeling.
   - Verified robust global metadata in `src/app/layout.tsx` (OpenGraph, Twitter cards, keywords, templates) and dynamic metadata for `/idea/[slug]`.
+- **AI Research Upgrade (`crawl4ai`) & Streaming Progress:**
+  - Integrated `crawl4ai` to scrape full content from Reddit and top News/Competitor links instead of relying purely on snippets.
+  - Implemented real-time server-side streaming (SSE / ReadableStream) in the `/api/ideas/[id]/research` route to show live status updates (e.g. "Scraping Reddit...", "Analyzing competitors...") in the frontend `ResearchPanel`, creating a Perplexity-like UX.
 - **Advanced Validation Scoring Logic:** Rewrote `calculateValidationScore` to accurately match the specified algorithmic weights:
   - **Vote Composition (40%)**: Adjusted for `USE_THIS` ratio and severely penalized ideas with >80% `NOT_FOR_ME` votes.
   - **Engagement Depth (25%)**: Factored in comment-to-view ratio, share-to-view ratio, and awarded bonus points for founder replies.

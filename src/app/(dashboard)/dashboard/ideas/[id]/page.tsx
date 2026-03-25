@@ -27,6 +27,8 @@ import { InvestorInterestList } from "@/components/investor/interest-list";
 import { IdeaAnalytics } from "@/components/dashboard/idea-analytics";
 import { CommentList } from "@/components/comments/comment-list";
 import { ShareModal } from "@/components/shared/share-modal";
+import { ResearchTrigger } from "@/components/research/research-trigger";
+import { ResearchPanel } from "@/components/research/research-panel";
 import {
   CATEGORY_LABELS,
   CATEGORY_EMOJIS,
@@ -303,6 +305,32 @@ async function IdeaDetailDashboardLoader({ id }: { id: string }) {
           dailyStats={dailyStats}
           demographics={demographics}
         />
+      </div>
+
+      {/* AI Research Section */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[15px] font-bold text-deep-ink flex items-center gap-2">
+            <span className="text-lg">🤖</span> AI Deep Dive Research
+          </h2>
+        </div>
+        
+        {(!idea.research || idea.research.status === "FAILED") ? (
+          <div className="rounded-xl border border-warm-border bg-white p-6 shadow-sm">
+            <ResearchTrigger ideaId={idea.id} existingResearch={idea.research} isOwner={true} />
+            {idea.research?.status === "FAILED" && (
+              <p className="mt-2 text-xs text-red-500 text-center">Previous generation failed. You can try again.</p>
+            )}
+          </div>
+        ) : idea.research.status === "COMPLETED" ? (
+          <div className="space-y-4">
+            <ResearchPanel research={idea.research} idea={idea as any} isOwner={true} />
+          </div>
+        ) : (
+          <div className="rounded-xl border border-warm-border bg-white p-6 text-center">
+            <ResearchTrigger ideaId={idea.id} existingResearch={idea.research} isOwner={true} />
+          </div>
+        )}
       </div>
 
       {/* Private Suggestions */}

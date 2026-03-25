@@ -289,6 +289,7 @@ export async function getIdeaBySlug(
   const idea = await prisma.idea.findUnique({
     where: { slug },
     include: {
+      research: true,
       founder: {
         select: { id: true, name: true, username: true, image: true, bio: true, city: true },
       },
@@ -337,7 +338,7 @@ export async function getIdeaBySlug(
 
 export async function getIdeaById(
   ideaId: string
-): Promise<ActionResult<Idea>> {
+): Promise<ActionResult<Idea & { research?: any }>> {
   const { userId: clerkId } = await auth();
   if (!clerkId) {
     return { success: false, error: "Not authenticated" };
@@ -348,7 +349,10 @@ export async function getIdeaById(
     return { success: false, error: "User not found" };
   }
 
-  const idea = await prisma.idea.findUnique({ where: { id: ideaId } });
+  const idea = await prisma.idea.findUnique({ 
+    where: { id: ideaId },
+    include: { research: true }
+  });
   if (!idea) {
     return { success: false, error: "Idea not found" };
   }

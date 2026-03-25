@@ -92,3 +92,17 @@ export const dmLimiter = new Ratelimit({
   prefix: "rl:dm",
   analytics: true,
 });
+
+export const researchLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(3, "24 h"), // 3 per day free
+  analytics: true,
+  prefix: "rl:research",
+})
+
+export const researchGenerationLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, "1 m"), // max 5 concurrent generations
+  analytics: true,
+  prefix: "rl:research-gen",
+})

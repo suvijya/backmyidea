@@ -249,6 +249,7 @@ model Idea {
   directMessages    DirectMessage[]
   watchlistItems    WatchlistItem[]
   investorInterests InvestorInterest[]
+  research          IdeaResearch?
 
   @@index([slug])
   @@index([status, validationScore(sort: Desc)])
@@ -580,4 +581,64 @@ model InvestorInterest {
   @@unique([investorId, ideaId])
   @@index([ideaId, status])
   @@index([investorId])
+}
+
+// ═══════════════════════════════
+// RESEARCH
+// ═══════════════════════════════
+
+enum ResearchStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+model IdeaResearch {
+  id              String         @id @default(cuid())
+  
+  // ── Status ──
+  status          ResearchStatus @default(PENDING)
+  error           String?
+  
+  // ── Competitor Analysis ──
+  competitors     Json?
+  competitorCount Int            @default(0)
+  
+  // ── Market Analysis ──
+  marketData      Json?
+  
+  // ── Reddit Analysis ──
+  redditData      Json?
+  
+  // ── Search Demand ──
+  searchData      Json?
+  
+  // ── News & Existing Solutions ──
+  newsData        Json?
+  
+  // ── AI Verdict ──
+  verdict         Json?
+  
+  // ── Metadata ──
+  generatedAt     DateTime       @default(now())
+  expiresAt       DateTime
+  generationTime  Int?
+  geminiModel     String         @default("gemini-2.0-flash")
+  dataSourcesUsed String[]       @default([])
+  
+  // ── Crowd Data Snapshot ──
+  crowdDataSnapshot Json?
+  
+  // ── Relations ──
+  ideaId          String         @unique
+  idea            Idea           @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  requestedById   String
+  
+  // ── Tracking ──
+  viewCount       Int            @default(0)
+  
+  @@index([ideaId])
+  @@index([status])
 }
