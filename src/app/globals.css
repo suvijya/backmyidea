@@ -238,6 +238,37 @@
   }
 }
 
+.pdf-export-mode,
+.pdf-export-mode * {
+  color-scheme: light !important;
+}
+
+.pdf-export-mode {
+  background: #ffffff !important;
+}
+
+.pdf-export-mode,
+.pdf-export-mode * {
+  --tw-gradient-from: #ffffff !important;
+  --tw-gradient-to: #ffffff !important;
+  --tw-gradient-stops: #ffffff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.pdf-export-mode [class*="bg-"] {
+  background-color: #ffffff !important;
+}
+
+.pdf-export-mode [class*="text-"] {
+  color: #111827 !important;
+}
+
+.pdf-export-mode [data-radix-popper-content-wrapper] {
+  display: none !important;
+}
+
 /* ═══════════════════════════════════════════════
    CUSTOM UTILITIES
    ═══════════════════════════════════════════════ */

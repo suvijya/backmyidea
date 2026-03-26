@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button"
 import { Loader2, RefreshCw, Download } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { jsPDF } from "jspdf"
-import html2canvas from "html2canvas"
 import { useState } from "react"
 
 import { ResearchProgress } from "./research-trigger"
@@ -57,50 +56,175 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
   ]
 
   const handlePrint = async () => {
-    const report = document.getElementById("research-report-printable")
-    if (!report) return
+    const pdf = new jsPDF("p", "pt", "a4")
+    const pageW = pdf.internal.pageSize.getWidth()
+    const pageH = pdf.internal.pageSize.getHeight()
+    const margin = 42
+    const contentW = pageW - margin * 2
+    let y = margin
 
-    const prevStyle = report.getAttribute("style")
-    report.style.maxWidth = "1200px"
-    report.style.padding = "24px"
-    report.style.background = "#ffffff"
-
-    try {
-      const canvas = await html2canvas(report, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      })
-
-      const imgData = canvas.toDataURL("image/png", 1.0)
-      const pdf = new jsPDF("p", "pt", "a4")
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      const margin = 24
-      const contentWidth = pdfWidth - margin * 2
-      const scaledHeight = (canvas.height * contentWidth) / canvas.width
-
-      let remainingHeight = scaledHeight
-      let position = 0
-
-      while (remainingHeight > 0) {
-        pdf.addImage(imgData, "PNG", margin, margin - position, contentWidth, scaledHeight)
-        remainingHeight -= pdfHeight - margin * 2
-        position += pdfHeight - margin * 2
-        if (remainingHeight > 0) {
-          pdf.addPage()
-        }
-      }
-
-      pdf.save(`${idea.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_research_report.pdf`)
-    } finally {
-      if (prevStyle === null) {
-        report.removeAttribute("style")
-      } else {
-        report.setAttribute("style", prevStyle)
+    const ensurePage = (h: number) => {
+      if (y + h > pageH - margin) {
+        pdf.addPage()
+        y = margin
       }
     }
+
+    const drawHeader = () => {
+      pdf.setFillColor(17, 24, 39)
+      pdf.rect(0, 0, pageW, 96, "F")
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(22)
+      pdf.setTextColor(255, 255, 255)
+      pdf.text("PIQD Deep Dive Report", margin, 40)
+      pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(11)
+      pdf.setTextColor(229, 231, 235)
+      pdf.text(`Generated ${new Date(research.generatedAt).toLocaleString()}`, margin, 62)
+      y = 124
+    }
+
+    const drawTitleBlock = () => {
+      ensurePage(120)
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(20)
+      pdf.setTextColor(17, 24, 39)
+      const titleLines = pdf.splitTextToSize(idea.title, contentW)
+      pdf.text(titleLines, margin, y)
+      y += titleLines.length * 24
+
+      pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(11)
+      pdf.setTextColor(75, 85, 99)
+      const pitchLines = pdf.splitTextToSize(idea.pitch || "", contentW)
+      pdf.text(pitchLines, margin, y)
+      y += pitchLines.length * 16 + 12
+
+      pdf.setDrawColor(229, 231, 235)
+      pdf.line(margin, y, pageW - margin, y)
+      y += 16
+    }
+
+    const drawMetricCards = () => {
+      ensurePage(96)
+      const gap = 10
+      const boxW = (contentW - gap * 2) / 3
+      const cards = [
+        { label: "Overall Score", value: `${research?.verdict?.overallScore ?? 0}/100` },
+        { label: "Signal", value: String(research?.verdict?.overallSignal || "moderate").toUpperCase() },
+        { label: "Sources", value: String(research?.sourceStats?.discovered || 0) },
+      ]
+      cards.forEach((c, i) => {
+        const x = margin + i * (boxW + gap)
+        pdf.setFillColor(249, 250, 251)
+        pdf.setDrawColor(229, 231, 235)
+        pdf.roundedRect(x, y, boxW, 78, 8, 8, "FD")
+        pdf.setFont("helvetica", "bold")
+        pdf.setFontSize(9)
+        pdf.setTextColor(107, 114, 128)
+        pdf.text(c.label.toUpperCase(), x + 12, y + 18)
+        pdf.setFont("helvetica", "bold")
+        pdf.setFontSize(18)
+        pdf.setTextColor(17, 24, 39)
+        pdf.text(c.value, x + 12, y + 44)
+      })
+      y += 96
+    }
+
+    const drawSection = (title: string, body?: string, bullets?: string[]) => {
+      ensurePage(48)
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(14)
+      pdf.setTextColor(17, 24, 39)
+      pdf.text(title, margin, y)
+      y += 14
+      pdf.setDrawColor(243, 244, 246)
+      pdf.line(margin, y, pageW - margin, y)
+      y += 14
+
+      if (body) {
+        pdf.setFont("helvetica", "normal")
+        pdf.setFontSize(11)
+        pdf.setTextColor(55, 65, 81)
+        const lines = pdf.splitTextToSize(body, contentW)
+        ensurePage(lines.length * 14 + 8)
+        pdf.text(lines, margin, y)
+        y += lines.length * 14 + 8
+      }
+
+      if (bullets && bullets.length > 0) {
+        pdf.setFont("helvetica", "normal")
+        pdf.setFontSize(10)
+        pdf.setTextColor(55, 65, 81)
+        bullets.slice(0, 8).forEach((item) => {
+          const lines = pdf.splitTextToSize(item, contentW - 14)
+          ensurePage(lines.length * 13 + 6)
+          pdf.text("-", margin, y)
+          pdf.text(lines, margin + 12, y)
+          y += lines.length * 13 + 6
+        })
+      }
+
+      y += 8
+    }
+
+    drawHeader()
+    drawTitleBlock()
+    drawMetricCards()
+
+    drawSection("Executive Summary", research?.verdict?.summary || "No summary generated.")
+    drawSection("Key Insight", research?.verdict?.keyInsight || "No key insight generated.")
+    drawSection("Strengths", undefined, Array.isArray(research?.verdict?.strengths) ? research.verdict.strengths : [])
+    drawSection("Risks", undefined, Array.isArray(research?.verdict?.risks) ? research.verdict.risks : [])
+    drawSection("Recommendations", undefined, Array.isArray(research?.verdict?.recommendations) ? research.verdict.recommendations : [])
+
+    drawSection(
+      "Market Context",
+      `TAM: ${research?.marketData?.estimatedTAM || "N/A"}\nSAM: ${research?.marketData?.estimatedSAM || "N/A"}\nGrowth: ${research?.marketData?.growthRate || "N/A"}\nMaturity: ${research?.marketData?.marketMaturity || "N/A"}`
+    )
+
+    drawSection(
+      "Search Demand",
+      `Primary keyword: ${research?.searchData?.primaryKeyword || "N/A"}\nTrend direction: ${research?.searchData?.trendDirection || "stable"}\n${research?.searchData?.trendSummary || "No trend summary available."}`,
+      Array.isArray(research?.searchData?.relatedKeywords)
+        ? research.searchData.relatedKeywords.slice(0, 8).map((k: { keyword: string; volume: string; trend: string }) => `${k.keyword} (${k.volume}, ${k.trend})`)
+        : []
+    )
+
+    drawSection(
+      "Reddit Pulse",
+      `Posts analyzed: ${research?.redditData?.totalPostsFound || 0}\nSentiment: ${research?.redditData?.sentiment || "neutral"} (${research?.redditData?.sentimentScore || 0}/100)\n${research?.redditData?.summary || "No summary available."}`,
+      Array.isArray(research?.redditData?.topPosts)
+        ? research.redditData.topPosts.slice(0, 6).map((p: { title: string; upvotes: number; commentCount: number }) => `${p.title} | ${p.upvotes} upvotes | ${p.commentCount} comments`)
+        : []
+    )
+
+    drawSection(
+      "Top Competitors",
+      undefined,
+      Array.isArray(research?.competitors)
+        ? research.competitors.slice(0, 8).map((c: { name: string; similarity: string; differentiator: string }) => `${c.name} (${c.similarity}) - ${c.differentiator}`)
+        : []
+    )
+
+    drawSection(
+      "News and Evidence",
+      research?.newsData?.industryNews || "No industry summary available.",
+      Array.isArray(research?.newsData?.articles)
+        ? research.newsData.articles.slice(0, 10).map((a: { title: string; source: string }) => `${a.title} - ${a.source}`)
+        : []
+    )
+
+    const pages = pdf.getNumberOfPages()
+    for (let i = 1; i <= pages; i += 1) {
+      pdf.setPage(i)
+      pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(9)
+      pdf.setTextColor(107, 114, 128)
+      pdf.text(`Page ${i} of ${pages}`, pageW - margin - 56, pageH - 18)
+    }
+
+    pdf.save(`${idea.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_research_report.pdf`)
   }
 
   return (
@@ -113,7 +237,7 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
 
       {/* Meta header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-        <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wider mr-2">Data Sources:</span>
           {sources.map(source => (
             <Badge key={source.id} variant="secondary" className="bg-white hover:bg-gray-50 font-normal">
@@ -122,6 +246,12 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
             </Badge>
           ))}
         </div>
+        {research?.sourceStats && (
+          <div className="flex gap-2 text-[11px] text-gray-600">
+            <span className="px-2 py-1 rounded-full bg-white border">Discovered: {research.sourceStats.discovered}</span>
+            <span className="px-2 py-1 rounded-full bg-white border">Scraped: {research.sourceStats.scraped}</span>
+          </div>
+        )}
         <div className="text-xs text-gray-500 text-right shrink-0">
           Generated {timeAgo(new Date(research.generatedAt))}
         </div>
