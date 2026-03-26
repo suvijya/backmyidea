@@ -493,6 +493,18 @@ export async function getRedditThreadContext(url: string): Promise<RedditThreadC
     const payload: unknown = await fetchJsonWithRetry(jsonUrl, 3)
     if (!payload) {
       const oldRedditUrl = url.replace("https://reddit.com", "https://old.reddit.com").replace("https://www.reddit.com", "https://old.reddit.com")
+      const scrapedOld = await scrapeUrlWithUserAgent(oldRedditUrl)
+      if (scrapedOld) {
+        const lines = scrapedOld.split("\n").map((l) => l.trim()).filter(Boolean)
+        const body = lines.slice(0, 20).join(" ").slice(0, 5000)
+        const comments = lines.filter((l) => l.startsWith("- ")).map((l) => l.replace(/^-\s*/, "")).slice(0, 12)
+        return {
+          url,
+          body,
+          topComments: comments,
+        }
+      }
+
       const html = await fetchTextWithRetry(oldRedditUrl, 2)
       if (!html) return null
 
@@ -535,6 +547,23 @@ export async function getRedditThreadContext(url: string): Promise<RedditThreadC
     }
   } catch (error) {
     console.error("Failed to fetch reddit thread context:", error)
+    return null
+  }
+}
+
+async function scrapeUrlWithUserAgent(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      cache: "no-store",
+    })
+    if (!res.ok) return null
+    return await res.text()
+  } catch {
     return null
   }
 }
