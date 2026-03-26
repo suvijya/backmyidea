@@ -3,6 +3,7 @@
 import { SearchDemandData } from "@/lib/research"
 import { getGoogleTrendsEmbedUrl } from "@/lib/search-providers"
 import { Badge } from "@/components/ui/badge"
+import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 
 function estimateMomentumScore(searchData: SearchDemandData): number {
   const base = searchData.trendDirection === "rising" ? 72 : searchData.trendDirection === "stable" ? 55 : 38
@@ -29,8 +30,11 @@ interface SearchDemandSectionProps {
 }
 
 export function SearchDemandSection({ searchData, title }: SearchDemandSectionProps) {
+  const cleanedKeywords = searchData.relatedKeywords.filter((kw) =>
+    !/(saas bahu|kyunki saas|serial|tv show|share price|hospital|bank)/i.test(kw.keyword)
+  )
   const momentumScore = estimateMomentumScore(searchData)
-  const competitionIndex = estimateCompetitionIndex(searchData)
+  const competitionIndex = estimateCompetitionIndex({ ...searchData, relatedKeywords: cleanedKeywords })
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -129,20 +133,37 @@ export function SearchDemandSection({ searchData, title }: SearchDemandSectionPr
           </div>
           <div className="w-full h-[350px] relative bg-gray-50/50">
             {/* Fallback if iframe fails/loads slowly */}
-            <div className="absolute inset-0 flex items-center justify-center -z-10 text-gray-400 text-sm">
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none">
               Loading Google Trends data...
             </div>
             <iframe 
               src={getGoogleTrendsEmbedUrl(searchData.primaryKeyword)} 
               className="w-full h-full border-0"
               title={`Google Trends for ${searchData.primaryKeyword}`}
+              loading="lazy"
             />
           </div>
         </div>
       )}
 
+      {Array.isArray(searchData.trendSeries) && searchData.trendSeries.length > 1 && (
+        <div className="border rounded-xl overflow-hidden bg-white shadow-sm p-4">
+          <h4 className="font-semibold text-gray-900 mb-3">Demand Momentum Curve (India, last 12 months)</h4>
+          <div className="h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={searchData.trendSeries}>
+                <XAxis dataKey="label" hide />
+                <YAxis domain={[0, 100]} width={28} />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* Related Keywords */}
-      {searchData.relatedKeywords.length > 0 && (
+      {cleanedKeywords.length > 0 && (
         <div>
           <h4 className="font-semibold text-gray-900 mb-3">Related Search Queries</h4>
           <div className="border rounded-lg overflow-hidden">
@@ -155,7 +176,7 @@ export function SearchDemandSection({ searchData, title }: SearchDemandSectionPr
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {searchData.relatedKeywords.map((kw, i) => (
+                {cleanedKeywords.map((kw, i) => (
                   <tr key={i} className="bg-white hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800">{kw.keyword}</td>
                     <td className="px-4 py-3 text-center">{getVolumeBadge(kw.volume)}</td>

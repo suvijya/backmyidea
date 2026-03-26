@@ -8,19 +8,28 @@ interface UseResearchOptions {
   onComplete?: () => void
 }
 
+type ResearchDepth = "fast" | "deep"
+
 export function useResearch({ ideaId, onComplete }: UseResearchOptions) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState("")
+  const [progressFeed, setProgressFeed] = useState<string[]>([])
+  const [sourcesFeed, setSourcesFeed] = useState<Array<{ url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number }>>([])
   const [research, setResearch] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const generate = useCallback(async (force: boolean = false) => {
+  const generate = useCallback(async (force: boolean = false, depth: ResearchDepth = "deep") => {
     setIsGenerating(true)
     setError(null)
     setProgress("Starting research...")
+    setProgressFeed(["Starting research..."])
+    setSourcesFeed([])
 
     try {
-      const url = force ? `/api/ideas/${ideaId}/research?force=true` : `/api/ideas/${ideaId}/research`
+      const searchParams = new URLSearchParams()
+      if (force) searchParams.set("force", "true")
+      searchParams.set("depth", depth)
+      const url = `/api/ideas/${ideaId}/research?${searchParams.toString()}`
       const res = await fetch(url, {
         method: "POST",
       })
@@ -50,6 +59,26 @@ export function useResearch({ ideaId, onComplete }: UseResearchOptions) {
               const data = JSON.parse(line.slice(6))
               if (data.type === 'progress') {
                 setProgress(data.message)
+                setProgressFeed((prev) => {
+                  if (prev[prev.length - 1] === data.message) return prev
+                  return [...prev, data.message].slice(-60)
+                })
+              } else if (data.type === 'source') {
+                setSourcesFeed((prev) => {
+                  const existingIndex = prev.findIndex((s) => s.url === data.url)
+                  const next = [...prev]
+                  const item = {
+                    url: data.url,
+                    status: data.status as "queued" | "scraping" | "done" | "failed",
+                    chars: typeof data.chars === "number" ? data.chars : undefined,
+                  }
+                  if (existingIndex >= 0) {
+                    next[existingIndex] = { ...next[existingIndex], ...item }
+                  } else {
+                    next.push(item)
+                  }
+                  return next.slice(-120)
+                })
               } else if (data.type === 'complete' || data.type === 'cached') {
                 setResearch(data.research)
                 toast.success("Research report ready!")
@@ -72,6 +101,8 @@ export function useResearch({ ideaId, onComplete }: UseResearchOptions) {
     } finally {
       setIsGenerating(false)
       setProgress("")
+      setProgressFeed([])
+      setSourcesFeed([])
     }
   }, [ideaId, onComplete])
 
@@ -93,6 +124,8 @@ export function useResearch({ ideaId, onComplete }: UseResearchOptions) {
     fetchExisting,
     isGenerating,
     progress,
+    progressFeed,
+    sourcesFeed,
     research,
     error,
     setResearch,

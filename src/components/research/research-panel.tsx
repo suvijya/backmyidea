@@ -17,6 +17,9 @@ import { useResearch } from "@/hooks/use-research"
 import { Button } from "@/components/ui/button"
 import { Loader2, RefreshCw, Download } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { jsPDF } from "jspdf"
+import html2canvas from "html2canvas"
+import { useState } from "react"
 
 import { ResearchProgress } from "./research-trigger"
 
@@ -28,7 +31,8 @@ interface ResearchPanelProps {
 
 export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
   const router = useRouter()
-  const { generate, isGenerating, progress } = useResearch({ 
+  const [depth, setDepth] = useState<"fast" | "deep">("deep")
+  const { generate, isGenerating, progress, progressFeed, sourcesFeed } = useResearch({ 
     ideaId: idea.id,
     onComplete: () => {
       router.refresh()
@@ -36,7 +40,7 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
   })
 
   if (isGenerating) {
-    return <ResearchProgress progress={progress} />
+    return <ResearchProgress progress={progress} progressFeed={progressFeed} sourcesFeed={sourcesFeed} />
   }
 
   if (!research || research.status !== "COMPLETED") return null
@@ -52,9 +56,51 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
       }))
   ]
 
-  const handlePrint = () => {
-    // We rely on print CSS in globals.css now
-    window.print()
+  const handlePrint = async () => {
+    const report = document.getElementById("research-report-printable")
+    if (!report) return
+
+    const prevStyle = report.getAttribute("style")
+    report.style.maxWidth = "1200px"
+    report.style.padding = "24px"
+    report.style.background = "#ffffff"
+
+    try {
+      const canvas = await html2canvas(report, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      })
+
+      const imgData = canvas.toDataURL("image/png", 1.0)
+      const pdf = new jsPDF("p", "pt", "a4")
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const margin = 24
+      const contentWidth = pdfWidth - margin * 2
+      const scaledHeight = (canvas.height * contentWidth) / canvas.width
+
+      let remainingHeight = scaledHeight
+      let position = 0
+
+      while (remainingHeight > 0) {
+        pdf.addImage(imgData, "PNG", margin, margin - position, contentWidth, scaledHeight)
+        remainingHeight -= pdfHeight - margin * 2
+        position += pdfHeight - margin * 2
+        if (remainingHeight > 0) {
+          pdf.addPage()
+        }
+      }
+
+      pdf.save(`${idea.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_research_report.pdf`)
+    } finally {
+      if (prevStyle === null) {
+        report.removeAttribute("style")
+      } else {
+        report.setAttribute("style", prevStyle)
+      }
+    }
   }
 
   return (
@@ -84,7 +130,7 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
       <Accordion type="multiple" defaultValue={["verdict", "competitors", "reddit", "market", "search", "news"]} className="space-y-4">
         
         {/* Verdict (Always open) */}
-        <AccordionItem value="verdict" className="border rounded-xl bg-white overflow-hidden shadow-sm">
+          <AccordionItem value="verdict" data-pdf-title="AI Verdict and Cross Validation" className="border rounded-xl bg-white overflow-hidden shadow-sm">
           <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gray-50/50">
             <div className="flex items-center text-lg font-semibold">
               <span className="mr-3 text-2xl">🎯</span> 
@@ -100,7 +146,7 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
         </AccordionItem>
 
         {/* Competitors */}
-        <AccordionItem value="competitors" className="border rounded-xl bg-white overflow-hidden shadow-sm">
+          <AccordionItem value="competitors" data-pdf-title="Competitors and Alternatives" className="border rounded-xl bg-white overflow-hidden shadow-sm">
           <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gray-50/50">
             <div className="flex items-center text-lg font-semibold">
               <span className="mr-3 text-2xl">🏢</span> 
@@ -114,7 +160,7 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
 
         {/* Reddit */}
         {research.redditData && (
-          <AccordionItem value="reddit" className="border rounded-xl bg-white overflow-hidden shadow-sm">
+          <AccordionItem value="reddit" data-pdf-title="Reddit Pulse" className="border rounded-xl bg-white overflow-hidden shadow-sm">
             <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gray-50/50">
               <div className="flex items-center text-lg font-semibold">
                 <span className="mr-3 text-2xl">💬</span> 
@@ -129,7 +175,7 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
 
         {/* Market Context */}
         {research.marketData && (
-          <AccordionItem value="market" className="border rounded-xl bg-white overflow-hidden shadow-sm">
+          <AccordionItem value="market" data-pdf-title="Market Context" className="border rounded-xl bg-white overflow-hidden shadow-sm">
             <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gray-50/50">
               <div className="flex items-center text-lg font-semibold">
                 <span className="mr-3 text-2xl">🏪</span> 
@@ -144,7 +190,7 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
 
         {/* Search Demand */}
         {research.searchData && (
-          <AccordionItem value="search" className="border rounded-xl bg-white overflow-hidden shadow-sm">
+          <AccordionItem value="search" data-pdf-title="Search Demand" className="border rounded-xl bg-white overflow-hidden shadow-sm">
             <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gray-50/50">
               <div className="flex items-center text-lg font-semibold">
                 <span className="mr-3 text-2xl">📈</span> 
@@ -159,7 +205,7 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
 
         {/* News */}
         {research.newsData && (
-          <AccordionItem value="news" className="border rounded-xl bg-white overflow-hidden shadow-sm">
+          <AccordionItem value="news" data-pdf-title="News and Existing Solutions" className="border rounded-xl bg-white overflow-hidden shadow-sm">
             <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gray-50/50">
               <div className="flex items-center text-lg font-semibold">
                 <span className="mr-3 text-2xl">📰</span> 
@@ -188,7 +234,7 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
           <Button 
             variant="secondary" 
             className="w-full sm:w-auto min-w-[140px] gap-2" 
-            onClick={() => generate(true)}
+            onClick={() => generate(true, depth)}
             disabled={isGenerating}
           >
             {isGenerating ? (
@@ -198,6 +244,24 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
             )}
             <span>{isGenerating ? "Regenerating..." : "Regenerate"}</span>
           </Button>
+        )}
+        {isOwner && (
+          <div className="inline-flex items-center gap-1 rounded-full border bg-white p-1">
+            <button
+              type="button"
+              className={`px-3 py-1 text-xs rounded-full ${depth === "fast" ? "bg-orange-100 text-orange-700" : "text-gray-600"}`}
+              onClick={() => setDepth("fast")}
+            >
+              Fast
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1 text-xs rounded-full ${depth === "deep" ? "bg-orange-100 text-orange-700" : "text-gray-600"}`}
+              onClick={() => setDepth("deep")}
+            >
+              Deep
+            </button>
+          </div>
         )}
       </div>
     </div>

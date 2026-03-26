@@ -3,7 +3,7 @@ import { getResearch } from "@/actions/research-actions"
 import { getCurrentUser } from "@/lib/clerk"
 import { prisma } from "@/lib/prisma"
 import { researchLimiter } from "@/lib/redis"
-import { generateResearch, type ResearchInput } from "@/lib/research"
+import { generateResearch, type ResearchInput, type ResearchProgressEvent } from "@/lib/research"
 
 export async function GET(
   req: NextRequest,
@@ -25,6 +25,8 @@ export async function POST(
 
   const { id: ideaId } = await params
   const force = req.nextUrl.searchParams.get("force") === "true"
+  const requestedDepth = req.nextUrl.searchParams.get("depth")
+  const researchDepth: "fast" | "deep" = requestedDepth === "fast" ? "fast" : "deep"
 
   // 1. Rate limiting
   let rateLimitOk = true
@@ -134,11 +136,21 @@ export async function POST(
           maybeCount: idea.maybeCount,
           notForMeCount: idea.notForMeCount,
           totalComments: idea.totalComments,
+          researchDepth,
         }
 
         // Run research and hook into progress
-        const result = await generateResearch(input, (msg) => {
-          sendEvent("progress", { message: msg })
+        const result = await generateResearch(input, (event: ResearchProgressEvent) => {
+          if (event.type === "progress") {
+            sendEvent("progress", { message: event.message })
+            return
+          }
+
+          sendEvent("source", {
+            url: event.url,
+            status: event.status,
+            chars: event.chars,
+          })
         })
 
         sendEvent("progress", { message: "Saving results..." })
@@ -157,6 +169,10 @@ export async function POST(
             verdict: result.verdict as any,
             generationTime: result.generationTime,
             dataSourcesUsed: result.dataSourcesUsed,
+            crowdDataSnapshot: {
+              ...(researchRecord.crowdDataSnapshot as Record<string, unknown>),
+              sourceStats: result.sourceStats || null,
+            },
             generatedAt: new Date(),
           },
         })

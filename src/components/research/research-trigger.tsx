@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/nextjs"
 import { Loader2, RefreshCw, CheckCircle2, CircleDashed } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 interface ResearchTriggerProps {
   ideaId: string
@@ -27,7 +28,15 @@ export const RESEARCH_STEPS = [
   "Research complete!"
 ]
 
-export function ResearchProgress({ progress }: { progress: string }) {
+export function ResearchProgress({
+  progress,
+  progressFeed = [],
+  sourcesFeed = [],
+}: {
+  progress: string
+  progressFeed?: string[]
+  sourcesFeed?: Array<{ url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number }>
+}) {
   const matchedStepIndex = RESEARCH_STEPS.indexOf(progress)
   const currentStepIndex = matchedStepIndex >= 0 ? matchedStepIndex : 0
   const hasCustomProgress = Boolean(progress) && matchedStepIndex === -1
@@ -67,6 +76,41 @@ export function ResearchProgress({ progress }: { progress: string }) {
           )
         })}
       </div>
+
+      <div className="mt-6 pt-4 border-t border-orange-100">
+        <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Live Source Feed</div>
+        <div className="max-h-44 overflow-auto space-y-1 pr-1">
+          {(progressFeed.length > 0 ? progressFeed : [progress || "Waiting for first signal..."]).map((line, idx) => (
+            <p key={`${line}-${idx}`} className="text-sm text-gray-700 leading-relaxed break-words">- {line}</p>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-orange-100">
+        <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Tracked Sources</div>
+        <div className="max-h-48 overflow-auto space-y-1 pr-1">
+          {sourcesFeed.length === 0 ? (
+            <p className="text-sm text-gray-500">Waiting for discovered sources...</p>
+          ) : (
+            sourcesFeed.map((source) => (
+              <div
+                key={source.url}
+                className={`text-xs break-all transition-all duration-300 ${
+                  source.status === "done"
+                    ? "text-emerald-700"
+                    : source.status === "failed"
+                      ? "text-red-600"
+                      : source.status === "scraping"
+                        ? "text-orange-700 animate-pulse"
+                        : "text-gray-700"
+                }`}
+              >
+                [{source.status.toUpperCase()}] {source.url}{typeof source.chars === "number" ? ` (${source.chars} chars)` : ""}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -74,8 +118,9 @@ export function ResearchProgress({ progress }: { progress: string }) {
 export function ResearchTrigger({ ideaId, existingResearch, isOwner }: ResearchTriggerProps) {
   const { userId } = useAuth()
   const router = useRouter()
+  const [depth, setDepth] = useState<"fast" | "deep">("deep")
   
-  const { generate, isGenerating, progress } = useResearch({ 
+  const { generate, isGenerating, progress, progressFeed, sourcesFeed } = useResearch({ 
     ideaId,
     onComplete: () => {
       router.refresh()
@@ -83,7 +128,7 @@ export function ResearchTrigger({ ideaId, existingResearch, isOwner }: ResearchT
   })
 
   if (isGenerating) {
-    return <ResearchProgress progress={progress} />
+    return <ResearchProgress progress={progress} progressFeed={progressFeed} sourcesFeed={sourcesFeed} />
   }
 
   if (!userId) {
@@ -141,12 +186,29 @@ export function ResearchTrigger({ ideaId, existingResearch, isOwner }: ResearchT
       </p>
       
       <Button 
-        onClick={() => generate(false)} 
+        onClick={() => generate(false, depth)} 
         size="lg" 
         className="bg-orange-600 hover:bg-orange-700 text-white rounded-full px-8 shadow-md"
       >
         <span className="mr-2">🔍</span> Research This Idea
       </Button>
+
+      <div className="mt-4 inline-flex items-center gap-2 rounded-full border bg-white p-1">
+        <button
+          type="button"
+          className={`px-3 py-1 text-xs rounded-full ${depth === "fast" ? "bg-orange-100 text-orange-700" : "text-gray-600"}`}
+          onClick={() => setDepth("fast")}
+        >
+          Fast (~30 sources)
+        </button>
+        <button
+          type="button"
+          className={`px-3 py-1 text-xs rounded-full ${depth === "deep" ? "bg-orange-100 text-orange-700" : "text-gray-600"}`}
+          onClick={() => setDepth("deep")}
+        >
+          Deep (40-100 sources)
+        </button>
+      </div>
       
       <p className="text-xs text-gray-400 mt-4">
         Free · Takes ~45 seconds · {isOwner ? "Available for your ideas" : "3 free reports per day"}

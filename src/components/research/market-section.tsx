@@ -55,6 +55,27 @@ export function MarketSection({ marketData }: MarketSectionProps) {
         </div>
       </div>
 
+      {marketData.sourceSignals && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-lg border bg-gray-50 p-3">
+            <div className="text-xs text-gray-500 uppercase">News Signals</div>
+            <div className="text-lg font-semibold text-gray-900">{marketData.sourceSignals.newsCount}</div>
+          </div>
+          <div className="rounded-lg border bg-gray-50 p-3">
+            <div className="text-xs text-gray-500 uppercase">Scraped Docs</div>
+            <div className="text-lg font-semibold text-gray-900">{marketData.sourceSignals.scrapedCount}</div>
+          </div>
+          <div className="rounded-lg border bg-gray-50 p-3">
+            <div className="text-xs text-gray-500 uppercase">X Discussions</div>
+            <div className="text-lg font-semibold text-gray-900">{marketData.sourceSignals.xCount}</div>
+          </div>
+          <div className="rounded-lg border bg-gray-50 p-3">
+            <div className="text-xs text-gray-500 uppercase">Confidence</div>
+            <div className="text-lg font-semibold text-gray-900 capitalize">{marketData.sourceSignals.confidence}</div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
         {/* Target Profile */}
         <div className="space-y-4">

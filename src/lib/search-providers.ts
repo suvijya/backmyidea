@@ -2,6 +2,43 @@
 
 import googleTrends from 'google-trends-api'
 
+const REDDIT_USER_AGENTS = [
+  "PIQD Research Bot 1.0",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+]
+
+async function fetchJsonWithRetry(url: string, maxAttempts: number = 3): Promise<any | null> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+      const ua = REDDIT_USER_AGENTS[(attempt - 1) % REDDIT_USER_AGENTS.length]
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": ua,
+          "Accept": "application/json,text/plain,*/*",
+          "Accept-Language": "en-IN,en;q=0.9",
+        },
+        signal: controller.signal,
+        cache: "no-store",
+      })
+      clearTimeout(timeout)
+
+      if (res.ok) {
+        return await res.json()
+      }
+
+      if (attempt === maxAttempts) return null
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
+    } catch {
+      if (attempt === maxAttempts) return null
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
+    }
+  }
+  return null
+}
+
 export interface SearchResult {
   title: string
   url: string
@@ -29,6 +66,7 @@ export interface RedditThreadContext {
 export interface GoogleTrendsResult {
   trendDirection: "rising" | "stable" | "declining"
   relatedQueries: string[]
+  interestSeries: Array<{ label: string; value: number }>
 }
 
 /**
@@ -47,10 +85,17 @@ export async function getRealGoogleTrends(keyword: string, geo: string = "IN"): 
 
     let trendDirection: "rising" | "stable" | "declining" = "stable"
     let relatedQueries: string[] = []
+    let interestSeries: Array<{ label: string; value: number }> = []
 
     if (interestRes) {
       const data = JSON.parse(interestRes)
       const timeline = data?.default?.timelineData || []
+      interestSeries = timeline
+        .map((item: { formattedTime?: string; value?: number[] }) => ({
+          label: item.formattedTime || "",
+          value: item.value?.[0] || 0,
+        }))
+        .slice(-24)
       if (timeline.length > 4) {
         // Compare first half vs second half average to determine trend
         const firstHalf = timeline.slice(0, Math.floor(timeline.length / 2))
@@ -76,10 +121,10 @@ export async function getRealGoogleTrends(keyword: string, geo: string = "IN"): 
       relatedQueries = Array.from(new Set(allQueries)).slice(0, 10)
     }
 
-    return { trendDirection, relatedQueries }
+    return { trendDirection, relatedQueries, interestSeries }
   } catch (error) {
     console.error("Google Trends API failed:", error)
-    return { trendDirection: "stable", relatedQueries: [] }
+    return { trendDirection: "stable", relatedQueries: [], interestSeries: [] }
   }
 }
 
@@ -107,6 +152,27 @@ export async function searchWeb(query: string, numResults: number = 10): Promise
     console.error("Web search failed:", error)
     return []
   }
+}
+
+export async function searchXPosts(query: string, numResults: number = 20): Promise<SearchResult[]> {
+  const queries = [
+    `site:x.com ${query}`,
+    `site:twitter.com ${query}`,
+  ]
+
+  const all: SearchResult[] = []
+  for (const q of queries) {
+    const found = await searchWeb(q, Math.ceil(numResults / 2))
+    all.push(...found)
+  }
+
+  const seen = new Set<string>()
+  return all.filter((item) => {
+    const isX = /x\.com|twitter\.com/i.test(item.url)
+    if (!isX || seen.has(item.url)) return false
+    seen.add(item.url)
+    return true
+  }).slice(0, numResults)
 }
 
 async function searchWithGoogleNewsRSS(query: string, num: number): Promise<SearchResult[]> {
@@ -208,15 +274,8 @@ export async function searchReddit(
   try {
     const encoded = encodeURIComponent(query)
     const url = `https://www.reddit.com/search.json?q=${encoded}&sort=relevance&limit=${limit}&type=link`
-    
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "PIQD Research Bot 1.0",
-      },
-    })
-    
-    if (!res.ok) return []
-    const data = await res.json()
+    const data = await fetchJsonWithRetry(url, 3)
+    if (!data) return []
     
     return (data.data?.children || [])
       .map((child: any) => child.data)
@@ -242,12 +301,15 @@ export async function searchReddit(
 export async function searchRedditTargeted(
   query: string,
   subreddits: string[] = [
-    "india",
-    "IndianStartups", 
-    "developersIndia",
     "startups",
     "SaaS",
     "Entrepreneur",
+    "productivity",
+    "projectmanagement",
+    "jira",
+    "asana",
+    "remotework",
+    "business",
     "smallbusiness",
   ],
   limit: number = 5
@@ -261,13 +323,8 @@ export async function searchRedditTargeted(
     try {
       const encoded = encodeURIComponent(query)
       const url = `https://www.reddit.com/r/${sub}/search.json?q=${encoded}&restrict_sr=1&sort=relevance&limit=${limit}`
-      
-      const res = await fetch(url, {
-        headers: { "User-Agent": "PIQD Research Bot 1.0" },
-      })
-      
-      if (!res.ok) continue
-      const data = await res.json()
+      const data = await fetchJsonWithRetry(url, 3)
+      if (!data) continue
       
       const posts = (data.data?.children || [])
         .map((child: any) => child.data)
@@ -298,15 +355,8 @@ export async function getRedditThreadContext(url: string): Promise<RedditThreadC
   try {
     const normalized = url.endsWith("/") ? url.slice(0, -1) : url
     const jsonUrl = `${normalized}.json?limit=8&sort=top`
-    const res = await fetch(jsonUrl, {
-      headers: {
-        "User-Agent": "PIQD Research Bot 1.0",
-      },
-    })
-
-    if (!res.ok) return null
-
-    const payload: unknown = await res.json()
+    const payload: unknown = await fetchJsonWithRetry(jsonUrl, 3)
+    if (!payload) return null
     if (!Array.isArray(payload) || payload.length < 2) return null
 
     const postListing = payload[0] as { data?: { children?: Array<{ data?: { selftext?: string } }> } }
