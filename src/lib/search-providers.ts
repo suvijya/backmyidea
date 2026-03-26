@@ -175,6 +175,34 @@ export async function searchXPosts(query: string, numResults: number = 20): Prom
   }).slice(0, numResults)
 }
 
+export async function searchForumSources(query: string, numResults: number = 30): Promise<SearchResult[]> {
+  const forumQueries = [
+    `site:reddit.com ${query}`,
+    `site:news.ycombinator.com ${query}`,
+    `site:stackoverflow.com ${query}`,
+    `site:producthunt.com ${query}`,
+    `site:indiehackers.com ${query}`,
+    `site:quora.com ${query}`,
+    `site:dev.to ${query}`,
+    `site:medium.com ${query}`,
+    `site:lobste.rs ${query}`,
+    `site:hackernews.io ${query}`,
+  ]
+
+  const all: SearchResult[] = []
+  for (const q of forumQueries) {
+    const found = await searchWeb(q, Math.max(3, Math.floor(numResults / forumQueries.length) + 2))
+    all.push(...found)
+  }
+
+  const seen = new Set<string>()
+  return all.filter((item) => {
+    if (!item.url || seen.has(item.url)) return false
+    seen.add(item.url)
+    return true
+  }).slice(0, numResults)
+}
+
 async function searchWithGoogleNewsRSS(query: string, num: number): Promise<SearchResult[]> {
   try {
     const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`
@@ -312,12 +340,12 @@ export async function searchRedditTargeted(
     "business",
     "smallbusiness",
   ],
-  limit: number = 5
+  limit: number = 8
 ): Promise<RedditPost[]> {
   const allPosts: RedditPost[] = []
   
-  // Search top 5 most relevant subreddits to get a better net
-  const targetSubs = subreddits.slice(0, 5)
+  // Search broader list for better coverage in deep research
+  const targetSubs = subreddits.slice(0, 10)
   
   for (const sub of targetSubs) {
     try {

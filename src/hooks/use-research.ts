@@ -14,7 +14,7 @@ export function useResearch({ ideaId, onComplete }: UseResearchOptions) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState("")
   const [progressFeed, setProgressFeed] = useState<string[]>([])
-  const [sourcesFeed, setSourcesFeed] = useState<Array<{ url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number }>>([])
+  const [sourcesFeed, setSourcesFeed] = useState<Array<{ url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number; channel?: "reddit" | "news" | "web" | "x" | "forum"; relevance?: number }>>([])
   const [research, setResearch] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -71,13 +71,15 @@ export function useResearch({ ideaId, onComplete }: UseResearchOptions) {
                     url: data.url,
                     status: data.status as "queued" | "scraping" | "done" | "failed",
                     chars: typeof data.chars === "number" ? data.chars : undefined,
+                    channel: data.channel as "reddit" | "news" | "web" | "x" | "forum" | undefined,
+                    relevance: typeof data.relevance === "number" ? data.relevance : undefined,
                   }
                   if (existingIndex >= 0) {
                     next[existingIndex] = { ...next[existingIndex], ...item }
                   } else {
                     next.push(item)
                   }
-                  return next.slice(-120)
+                  return next.slice(-300)
                 })
               } else if (data.type === 'complete' || data.type === 'cached') {
                 setResearch(data.research)

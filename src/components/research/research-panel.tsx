@@ -81,7 +81,79 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
       pdf.setFontSize(11)
       pdf.setTextColor(229, 231, 235)
       pdf.text(`Generated ${new Date(research.generatedAt).toLocaleString()}`, margin, 62)
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(10)
+      pdf.setTextColor(251, 191, 36)
+      pdf.text("India-Born Startup Intelligence", pageW - margin - 170, 40)
       y = 124
+    }
+
+    const drawCoverPage = () => {
+      drawHeader()
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(28)
+      pdf.setTextColor(17, 24, 39)
+      const titleLines = pdf.splitTextToSize(idea.title, contentW)
+      pdf.text(titleLines, margin, 190)
+
+      pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(12)
+      pdf.setTextColor(75, 85, 99)
+      const pitchLines = pdf.splitTextToSize(idea.pitch || "", contentW)
+      pdf.text(pitchLines, margin, 230)
+
+      pdf.setFillColor(255, 247, 237)
+      pdf.roundedRect(margin, 290, contentW, 140, 10, 10, "F")
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(11)
+      pdf.setTextColor(17, 24, 39)
+      pdf.text("Founder Snapshot", margin + 16, 316)
+      pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(11)
+      pdf.setTextColor(55, 65, 81)
+      pdf.text(`Category: ${idea.category.replace(/_/g, " ")}`, margin + 16, 340)
+      pdf.text(`Stage: ${idea.stage.replace(/_/g, " ")}`, margin + 16, 360)
+      pdf.text(`Signal: ${String(research?.verdict?.overallSignal || "moderate").toUpperCase()}`, margin + 16, 380)
+      pdf.text(`Sources discovered: ${research?.sourceStats?.discovered || 0}`, margin + 16, 400)
+
+      pdf.setFont("helvetica", "italic")
+      pdf.setFontSize(10)
+      pdf.setTextColor(100, 116, 139)
+      pdf.text("Confidential report generated for PIQD founders.", margin, pageH - 50)
+      pdf.addPage()
+      y = margin
+    }
+
+    const drawTOC = () => {
+      drawHeader()
+      y = 140
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(20)
+      pdf.setTextColor(17, 24, 39)
+      pdf.text("Table of Contents", margin, y)
+      y += 28
+
+      const tocItems = [
+        "1. Executive Summary",
+        "2. Investor Snapshot",
+        "3. Strengths, Risks, Recommendations",
+        "4. Market Context",
+        "5. Search Demand",
+        "6. Reddit Pulse",
+        "7. Competitor Landscape",
+        "8. News and Evidence",
+        "9. Source Appendix",
+      ]
+
+      pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(12)
+      tocItems.forEach((item) => {
+        pdf.text(item, margin, y)
+        y += 20
+      })
+
+      pdf.addPage()
+      y = margin
     }
 
     const drawTitleBlock = () => {
@@ -168,6 +240,8 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
       y += 8
     }
 
+    drawCoverPage()
+    drawTOC()
     drawHeader()
     drawTitleBlock()
     drawMetricCards()
@@ -214,6 +288,51 @@ export function ResearchPanel({ research, idea, isOwner }: ResearchPanelProps) {
         ? research.newsData.articles.slice(0, 10).map((a: { title: string; source: string }) => `${a.title} - ${a.source}`)
         : []
     )
+
+    pdf.addPage()
+    y = margin
+    drawHeader()
+    y = 140
+    drawSection(
+      "Investor Snapshot (One-Page)",
+      `${idea.title}\nScore: ${research?.verdict?.overallScore || 0}/100\nSignal: ${research?.verdict?.overallSignal || "moderate"}\nShould Build: ${research?.verdict?.shouldBuild || "maybe"}\nKey Insight: ${research?.verdict?.keyInsight || "N/A"}`,
+      [
+        ...(Array.isArray(research?.verdict?.strengths) ? research.verdict.strengths.slice(0, 3).map((s: string) => `Strength: ${s}`) : []),
+        ...(Array.isArray(research?.verdict?.risks) ? research.verdict.risks.slice(0, 3).map((r: string) => `Risk: ${r}`) : []),
+      ]
+    )
+
+    drawSection(
+      "Source Appendix",
+      "Top evidence references grouped by channel.",
+      [
+        `Reddit analyzed: ${research?.redditData?.totalPostsFound || 0}`,
+        `News articles: ${research?.newsData?.articles?.length || 0}`,
+        `Discovered sources: ${research?.sourceStats?.discovered || 0}`,
+        `Scraped sources: ${research?.sourceStats?.scraped || 0}`,
+      ]
+    )
+
+    const appendixSources: string[] = []
+    if (Array.isArray(research?.newsData?.articles)) {
+      research.newsData.articles.slice(0, 20).forEach((a: { title: string; source: string; url?: string }) => {
+        appendixSources.push(`${a.title} (${a.source})${a.url ? ` - ${a.url}` : ""}`)
+      })
+    }
+    if (Array.isArray(research?.redditData?.topPosts)) {
+      research.redditData.topPosts.slice(0, 15).forEach((p: { title: string; url?: string }) => {
+        appendixSources.push(`${p.title}${p.url ? ` - ${p.url}` : ""}`)
+      })
+    }
+    drawSection("Evidence URLs", undefined, appendixSources)
+
+    if (research?.sourceCitations) {
+      drawSection("Citations: Market", undefined, (research.sourceCitations.market || []).slice(0, 12))
+      drawSection("Citations: Search", undefined, (research.sourceCitations.search || []).slice(0, 10))
+      drawSection("Citations: Reddit", undefined, (research.sourceCitations.reddit || []).slice(0, 12))
+      drawSection("Citations: Competitors", undefined, (research.sourceCitations.competitors || []).slice(0, 10))
+      drawSection("Citations: News", undefined, (research.sourceCitations.news || []).slice(0, 12))
+    }
 
     const pages = pdf.getNumberOfPages()
     for (let i = 1; i <= pages; i += 1) {

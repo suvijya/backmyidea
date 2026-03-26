@@ -1,7 +1,7 @@
 // src/lib/research.ts
 
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { searchWeb, searchXPosts, searchRedditTargeted, searchReddit, getRedditThreadContext, SearchResult, RedditPost, getRealGoogleTrends, GoogleTrendsResult } from "@/lib/search-providers"
+import { searchWeb, searchXPosts, searchForumSources, searchRedditTargeted, searchReddit, getRedditThreadContext, SearchResult, RedditPost, getRealGoogleTrends, GoogleTrendsResult } from "@/lib/search-providers"
 import { scrapeUrl } from "@/lib/scraper"
 import { aiLimiter } from "@/lib/redis"
 
@@ -42,6 +42,14 @@ export interface ResearchOutput {
     reddit: number
     news: number
     xPosts: number
+    forums: number
+  }
+  sourceCitations?: {
+    market: string[]
+    search: string[]
+    reddit: string[]
+    competitors: string[]
+    news: string[]
   }
 }
 
@@ -55,7 +63,14 @@ interface IdeaIntent {
 
 export type ResearchProgressEvent =
   | { type: "progress"; message: string }
-  | { type: "source"; url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number }
+  | {
+      type: "source"
+      url: string
+      status: "queued" | "scraping" | "done" | "failed"
+      chars?: number
+      channel?: "reddit" | "news" | "web" | "x" | "forum"
+      relevance?: number
+    }
 
 export interface CompetitorData {
   name: string
@@ -79,6 +94,7 @@ export interface MarketData {
     newsCount: number
     scrapedCount: number
     xCount: number
+    forumCount?: number
     confidence: "high" | "medium" | "low"
   }
 }
@@ -157,23 +173,30 @@ export async function generateResearch(
   const dataSourcesUsed: string[] = ["gemini", "piqd_crowd"]
   
   const emitProgress = (message: string) => onProgress?.({ type: "progress", message })
-  const emitSource = (url: string, status: "queued" | "scraping" | "done" | "failed", chars?: number) =>
-    onProgress?.({ type: "source", url, status, chars })
+  const emitSource = (
+    url: string,
+    status: "queued" | "scraping" | "done" | "failed",
+    chars?: number,
+    channel?: "reddit" | "news" | "web" | "x" | "forum",
+    relevance?: number
+  ) => onProgress?.({ type: "source", url, status, chars, channel, relevance })
   const depth = input.researchDepth || "deep"
   const config = depth === "fast"
     ? {
         redditSearchLimit: 12,
-        redditThreadLimit: 5,
+        redditThreadLimit: 8,
         queryResultCount: 6,
-        scrapeLimit: 8,
+        scrapeLimit: 30,
         xSearchLimit: 8,
+        forumSearchLimit: 16,
       }
     : {
-        redditSearchLimit: 25,
-        redditThreadLimit: 10,
-        queryResultCount: 10,
-        scrapeLimit: 15,
-        xSearchLimit: 20,
+        redditSearchLimit: 50,
+        redditThreadLimit: 20,
+        queryResultCount: 14,
+        scrapeLimit: 100,
+        xSearchLimit: 40,
+        forumSearchLimit: 40,
       }
 
   emitProgress(`Research mode: ${depth.toUpperCase()}`)
@@ -193,21 +216,20 @@ export async function generateResearch(
     reddit = await searchReddit(searchQueries.reddit, config.redditSearchLimit)
   }
   emitProgress(`Found ${reddit.length} Reddit posts`)
-  reddit.slice(0, 20).forEach((post) => emitSource(post.url, "queued"))
 
   emitProgress("Crawling top Reddit threads for comment-level context...")
   const redditContexts: Array<{ url: string; body: string; topComments: string[] }> = []
   for (const post of reddit.slice(0, config.redditThreadLimit)) {
     emitProgress(`Crawling Reddit thread: ${post.url}`)
-    emitSource(post.url, "scraping")
+    emitSource(post.url, "scraping", undefined, "reddit")
     const thread = await getRedditThreadContext(post.url)
     if (thread) {
       redditContexts.push(thread)
       emitProgress(`Extracted ${thread.topComments.length} comments from: ${post.url}`)
-      emitSource(post.url, "done")
+      emitSource(post.url, "done", undefined, "reddit")
     } else {
       emitProgress(`Could not crawl Reddit thread: ${post.url}`)
-      emitSource(post.url, "failed")
+      emitSource(post.url, "failed", undefined, "reddit")
     }
   }
 
@@ -280,7 +302,10 @@ export async function generateResearch(
   emitProgress("Searching X/Twitter discussions...")
   const xPosts = await searchXPosts(`${intent.problemDomain} ${intent.coreSearchPhrases.join(" ")}`, config.xSearchLimit)
   emitProgress(`Found ${xPosts.length} X/Twitter references`)
-  xPosts.forEach((r) => emitSource(r.url, "queued"))
+
+  emitProgress("Searching public forums and communities...")
+  const forumSources = await searchForumSources(`${intent.problemDomain} ${intent.coreSearchPhrases.join(" ")}`, config.forumSearchLimit)
+  emitProgress(`Found ${forumSources.length} public forum sources`)
 
   const competitorPool: SearchResult[] = []
   for (const q of competitorQueries) {
@@ -288,7 +313,6 @@ export async function generateResearch(
     const results = await searchWeb(q, config.queryResultCount)
     competitorPool.push(...results)
     emitProgress(`Found ${results.length} results for query`)
-    results.forEach((r) => emitSource(r.url, "queued"))
   }
 
   const newsPool: SearchResult[] = []
@@ -297,7 +321,6 @@ export async function generateResearch(
     const results = await searchWeb(q, config.queryResultCount)
     newsPool.push(...results)
     emitProgress(`Found ${results.length} category news results`)
-    results.forEach((r) => emitSource(r.url, "queued"))
   }
 
   const dedupeByUrl = (items: SearchResult[]) => {
@@ -311,16 +334,26 @@ export async function generateResearch(
     return out
   }
 
-  const webRes = dedupeByUrl(competitorPool).slice(0, 30)
-  const compRes = dedupeByUrl(competitorPool.filter((r) => /competitor|alternative|vs|compare|startup/i.test(`${r.title} ${r.snippet}`))).slice(0, 25)
+  const rankedCompetitorPool = dedupeByUrl(competitorPool)
+    .map((item) => ({ item, score: scoreSearchRelevance(item, intent) }))
+    .sort((a, b) => b.score - a.score)
+  const webRes = rankedCompetitorPool.slice(0, 40).map((x) => x.item)
+  const compRes = rankedCompetitorPool
+    .filter(({ item }) => /competitor|alternative|vs|compare|startup/i.test(`${item.title} ${item.snippet}`))
+    .slice(0, 25)
+    .map((x) => x.item)
 
   emitProgress(`Fetching Google Trends for keyword: ${searchQueries.trends}`)
   const trends = await getRealGoogleTrends(searchQueries.trends)
   emitProgress(`Google Trends direction: ${trends.trendDirection}`)
 
-  const newsRes = dedupeByUrl(newsPool).slice(0, 35)
+  const newsRes = dedupeByUrl(newsPool)
+    .map((item) => ({ item, score: scoreSearchRelevance(item, intent) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 35)
+    .map((x) => x.item)
   emitProgress(`Compiled ${newsRes.length} category-news sources`)
-  emitProgress(`Total source universe size: ${reddit.length + webRes.length + newsRes.length + xPosts.length}`)
+  emitProgress(`Total source universe size: ${reddit.length + webRes.length + newsRes.length + xPosts.length + forumSources.length}`)
 
   
   if (finalReddit.length > 0) dataSourcesUsed.push("reddit")
@@ -328,31 +361,84 @@ export async function generateResearch(
   dataSourcesUsed.push("google_trends")
 
   // --- Deep Scraping Step ---
-  emitProgress("Performing deep scraping on News results...")
-  
-  const urlsToScrape: string[] = []
-  newsRes.slice(0, config.scrapeLimit).forEach((n) => urlsToScrape.push(n.url))
-  xPosts.slice(0, Math.max(4, Math.floor(config.scrapeLimit / 2))).forEach((p) => urlsToScrape.push(p.url))
-  
-  // Scrape concurrently
-  const uniqueUrls = Array.from(new Set(urlsToScrape)).slice(0, config.scrapeLimit)
+  emitProgress("Selecting highest-quality sources for deep crawling...")
+
+  const candidates: Array<{ url: string; channel: "reddit" | "news" | "web" | "x" | "forum"; relevance: number }> = [
+    ...finalReddit.map((p) => ({
+      url: p.url,
+      channel: "reddit" as const,
+      relevance: scoreTextRelevance(`${p.title} ${p.selftext || ""}`, intent),
+    })),
+    ...newsRes.map((r) => ({
+      url: r.url,
+      channel: "news" as const,
+      relevance: scoreSearchRelevance(r, intent),
+    })),
+    ...webRes.map((r) => ({
+      url: r.url,
+      channel: "web" as const,
+      relevance: scoreSearchRelevance(r, intent),
+    })),
+    ...xPosts.map((r) => ({
+      url: r.url,
+      channel: "x" as const,
+      relevance: scoreSearchRelevance(r, intent),
+    })),
+    ...forumSources.map((r) => ({
+      url: r.url,
+      channel: "forum" as const,
+      relevance: scoreSearchRelevance(r, intent),
+    })),
+  ]
+
+  const dedupedCandidates: Array<{ url: string; channel: "reddit" | "news" | "web" | "x" | "forum"; relevance: number }> = []
+  const seenCandidateUrls = new Set<string>()
+  for (const candidate of candidates.sort((a, b) => b.relevance - a.relevance)) {
+    if (!candidate.url || seenCandidateUrls.has(candidate.url)) continue
+    seenCandidateUrls.add(candidate.url)
+    dedupedCandidates.push(candidate)
+  }
+
+  const scrapeTarget = Math.min(config.scrapeLimit, dedupedCandidates.length)
+  const scrapeCandidates = dedupedCandidates.slice(0, scrapeTarget)
+  scrapeCandidates.forEach((s) => emitSource(s.url, "queued", undefined, s.channel, s.relevance))
+  emitProgress(`Queued ${scrapeCandidates.length} sources for crawling in ${depth.toUpperCase()} mode`)
+
+  // Scrape concurrently with bounded workers
+  const uniqueUrls = scrapeCandidates.map((s) => s.url)
   let scrapedContext = ""
   if (uniqueUrls.length > 0) {
     const scraped: Array<{ success: boolean; url: string; markdown?: string; error?: string }> = []
-    for (const url of uniqueUrls) {
-      emitProgress(`Scraping source: ${url}`)
-      emitSource(url, "scraping")
-      const result = await scrapeUrl(url)
-      scraped.push(result)
-      if (result.success) {
-        emitProgress(`Scraped successfully: ${url}`)
-        emitProgress(`Captured ${(result.markdown || "").length} characters from ${url}`)
-        emitSource(url, "done", (result.markdown || "").length)
-      } else {
-        emitProgress(`Scrape failed: ${url}`)
-        emitSource(url, "failed")
+
+    const channelByUrl = new Map(scrapeCandidates.map((s) => [s.url, s.channel]))
+    const relevanceByUrl = new Map(scrapeCandidates.map((s) => [s.url, s.relevance]))
+
+    const workerCount = depth === "deep" ? 6 : 4
+    let cursor = 0
+    const workers = Array.from({ length: workerCount }, async () => {
+      while (cursor < uniqueUrls.length) {
+        const idx = cursor
+        cursor += 1
+        const url = uniqueUrls[idx]
+        const channel = channelByUrl.get(url) || "web"
+        const relevance = relevanceByUrl.get(url)
+
+        emitProgress(`Scraping source (${idx + 1}/${uniqueUrls.length}): ${url}`)
+        emitSource(url, "scraping", undefined, channel, relevance)
+
+        const result = await scrapeUrl(url)
+        scraped.push(result)
+        if (result.success) {
+          emitProgress(`Scraped successfully: ${url}`)
+          emitProgress(`Captured ${(result.markdown || "").length} characters from ${url}`)
+          emitSource(url, "done", (result.markdown || "").length, channel, relevance)
+        } else {
+          emitProgress(`Scrape failed: ${url}`)
+          emitSource(url, "failed", undefined, channel, relevance)
+        }
       }
-    }
+    })
+    await Promise.all(workers)
 
     const successfulScrapes = scraped.filter(s => s.success && s.markdown)
     if (successfulScrapes.length > 0) {
@@ -368,6 +454,7 @@ export async function generateResearch(
     newsCount: newsRes.length,
     scrapedCount: uniqueUrls.length,
     xCount: xPosts.length,
+    forumCount: forumSources.length,
     confidence: newsRes.length > 15 && uniqueUrls.length > 8 ? "high" : newsRes.length > 7 ? "medium" : "low",
   }
   
@@ -402,13 +489,33 @@ export async function generateResearch(
     dataSourcesUsed,
     generationTime,
     sourceStats: {
-      discovered: reddit.length + webRes.length + newsRes.length + xPosts.length,
+      discovered: reddit.length + webRes.length + newsRes.length + xPosts.length + forumSources.length,
       scraped: uniqueUrls.length,
       reddit: finalReddit.length,
       news: newsRes.length,
       xPosts: xPosts.length,
+      forums: forumSources.length,
+    },
+    sourceCitations: {
+      market: newsRes.slice(0, 8).map((x) => x.url),
+      search: newsRes.slice(0, 5).map((x) => x.url),
+      reddit: finalReddit.slice(0, 8).map((x) => x.url),
+      competitors: compRes.slice(0, 8).map((x) => x.url),
+      news: newsRes.slice(0, 10).map((x) => x.url),
     },
   }
+}
+
+function scoreTextRelevance(text: string, intent: IdeaIntent): number {
+  const normalized = text.toLowerCase()
+  const includeHits = intent.includeKeywords.reduce((sum, kw) => (normalized.includes(kw.toLowerCase()) ? sum + 1 : sum), 0)
+  const excludeHits = intent.excludeKeywords.reduce((sum, kw) => (normalized.includes(kw.toLowerCase()) ? sum + 1 : sum), 0)
+  const base = 0.35 + includeHits * 0.08 - excludeHits * 0.22
+  return Math.max(0, Math.min(1, Number(base.toFixed(2))))
+}
+
+function scoreSearchRelevance(item: SearchResult, intent: IdeaIntent): number {
+  return scoreTextRelevance(`${item.title} ${item.snippet} ${item.url}`, intent)
 }
 
 function buildSearchQueries(input: ResearchInput, intent: IdeaIntent) {

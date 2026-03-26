@@ -297,6 +297,7 @@ alert-dialog, avatar, badge, button, card, checkbox, dialog, dropdown-menu, form
 | Route | Method | Description |
 |---|---|---|
 | `/api/ideas/[id]/comments` | GET | Paginated comments for an idea. Top-level only (replies nested via include). Sorted by pinned first, then newest. |
+| `/api/ideas/[id]/research` | GET, POST | AI deep-dive research endpoint with SSE streaming progress, force regenerate, and depth mode. |
 
 ### User Profiles
 
@@ -730,7 +731,7 @@ The investor layout relied on `x-url` header to detect the apply page and hide t
 | `/investor/compare` | `src/app/investor/compare/page.tsx` |
 | `/investor/watchlist` | `src/app/investor/watchlist/page.tsx` |
 
-### API Routes (19 endpoints)
+### API Routes (20 endpoints)
 
 | Endpoint | Methods |
 |---|---|
@@ -740,6 +741,7 @@ The investor layout relied on `x-url` header to detect the apply page and hide t
 | `/api/ideas/trending` | GET |
 | `/api/ideas/[id]/vote` | GET |
 | `/api/ideas/[id]/comments` | GET |
+| `/api/ideas/[id]/research` | GET, POST |
 | `/api/notifications` | GET |
 | `/api/notifications/unread-count` | GET |
 | `/api/validation-card/[id]` | GET |
@@ -912,6 +914,26 @@ UserRole, UserLevel, Category (16 sectors), IdeaStage, IdeaStatus, TargetAudienc
 - **Fixed Persistent Mobile Routing/Redirect Loop:**
   - Addressed a major bug where clicking mobile navigation links (like Dashboard or Rank) wrongfully redirected users to the Explore page.
   - Resolved missing cookie `returnTo` state losses across `middleware.ts`, `onboard/page.tsx`, and `sync-onboarding/route.ts`. The exact requested path is now properly tracked and respected after the onboarding flow finishes or validates.
+- **Deep Dive Research -- Semantic-First, Multi-Source Intelligence Upgrade (Production-focused):**
+  - Implemented semantic intent stage before crawling (problem-domain/ICP/keyword intent extraction), so research is driven by idea meaning rather than idea name.
+  - Added depth modes (`fast` / `deep`) from UI to API to backend orchestration.
+  - Added broad public-source discovery in deep mode: Reddit, Web, News, X/Twitter references, and forum communities.
+  - Added deterministic source relevance scoring and ranking before AI synthesis.
+  - Added Perplexity-style SSE streaming improvements: step-level progress + source-level status with channel/relevance metadata.
+  - Added robust Reddit reliability hardening: retries, timeout handling, rotating user agents, thread-context extraction.
+  - Added grounded market context fusion using real fetched/scraped evidence and source confidence signals.
+  - Added structured source citations in research output (`market`, `search`, `reddit`, `competitors`, `news`).
+  - Added branded multi-page PDF export with PIQD styling, cover page, TOC, investor snapshot, and source appendix.
+  - Expanded source crawling scale to match queued counts with actual scraping throughput:
+    - `fast` mode now targets ~20-30 scraped sources
+    - `deep` mode now targets ~60-100 scraped sources
+    - Added bounded-worker parallel scraping so queued URLs are actually processed (instead of mostly staying queued)
+  - Added channel-level source metadata in stream events (`reddit/news/web/x/forum`) + relevance score and surfacing in live feed UI.
+  - Added deterministic source citation bundles in report output for market/search/reddit/competitors/news traceability.
+  - Added additional public forum discovery expansion to improve paid-tier research depth.
+- **Dummy Data for Feature Testing:**
+  - Created 2 detailed ACTIVE ideas for `anmolsinha345@gmail.com` and 1 detailed ACTIVE idea for `suvijya123@gmail.com`.
+  - Added seed comments and votes on all 3 ideas to test analytics, score panels, and research generation quality on non-empty engagement data.
 
 ### Rate Limiters Active
 | Limiter | Limit | Prefix |

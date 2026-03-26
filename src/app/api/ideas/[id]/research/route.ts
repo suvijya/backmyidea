@@ -150,6 +150,8 @@ export async function POST(
             url: event.url,
             status: event.status,
             chars: event.chars,
+            channel: event.channel,
+            relevance: event.relevance,
           })
         })
 

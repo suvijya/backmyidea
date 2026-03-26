@@ -70,6 +70,10 @@ export function MarketSection({ marketData }: MarketSectionProps) {
             <div className="text-lg font-semibold text-gray-900">{marketData.sourceSignals.xCount}</div>
           </div>
           <div className="rounded-lg border bg-gray-50 p-3">
+            <div className="text-xs text-gray-500 uppercase">Forum Signals</div>
+            <div className="text-lg font-semibold text-gray-900">{(marketData.sourceSignals as any).forumCount ?? 0}</div>
+          </div>
+          <div className="rounded-lg border bg-gray-50 p-3">
             <div className="text-xs text-gray-500 uppercase">Confidence</div>
             <div className="text-lg font-semibold text-gray-900 capitalize">{marketData.sourceSignals.confidence}</div>
           </div>
