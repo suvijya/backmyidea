@@ -9,6 +9,7 @@ const REDDIT_USER_AGENTS = [
 ]
 
 async function fetchJsonWithRetry(url: string, maxAttempts: number = 3): Promise<any | null> {
+  let lastStatus: number | null = null
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       const controller = new AbortController()
@@ -29,6 +30,8 @@ async function fetchJsonWithRetry(url: string, maxAttempts: number = 3): Promise
         return await res.json()
       }
 
+      lastStatus = res.status
+
       if (attempt === maxAttempts) return null
       await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
     } catch {
@@ -36,7 +39,27 @@ async function fetchJsonWithRetry(url: string, maxAttempts: number = 3): Promise
       await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
     }
   }
+  if (lastStatus !== null) {
+    console.warn(`Reddit JSON fetch failed with status ${lastStatus}: ${url}`)
+  }
   return null
+}
+
+function mapSearchResultsToRedditPosts(results: SearchResult[]): RedditPost[] {
+  return results
+    .filter((r) => /reddit\.com/i.test(r.url))
+    .map((r) => {
+      const subMatch = r.url.match(/reddit\.com\/r\/([^/]+)/i)
+      return {
+        title: r.title,
+        subreddit: subMatch ? `r/${subMatch[1]}` : "r/unknown",
+        url: r.url,
+        selftext: r.snippet,
+        score: 0,
+        numComments: 0,
+        created: new Date().toISOString(),
+      }
+    })
 }
 
 export interface SearchResult {
@@ -248,6 +271,74 @@ function decodeXml(value: string): string {
     .replace(/&#39;/g, "'")
 }
 
+async function fetchTextWithRetry(url: string, maxAttempts: number = 3): Promise<string | null> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+      const ua = REDDIT_USER_AGENTS[(attempt - 1) % REDDIT_USER_AGENTS.length]
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": ua,
+          "Accept": "text/html,application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-IN,en;q=0.9",
+        },
+        signal: controller.signal,
+        cache: "no-store",
+      })
+      clearTimeout(timeout)
+      if (res.ok) {
+        return await res.text()
+      }
+      if (attempt === maxAttempts) return null
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
+    } catch {
+      if (attempt === maxAttempts) return null
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
+    }
+  }
+  return null
+}
+
+function parseRedditRss(xml: string, max: number): RedditPost[] {
+  const items = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g)).slice(0, max)
+  return items.map((match) => {
+    const itemXml = match[1]
+    const title = decodeXml((itemXml.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] || itemXml.match(/<title>([\s\S]*?)<\/title>/)?.[1] || "Untitled").trim())
+    const link = decodeXml((itemXml.match(/<link>([\s\S]*?)<\/link>/)?.[1] || "").trim())
+    const description = decodeXml((itemXml.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/)?.[1] || itemXml.match(/<description>([\s\S]*?)<\/description>/)?.[1] || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+    const sub = link.match(/reddit\.com\/r\/([^/]+)/i)?.[1]
+    const date = decodeXml((itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || "").trim())
+
+    return {
+      title,
+      subreddit: sub ? `r/${sub}` : "r/unknown",
+      url: link,
+      selftext: description,
+      score: 0,
+      numComments: 0,
+      created: date ? new Date(date).toISOString() : new Date().toISOString(),
+    }
+  }).filter((p) => Boolean(p.url))
+}
+
+async function searchRedditViaRss(query: string, limit: number, subreddits?: string[]): Promise<RedditPost[]> {
+  const encoded = encodeURIComponent(query)
+  const urls = subreddits && subreddits.length > 0
+    ? subreddits.map((sub) => `https://www.reddit.com/r/${sub}/search.rss?q=${encoded}&restrict_sr=on&sort=relevance&t=year`)
+    : [`https://www.reddit.com/search.rss?q=${encoded}&sort=relevance&t=year`]
+
+  const all: RedditPost[] = []
+  for (const url of urls) {
+    const xml = await fetchTextWithRetry(url, 3)
+    if (!xml) continue
+    all.push(...parseRedditRss(xml, Math.max(3, Math.ceil(limit / Math.max(1, urls.length)))))
+  }
+
+  const deduped = Array.from(new Map(all.map((p) => [p.url, p])).values())
+  return deduped.slice(0, limit)
+}
+
 async function searchWithSerper(query: string, num: number): Promise<SearchResult[]> {
   const res = await fetch("https://google.serper.dev/search", {
     method: "POST",
@@ -303,7 +394,13 @@ export async function searchReddit(
     const encoded = encodeURIComponent(query)
     const url = `https://www.reddit.com/search.json?q=${encoded}&sort=relevance&limit=${limit}&type=link`
     const data = await fetchJsonWithRetry(url, 3)
-    if (!data) return []
+    if (!data) {
+      console.warn("Reddit API blocked or unavailable. Falling back to Reddit RSS + web-indexed links.")
+      const rssFallback = await searchRedditViaRss(query, limit)
+      if (rssFallback.length > 0) return rssFallback
+      const fallback = await searchWeb(`site:reddit.com ${query}`, limit)
+      return mapSearchResultsToRedditPosts(fallback)
+    }
     
     return (data.data?.children || [])
       .map((child: any) => child.data)
@@ -374,9 +471,19 @@ export async function searchRedditTargeted(
   }
   
   // Sort by relevance (score) and deduplicate
-  return allPosts
+  const deduped = Array.from(new Map(allPosts.map((p) => [p.url, p])).values())
     .sort((a, b) => b.score - a.score)
-    .slice(0, 10)
+    .slice(0, 20)
+
+  if (deduped.length === 0) {
+    console.warn("Targeted Reddit search returned 0. Falling back to Reddit RSS + web-indexed links.")
+    const rssFallback = await searchRedditViaRss(query, limit * 3, targetSubs)
+    if (rssFallback.length > 0) return rssFallback
+    const fallback = await searchWeb(`site:reddit.com ${query}`, limit * 3)
+    return mapSearchResultsToRedditPosts(fallback)
+  }
+
+  return deduped
 }
 
 export async function getRedditThreadContext(url: string): Promise<RedditThreadContext | null> {
@@ -384,7 +491,28 @@ export async function getRedditThreadContext(url: string): Promise<RedditThreadC
     const normalized = url.endsWith("/") ? url.slice(0, -1) : url
     const jsonUrl = `${normalized}.json?limit=8&sort=top`
     const payload: unknown = await fetchJsonWithRetry(jsonUrl, 3)
-    if (!payload) return null
+    if (!payload) {
+      const oldRedditUrl = url.replace("https://reddit.com", "https://old.reddit.com").replace("https://www.reddit.com", "https://old.reddit.com")
+      const html = await fetchTextWithRetry(oldRedditUrl, 2)
+      if (!html) return null
+
+      const body = (html.match(/<div class="md">([\s\S]*?)<\/div>/i)?.[1] || "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 5000)
+
+      const comments = Array.from(html.matchAll(/<div class="md">([\s\S]*?)<\/div>/gi))
+        .slice(1, 10)
+        .map((m) => m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+        .filter((t) => t.length > 20)
+
+      return {
+        url,
+        body,
+        topComments: comments,
+      }
+    }
     if (!Array.isArray(payload) || payload.length < 2) return null
 
     const postListing = payload[0] as { data?: { children?: Array<{ data?: { selftext?: string } }> } }

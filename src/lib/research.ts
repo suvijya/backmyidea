@@ -216,6 +216,9 @@ export async function generateResearch(
     reddit = await searchReddit(searchQueries.reddit, config.redditSearchLimit)
   }
   emitProgress(`Found ${reddit.length} Reddit posts`)
+  if (reddit.length === 0) {
+    emitProgress("Reddit direct API appears blocked in this environment. Using search-indexed Reddit fallback.")
+  }
 
   emitProgress("Crawling top Reddit threads for comment-level context...")
   const redditContexts: Array<{ url: string; body: string; topComments: string[] }> = []
