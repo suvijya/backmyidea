@@ -383,37 +383,139 @@ async function searchWithGoogleCSE(query: string, num: number): Promise<SearchRe
 }
 
 /**
+ * Search Reddit via Serper.dev `site:reddit.com` queries.
+ * This is the most reliable method since Reddit blocks direct API calls.
+ */
+async function searchRedditViaSerper(
+  query: string,
+  limit: number = 15,
+  subreddits?: string[]
+): Promise<RedditPost[]> {
+  if (!process.env.SERPER_API_KEY) return []
+
+  try {
+    const siteQuery = subreddits && subreddits.length > 0
+      ? subreddits.map((sub) => `site:reddit.com/r/${sub}`).join(" OR ")
+      : "site:reddit.com"
+
+    const fullQuery = `${siteQuery} ${query}`
+    const res = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: {
+        "X-API-KEY": process.env.SERPER_API_KEY!,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ q: fullQuery, num: Math.min(limit, 40), gl: "in", hl: "en" }),
+    })
+
+    if (!res.ok) return []
+    const data = await res.json()
+
+    return (data.organic || [])
+      .filter((r: any) => /reddit\.com\/r\//i.test(r.link))
+      .map((r: any) => {
+        const subMatch = r.link.match(/reddit\.com\/r\/([^/]+)/i)
+        return {
+          title: r.title?.replace(/ : .*$/, "")?.replace(/ - Reddit$/, "")?.trim() || "Untitled",
+          subreddit: subMatch ? `r/${subMatch[1]}` : "r/unknown",
+          url: r.link,
+          selftext: r.snippet || "",
+          score: 0,
+          numComments: 0,
+          created: r.date ? new Date(r.date).toISOString() : new Date().toISOString(),
+        }
+      })
+      .slice(0, limit)
+  } catch (error) {
+    console.error("Serper Reddit search failed:", error)
+    return []
+  }
+}
+
+/**
+ * Enrich Serper-discovered Reddit posts with metadata from Reddit JSON API.
+ * Silently fails per-post if Reddit blocks the request — the post is kept with score 0.
+ */
+async function enrichRedditPostsFromApi(posts: RedditPost[]): Promise<RedditPost[]> {
+  // Only try enrichment for a subset to avoid hammering Reddit
+  const toEnrich = posts.slice(0, 8)
+  const rest = posts.slice(8)
+
+  const enriched = await Promise.all(
+    toEnrich.map(async (post) => {
+      try {
+        const jsonUrl = `${post.url.replace(/\/$/, "")}.json?limit=1`
+        const data = await fetchJsonWithRetry(jsonUrl, 1)
+        if (!data || !Array.isArray(data) || data.length < 1) return post
+
+        const postData = data[0]?.data?.children?.[0]?.data
+        if (!postData) return post
+
+        return {
+          ...post,
+          title: postData.title || post.title,
+          selftext: postData.selftext?.slice(0, 3000) || post.selftext,
+          score: postData.score || post.score,
+          numComments: postData.num_comments || post.numComments,
+          subreddit: postData.subreddit_name_prefixed || post.subreddit,
+          created: postData.created_utc
+            ? new Date(postData.created_utc * 1000).toISOString()
+            : post.created,
+        }
+      } catch {
+        return post
+      }
+    })
+  )
+
+  return [...enriched, ...rest]
+}
+
+/**
  * Search Reddit for relevant discussions.
- * Uses Reddit's public JSON API (no API key needed).
+ * Strategy: Serper site:reddit.com (primary) → Reddit JSON API (fallback) → RSS (fallback) → web search.
  */
 export async function searchReddit(
   query: string,
   limit: number = 15
 ): Promise<RedditPost[]> {
   try {
+    // PRIMARY: Serper.dev site:reddit.com search (most reliable)
+    const serperResults = await searchRedditViaSerper(query, limit)
+    if (serperResults.length > 0) {
+      console.log(`[Reddit] Found ${serperResults.length} posts via Serper`)
+      const enriched = await enrichRedditPostsFromApi(serperResults)
+      return enriched
+    }
+
+    // FALLBACK 1: Reddit JSON API (often blocked)
     const encoded = encodeURIComponent(query)
     const url = `https://www.reddit.com/search.json?q=${encoded}&sort=relevance&limit=${limit}&type=link`
-    const data = await fetchJsonWithRetry(url, 3)
-    if (!data) {
-      console.warn("Reddit API blocked or unavailable. Falling back to Reddit RSS + web-indexed links.")
-      const rssFallback = await searchRedditViaRss(query, Math.max(limit, 30))
-      if (rssFallback.length > 0) return rssFallback
-      const fallback = await searchWeb(`site:reddit.com ${query}`, Math.max(limit, 30))
-      return mapSearchResultsToRedditPosts(fallback)
+    const data = await fetchJsonWithRetry(url, 2)
+    if (data) {
+      const posts = (data.data?.children || [])
+        .map((child: any) => child.data)
+        .filter((post: any) => !post.over_18)
+        .map((post: any) => ({
+          title: post.title,
+          subreddit: post.subreddit_name_prefixed || `r/${post.subreddit}`,
+          url: `https://reddit.com${post.permalink}`,
+          selftext: post.selftext?.slice(0, 3000) || "",
+          score: post.score || 0,
+          numComments: post.num_comments || 0,
+          created: new Date(post.created_utc * 1000).toISOString(),
+        }))
+      if (posts.length > 0) return posts
     }
-    
-    return (data.data?.children || [])
-      .map((child: any) => child.data)
-      .filter((post: any) => !post.over_18) // filter NSFW
-      .map((post: any) => ({
-        title: post.title,
-        subreddit: post.subreddit_name_prefixed || `r/${post.subreddit}`,
-        url: `https://reddit.com${post.permalink}`,
-        selftext: post.selftext?.slice(0, 3000) || "",
-        score: post.score || 0,
-        numComments: post.num_comments || 0,
-        created: new Date(post.created_utc * 1000).toISOString(),
-      }))
+
+    // FALLBACK 2: Reddit RSS
+    console.warn("Reddit API blocked. Falling back to RSS.")
+    const rssFallback = await searchRedditViaRss(query, Math.max(limit, 30))
+    if (rssFallback.length > 0) return rssFallback
+
+    // FALLBACK 3: Generic web search for Reddit links
+    const fallback = await searchWeb(`site:reddit.com ${query}`, Math.max(limit, 30))
+    return mapSearchResultsToRedditPosts(fallback)
   } catch (error) {
     console.error("Reddit search failed:", error)
     return []
@@ -422,6 +524,7 @@ export async function searchReddit(
 
 /**
  * Search Reddit in specific subreddits relevant to Indian startups.
+ * Strategy: Serper with subreddit-scoped queries (primary) → Reddit JSON API (fallback) → RSS → web search.
  */
 export async function searchRedditTargeted(
   query: string,
@@ -439,16 +542,34 @@ export async function searchRedditTargeted(
   ],
   limit: number = 8
 ): Promise<RedditPost[]> {
-  const allPosts: RedditPost[] = []
-  
-  // Search broader list for better coverage in deep research
   const targetSubs = subreddits.slice(0, 20)
-  
+
+  // PRIMARY: Serper.dev with subreddit-scoped queries
+  // Batch subreddits into groups of 4 to conserve Serper quota while getting good coverage
+  const allSerperPosts: RedditPost[] = []
+  const batchSize = 4
+  for (let i = 0; i < targetSubs.length; i += batchSize) {
+    const batch = targetSubs.slice(i, i + batchSize)
+    const posts = await searchRedditViaSerper(query, Math.ceil(limit / Math.max(1, targetSubs.length / batchSize)), batch)
+    allSerperPosts.push(...posts)
+  }
+
+  if (allSerperPosts.length > 0) {
+    console.log(`[Reddit Targeted] Found ${allSerperPosts.length} posts via Serper`)
+    const deduped = Array.from(new Map(allSerperPosts.map((p) => [p.url, p])).values())
+    const enriched = await enrichRedditPostsFromApi(deduped)
+    return enriched
+      .sort((a, b) => b.score - a.score)
+      .slice(0, Math.max(limit, 20))
+  }
+
+  // FALLBACK 1: Reddit JSON API per subreddit (often blocked)
+  const allPosts: RedditPost[] = []
   for (const sub of targetSubs) {
     try {
       const encoded = encodeURIComponent(query)
       const url = `https://www.reddit.com/r/${sub}/search.json?q=${encoded}&restrict_sr=1&sort=relevance&limit=${limit}`
-      const data = await fetchJsonWithRetry(url, 3)
+      const data = await fetchJsonWithRetry(url, 2)
       if (!data) continue
       
       const posts = (data.data?.children || [])
@@ -470,20 +591,20 @@ export async function searchRedditTargeted(
     }
   }
   
-  // Sort by relevance (score) and deduplicate
   const deduped = Array.from(new Map(allPosts.map((p) => [p.url, p])).values())
     .sort((a, b) => b.score - a.score)
     .slice(0, Math.max(limit, 20))
 
-  if (deduped.length === 0) {
-    console.warn("Targeted Reddit search returned 0. Falling back to Reddit RSS + web-indexed links.")
-    const rssFallback = await searchRedditViaRss(query, Math.max(limit * 4, 40), targetSubs)
-    if (rssFallback.length > 0) return rssFallback
-    const fallback = await searchWeb(`site:reddit.com ${query}`, Math.max(limit * 4, 40))
-    return mapSearchResultsToRedditPosts(fallback)
-  }
+  if (deduped.length > 0) return deduped
 
-  return deduped
+  // FALLBACK 2: RSS
+  console.warn("Targeted Reddit search returned 0. Falling back to RSS + web-indexed links.")
+  const rssFallback = await searchRedditViaRss(query, Math.max(limit * 4, 40), targetSubs)
+  if (rssFallback.length > 0) return rssFallback
+
+  // FALLBACK 3: Generic web search
+  const fallback = await searchWeb(`site:reddit.com ${query}`, Math.max(limit * 4, 40))
+  return mapSearchResultsToRedditPosts(fallback)
 }
 
 export async function getRedditThreadContext(url: string): Promise<RedditThreadContext | null> {
