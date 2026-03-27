@@ -35,7 +35,7 @@ export function ResearchProgress({
 }: {
   progress: string
   progressFeed?: string[]
-  sourcesFeed?: Array<{ url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number; channel?: "reddit" | "news" | "web" | "x" | "forum"; relevance?: number }>
+  sourcesFeed?: Array<{ url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number; channel?: "reddit" | "news" | "web" | "x" | "forum"; relevance?: number; error?: string }>
 }) {
   const matchedStepIndex = RESEARCH_STEPS.indexOf(progress)
   const currentStepIndex = matchedStepIndex >= 0 ? matchedStepIndex : 0
@@ -105,7 +105,7 @@ export function ResearchProgress({
                         : "text-gray-700"
                 }`}
               >
-                [{source.status.toUpperCase()}] [{source.channel?.toUpperCase() || "SRC"}] {source.url}{typeof source.chars === "number" ? ` (${source.chars} chars)` : ""}{typeof source.relevance === "number" ? ` [R:${source.relevance.toFixed(2)}]` : ""}
+                [{source.status.toUpperCase()}] [{source.channel?.toUpperCase() || "SRC"}] {source.url}{typeof source.chars === "number" ? ` (${source.chars} chars)` : ""}{typeof source.relevance === "number" ? ` [R:${source.relevance.toFixed(2)}]` : ""}{source.status === "failed" && source.error ? ` [E:${source.error}]` : ""}
               </div>
             ))
           )}

@@ -1042,6 +1042,13 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
 
 ## Recent Updates (March 2026)
 
+- **Research Scraping Reliability Hardening (Production-oriented):**
+  - Added source pre-filtering before crawl in `src/lib/research.ts` to skip low-yield/high-failure URLs (social-only hosts, blocked domains, and non-HTML file extensions).
+  - Added explicit scrape diagnostics in `sourceStats`: `scrapeAttempted`, `scrapeSucceeded`, `scrapeFailed`, `scrapeSkipped`, and `failureHosts` (top failing hostnames).
+  - Corrected scraping signal semantics so `scraped` now represents successful scrapes (not queued URLs), improving confidence telemetry in UI and reports.
+  - Added source-level failure reason propagation through SSE (`error`) so frontend streams can surface why sources failed.
+  - Updated market `sourceSignals` to use successful scrape counts and include attempted/failed counts for clearer confidence grading.
+
 - **Performance & Navigation Upgrades**: Added extensive `Suspense` boundaries around server components (e.g., Explore Feed, Dashboard Stats) to ensure instant UI transitions without blocking page loads.
 - **Double Header Bug Fixed**: Resolved an issue where the `Navbar` was rendering twice by stripping it from the global `not-found.tsx` fallback page, ensuring route layouts act as the single source of truth for the app header.
 - **Root File Cleanup**: Removed temporary `fix-*.js` and `update-*.js` script files from the root directory to maintain a clean workspace.

@@ -14,7 +14,7 @@ export function useResearch({ ideaId, onComplete }: UseResearchOptions) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState("")
   const [progressFeed, setProgressFeed] = useState<string[]>([])
-  const [sourcesFeed, setSourcesFeed] = useState<Array<{ url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number; channel?: "reddit" | "news" | "web" | "x" | "forum"; relevance?: number }>>([])
+  const [sourcesFeed, setSourcesFeed] = useState<Array<{ url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number; channel?: "reddit" | "news" | "web" | "x" | "forum"; relevance?: number; error?: string }>>([])
   const [research, setResearch] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -73,6 +73,7 @@ export function useResearch({ ideaId, onComplete }: UseResearchOptions) {
                     chars: typeof data.chars === "number" ? data.chars : undefined,
                     channel: data.channel as "reddit" | "news" | "web" | "x" | "forum" | undefined,
                     relevance: typeof data.relevance === "number" ? data.relevance : undefined,
+                    error: typeof data.error === "string" ? data.error : undefined,
                   }
                   if (existingIndex >= 0) {
                     next[existingIndex] = { ...next[existingIndex], ...item }

@@ -152,6 +152,7 @@ export async function POST(
             chars: event.chars,
             channel: event.channel,
             relevance: event.relevance,
+            error: event.error,
           })
         })
 

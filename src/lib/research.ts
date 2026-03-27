@@ -39,10 +39,15 @@ export interface ResearchOutput {
   sourceStats?: {
     discovered: number
     scraped: number
+    scrapeAttempted: number
+    scrapeSucceeded: number
+    scrapeFailed: number
+    scrapeSkipped: number
     reddit: number
     news: number
     xPosts: number
     forums: number
+    failureHosts: Array<{ host: string; count: number }>
   }
   sourceCitations?: {
     market: string[]
@@ -70,6 +75,7 @@ export type ResearchProgressEvent =
       chars?: number
       channel?: "reddit" | "news" | "web" | "x" | "forum"
       relevance?: number
+      error?: string
     }
 
 export interface CompetitorData {
@@ -93,6 +99,8 @@ export interface MarketData {
   sourceSignals?: {
     newsCount: number
     scrapedCount: number
+    scrapeAttempted?: number
+    scrapeFailed?: number
     xCount: number
     forumCount?: number
     confidence: "high" | "medium" | "low"
@@ -178,8 +186,9 @@ export async function generateResearch(
     status: "queued" | "scraping" | "done" | "failed",
     chars?: number,
     channel?: "reddit" | "news" | "web" | "x" | "forum",
-    relevance?: number
-  ) => onProgress?.({ type: "source", url, status, chars, channel, relevance })
+    relevance?: number,
+    error?: string
+  ) => onProgress?.({ type: "source", url, status, chars, channel, relevance, error })
   const depth = input.researchDepth || "deep"
   const config = depth === "fast"
     ? {
@@ -402,14 +411,24 @@ export async function generateResearch(
     dedupedCandidates.push(candidate)
   }
 
-  const scrapeTarget = Math.min(config.scrapeLimit, dedupedCandidates.length)
-  const scrapeCandidates = dedupedCandidates.slice(0, scrapeTarget)
+  const scrapeEligible = dedupedCandidates.filter((candidate) => isScrapeEligible(candidate.url, candidate.channel))
+  const skippedCount = dedupedCandidates.length - scrapeEligible.length
+  if (skippedCount > 0) {
+    emitProgress(`Skipped ${skippedCount} low-yield or blocked sources before crawl`)
+  }
+
+  const scrapeTarget = Math.min(config.scrapeLimit, scrapeEligible.length)
+  const scrapeCandidates = scrapeEligible.slice(0, scrapeTarget)
   scrapeCandidates.forEach((s) => emitSource(s.url, "queued", undefined, s.channel, s.relevance))
   emitProgress(`Queued ${scrapeCandidates.length} sources for crawling in ${depth.toUpperCase()} mode`)
 
   // Scrape concurrently with bounded workers
   const uniqueUrls = scrapeCandidates.map((s) => s.url)
   let scrapedContext = ""
+  let scrapeAttempted = 0
+  let scrapeSucceeded = 0
+  let scrapeFailed = 0
+  let failureHosts: Array<{ host: string; count: number }> = []
   if (uniqueUrls.length > 0) {
     const scraped: Array<{ success: boolean; url: string; markdown?: string; error?: string }> = []
 
@@ -436,14 +455,29 @@ export async function generateResearch(
           emitProgress(`Captured ${(result.markdown || "").length} characters from ${url}`)
           emitSource(url, "done", (result.markdown || "").length, channel, relevance)
         } else {
-          emitProgress(`Scrape failed: ${url}`)
-          emitSource(url, "failed", undefined, channel, relevance)
+          emitProgress(`Scrape failed: ${url} (${result.error || "unknown"})`)
+          emitSource(url, "failed", undefined, channel, relevance, result.error)
         }
       }
     })
     await Promise.all(workers)
 
     const successfulScrapes = scraped.filter(s => s.success && s.markdown)
+    const failedScrapes = scraped.filter((s) => !s.success)
+    const failureHostsMap = new Map<string, number>()
+    for (const fail of failedScrapes) {
+      const host = getHostFromUrl(fail.url)
+      failureHostsMap.set(host, (failureHostsMap.get(host) || 0) + 1)
+    }
+    failureHosts = Array.from(failureHostsMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([host, count]) => ({ host, count }))
+
+    scrapeAttempted = uniqueUrls.length
+    scrapeSucceeded = successfulScrapes.length
+    scrapeFailed = failedScrapes.length
+
     if (successfulScrapes.length > 0) {
       dataSourcesUsed.push("crawl4ai_deep_scrape")
       scrapedContext = successfulScrapes.map(s => `\n--- SOURCE: ${s.url} ---\n${s.markdown?.slice(0, 6000)}`).join("\n\n")
@@ -455,10 +489,12 @@ export async function generateResearch(
   const competitorMarketAnalysis = await analyzeCompetitorsAndMarket(input, compRes, webRes, newsRes, scrapedContext, intent)
   competitorMarketAnalysis.market.sourceSignals = {
     newsCount: newsRes.length,
-    scrapedCount: uniqueUrls.length,
+    scrapedCount: scrapeSucceeded,
+    scrapeAttempted,
+    scrapeFailed,
     xCount: xPosts.length,
     forumCount: forumSources.length,
-    confidence: newsRes.length > 15 && uniqueUrls.length > 8 ? "high" : newsRes.length > 7 ? "medium" : "low",
+    confidence: newsRes.length > 15 && scrapeSucceeded > 8 ? "high" : newsRes.length > 7 ? "medium" : "low",
   }
   
   // Call 2: Reddit Sentiment Analysis  
@@ -493,11 +529,16 @@ export async function generateResearch(
     generationTime,
     sourceStats: {
       discovered: reddit.length + webRes.length + newsRes.length + xPosts.length + forumSources.length,
-      scraped: uniqueUrls.length,
+      scraped: scrapeSucceeded,
+      scrapeAttempted,
+      scrapeSucceeded,
+      scrapeFailed,
+      scrapeSkipped: skippedCount,
       reddit: finalReddit.length,
       news: newsRes.length,
       xPosts: xPosts.length,
       forums: forumSources.length,
+      failureHosts,
     },
     sourceCitations: {
       market: newsRes.slice(0, 8).map((x) => x.url),
@@ -519,6 +560,64 @@ function scoreTextRelevance(text: string, intent: IdeaIntent): number {
 
 function scoreSearchRelevance(item: SearchResult, intent: IdeaIntent): number {
   return scoreTextRelevance(`${item.title} ${item.snippet} ${item.url}`, intent)
+}
+
+function getHostFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "")
+  } catch {
+    return "unknown"
+  }
+}
+
+function isScrapeEligible(url: string, channel: "reddit" | "news" | "web" | "x" | "forum"): boolean {
+  const host = getHostFromUrl(url)
+
+  if (channel === "x") {
+    return false
+  }
+
+  const blockedHosts = [
+    "linkedin.com",
+    "facebook.com",
+    "instagram.com",
+    "threads.net",
+    "x.com",
+    "twitter.com",
+    "t.co",
+    "youtube.com",
+    "youtu.be",
+    "webcache.googleusercontent.com",
+    "accounts.google.com",
+    "docs.google.com",
+  ]
+
+  if (blockedHosts.some((blocked) => host === blocked || host.endsWith(`.${blocked}`))) {
+    return false
+  }
+
+  const blockedExtensions = [
+    ".pdf",
+    ".zip",
+    ".rar",
+    ".7z",
+    ".mp4",
+    ".mov",
+    ".mp3",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".svg",
+    ".webp",
+  ]
+
+  const lowerUrl = url.toLowerCase()
+  if (blockedExtensions.some((ext) => lowerUrl.includes(ext))) {
+    return false
+  }
+
+  return true
 }
 
 function buildSearchQueries(input: ResearchInput, intent: IdeaIntent) {
