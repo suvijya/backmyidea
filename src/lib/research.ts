@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 import { searchWeb, searchXPosts, searchForumSources, searchRedditTargeted, searchReddit, getRedditThreadContext, SearchResult, RedditPost, getRealGoogleTrends, GoogleTrendsResult } from "@/lib/search-providers"
 import { scrapeUrl } from "@/lib/scraper"
 import { aiLimiter } from "@/lib/redis"
+import { isRedditOAuthConfigured } from "@/lib/reddit"
 
 // ── Types ──
 
@@ -237,7 +238,11 @@ export async function generateResearch(
 
   emitProgress("Crawling top Reddit threads for comment-level context...")
   const redditContexts: Array<{ url: string; body: string; topComments: string[] }> = []
+  // NOTE: Without OAuth, Reddit aggressively blocks server-side crawling.
+  // Try the first post as a probe; if it fails and OAuth isn't configured, skip all remaining.
+  let redditCrawlBlocked = false
   for (const post of reddit.slice(0, config.redditThreadLimit)) {
+    if (redditCrawlBlocked) break
     emitProgress(`Crawling Reddit thread: ${post.url}`)
     emitSource(post.url, "scraping", undefined, "reddit")
     const thread = await getRedditThreadContext(post.url)
@@ -248,6 +253,11 @@ export async function generateResearch(
     } else {
       emitProgress(`Could not crawl Reddit thread: ${post.url}`)
       emitSource(post.url, "failed", undefined, "reddit")
+      // If the very first thread fails and no OAuth, Reddit is likely blocking us
+      if (redditContexts.length === 0 && !isRedditOAuthConfigured()) {
+        redditCrawlBlocked = true
+        emitProgress("Reddit is blocking direct access and OAuth is not configured. Skipping remaining thread crawls.")
+      }
     }
   }
 
@@ -684,6 +694,10 @@ function isScrapeEligible(url: string, channel: "reddit" | "news" | "web" | "x" 
     "webcache.googleusercontent.com",
     "accounts.google.com",
     "docs.google.com",
+    // NOTE: Reddit blocks unauthenticated server-side access (403).
+    // Only block Reddit scraping if OAuth is NOT configured.
+    // With OAuth, getRedditThreadContext will use the authenticated API.
+    ...(!isRedditOAuthConfigured() ? ["reddit.com", "old.reddit.com"] : []),
   ]
 
   if (blockedHosts.some((blocked) => host === blocked || host.endsWith(`.${blocked}`))) {

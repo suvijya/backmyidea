@@ -1,6 +1,12 @@
 // src/lib/search-providers.ts
 
 import googleTrends from 'google-trends-api'
+import {
+  isRedditOAuthConfigured,
+  oauthSearchReddit,
+  oauthSearchRedditTargeted,
+  oauthGetThreadContext,
+} from "@/lib/reddit"
 
 const REDDIT_USER_AGENTS = [
   "PIQD Research Bot 1.0",
@@ -473,14 +479,23 @@ async function enrichRedditPostsFromApi(posts: RedditPost[]): Promise<RedditPost
 
 /**
  * Search Reddit for relevant discussions.
- * Strategy: Serper site:reddit.com (primary) → Reddit JSON API (fallback) → RSS (fallback) → web search.
+ * Strategy: OAuth API (primary) → Serper site:reddit.com → Reddit JSON API → RSS → web search.
  */
 export async function searchReddit(
   query: string,
   limit: number = 15
 ): Promise<RedditPost[]> {
   try {
-    // PRIMARY: Serper.dev site:reddit.com search (most reliable)
+    // PRIMARY: Reddit OAuth API (full data: selftext, scores, comments)
+    if (isRedditOAuthConfigured()) {
+      const oauthResults = await oauthSearchReddit(query, limit)
+      if (oauthResults.length > 0) {
+        console.log(`[Reddit] Found ${oauthResults.length} posts via OAuth API`)
+        return oauthResults
+      }
+    }
+
+    // FALLBACK 1: Serper.dev site:reddit.com search
     const serperResults = await searchRedditViaSerper(query, limit)
     if (serperResults.length > 0) {
       console.log(`[Reddit] Found ${serperResults.length} posts via Serper`)
@@ -488,7 +503,7 @@ export async function searchReddit(
       return enriched
     }
 
-    // FALLBACK 1: Reddit JSON API (often blocked)
+    // FALLBACK 2: Reddit JSON API (often blocked without OAuth)
     const encoded = encodeURIComponent(query)
     const url = `https://www.reddit.com/search.json?q=${encoded}&sort=relevance&limit=${limit}&type=link`
     const data = await fetchJsonWithRetry(url, 2)
@@ -508,12 +523,12 @@ export async function searchReddit(
       if (posts.length > 0) return posts
     }
 
-    // FALLBACK 2: Reddit RSS
+    // FALLBACK 3: Reddit RSS
     console.warn("Reddit API blocked. Falling back to RSS.")
     const rssFallback = await searchRedditViaRss(query, Math.max(limit, 30))
     if (rssFallback.length > 0) return rssFallback
 
-    // FALLBACK 3: Generic web search for Reddit links
+    // FALLBACK 4: Generic web search for Reddit links
     const fallback = await searchWeb(`site:reddit.com ${query}`, Math.max(limit, 30))
     return mapSearchResultsToRedditPosts(fallback)
   } catch (error) {
@@ -523,8 +538,8 @@ export async function searchReddit(
 }
 
 /**
- * Search Reddit in specific subreddits relevant to Indian startups.
- * Strategy: Serper with subreddit-scoped queries (primary) → Reddit JSON API (fallback) → RSS → web search.
+ * Search Reddit in specific subreddits.
+ * Strategy: OAuth API (primary) → Serper with subreddit-scoped queries → Reddit JSON API → RSS → web search.
  */
 export async function searchRedditTargeted(
   query: string,
@@ -544,7 +559,16 @@ export async function searchRedditTargeted(
 ): Promise<RedditPost[]> {
   const targetSubs = subreddits.slice(0, 20)
 
-  // PRIMARY: Serper.dev with subreddit-scoped queries
+  // PRIMARY: Reddit OAuth API (full data: selftext, scores, comments)
+  if (isRedditOAuthConfigured()) {
+    const oauthResults = await oauthSearchRedditTargeted(query, targetSubs, Math.max(8, Math.ceil(limit / targetSubs.length) + 2))
+    if (oauthResults.length > 0) {
+      console.log(`[Reddit Targeted] Found ${oauthResults.length} posts via OAuth API`)
+      return oauthResults.slice(0, Math.max(limit, 20))
+    }
+  }
+
+  // FALLBACK 1: Serper.dev with subreddit-scoped queries
   // Batch subreddits into groups of 4 to conserve Serper quota while getting good coverage
   const allSerperPosts: RedditPost[] = []
   const batchSize = 4
@@ -607,7 +631,18 @@ export async function searchRedditTargeted(
   return mapSearchResultsToRedditPosts(fallback)
 }
 
+/**
+ * Get thread context (selftext + top comments).
+ * Strategy: OAuth API (primary) → direct JSON → old.reddit.com HTML scraping.
+ */
 export async function getRedditThreadContext(url: string): Promise<RedditThreadContext | null> {
+  // PRIMARY: Reddit OAuth API
+  if (isRedditOAuthConfigured()) {
+    const result = await oauthGetThreadContext(url)
+    if (result) return result
+  }
+
+  // FALLBACK: Direct JSON + HTML scraping
   try {
     const normalized = url.endsWith("/") ? url.slice(0, -1) : url
     const jsonUrl = `${normalized}.json?limit=8&sort=top`
