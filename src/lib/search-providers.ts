@@ -396,9 +396,9 @@ export async function searchReddit(
     const data = await fetchJsonWithRetry(url, 3)
     if (!data) {
       console.warn("Reddit API blocked or unavailable. Falling back to Reddit RSS + web-indexed links.")
-      const rssFallback = await searchRedditViaRss(query, limit)
+      const rssFallback = await searchRedditViaRss(query, Math.max(limit, 30))
       if (rssFallback.length > 0) return rssFallback
-      const fallback = await searchWeb(`site:reddit.com ${query}`, limit)
+      const fallback = await searchWeb(`site:reddit.com ${query}`, Math.max(limit, 30))
       return mapSearchResultsToRedditPosts(fallback)
     }
     
@@ -442,7 +442,7 @@ export async function searchRedditTargeted(
   const allPosts: RedditPost[] = []
   
   // Search broader list for better coverage in deep research
-  const targetSubs = subreddits.slice(0, 10)
+  const targetSubs = subreddits.slice(0, 20)
   
   for (const sub of targetSubs) {
     try {
@@ -473,13 +473,13 @@ export async function searchRedditTargeted(
   // Sort by relevance (score) and deduplicate
   const deduped = Array.from(new Map(allPosts.map((p) => [p.url, p])).values())
     .sort((a, b) => b.score - a.score)
-    .slice(0, 20)
+    .slice(0, Math.max(limit, 20))
 
   if (deduped.length === 0) {
     console.warn("Targeted Reddit search returned 0. Falling back to Reddit RSS + web-indexed links.")
-    const rssFallback = await searchRedditViaRss(query, limit * 3, targetSubs)
+    const rssFallback = await searchRedditViaRss(query, Math.max(limit * 4, 40), targetSubs)
     if (rssFallback.length > 0) return rssFallback
-    const fallback = await searchWeb(`site:reddit.com ${query}`, limit * 3)
+    const fallback = await searchWeb(`site:reddit.com ${query}`, Math.max(limit * 4, 40))
     return mapSearchResultsToRedditPosts(fallback)
   }
 

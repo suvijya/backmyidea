@@ -192,18 +192,24 @@ export async function generateResearch(
   const depth = input.researchDepth || "deep"
   const config = depth === "fast"
     ? {
-        redditSearchLimit: 12,
-        redditThreadLimit: 8,
+        redditSearchLimit: 40,
+        redditThreadLimit: 14,
+        redditFinalLimit: 24,
         queryResultCount: 6,
         scrapeLimit: 30,
+        redditScrapeTarget: 10,
+        otherScrapeTarget: 20,
         xSearchLimit: 8,
         forumSearchLimit: 16,
       }
     : {
-        redditSearchLimit: 50,
-        redditThreadLimit: 20,
+        redditSearchLimit: 80,
+        redditThreadLimit: 35,
+        redditFinalLimit: 55,
         queryResultCount: 14,
-        scrapeLimit: 100,
+        scrapeLimit: 150,
+        redditScrapeTarget: 50,
+        otherScrapeTarget: 100,
         xSearchLimit: 40,
         forumSearchLimit: 40,
       }
@@ -219,7 +225,7 @@ export async function generateResearch(
 
   emitProgress("Searching Reddit posts...")
   emitProgress(`Query: ${searchQueries.reddit}`)
-  let reddit = await searchRedditTargeted(searchQueries.reddit)
+  let reddit = await searchRedditTargeted(searchQueries.reddit, undefined, config.redditSearchLimit)
   if (reddit.length === 0) {
     emitProgress("No targeted Reddit matches. Expanding to global Reddit search...")
     reddit = await searchReddit(searchQueries.reddit, config.redditSearchLimit)
@@ -291,7 +297,10 @@ export async function generateResearch(
     const clearIrrelevant = intent.excludeKeywords.some((kw) => topicText.includes(kw.toLowerCase()))
     return (topicRelevant || subAllowed) && !clearIrrelevant
   })
-  const finalReddit = filteredReddit.length >= 6 ? filteredReddit.slice(0, 20) : enrichedReddit.slice(0, 20)
+  const minFilteredThreshold = Math.max(6, Math.floor(config.redditFinalLimit * 0.4))
+  const finalReddit = filteredReddit.length >= minFilteredThreshold
+    ? filteredReddit.slice(0, config.redditFinalLimit)
+    : enrichedReddit.slice(0, config.redditFinalLimit)
   emitProgress(`Reddit posts after relevance filtering: ${finalReddit.length}`)
 
   emitProgress("Building broad source universe (target: 40-100 sources)...")
@@ -417,8 +426,18 @@ export async function generateResearch(
     emitProgress(`Skipped ${skippedCount} low-yield or blocked sources before crawl`)
   }
 
+  const redditEligible = scrapeEligible.filter((candidate) => candidate.channel === "reddit")
+  const otherEligible = scrapeEligible.filter((candidate) => candidate.channel !== "reddit")
+
+  // NOTE: We enforce a channel mix target so deep mode remains Reddit-heavy while still covering broad non-Reddit sources.
+  const selectedReddit = redditEligible.slice(0, Math.min(config.redditScrapeTarget, redditEligible.length))
+  const selectedOthers = otherEligible.slice(0, Math.min(config.otherScrapeTarget, otherEligible.length))
+  const selectedSet = new Set<string>([...selectedReddit, ...selectedOthers].map((s) => s.url))
+  const remaining = scrapeEligible.filter((candidate) => !selectedSet.has(candidate.url))
   const scrapeTarget = Math.min(config.scrapeLimit, scrapeEligible.length)
-  const scrapeCandidates = scrapeEligible.slice(0, scrapeTarget)
+  const scrapeCandidates = [...selectedReddit, ...selectedOthers, ...remaining].slice(0, scrapeTarget)
+
+  emitProgress(`Source mix target -> reddit: ${selectedReddit.length}, non-reddit: ${selectedOthers.length}`)
   scrapeCandidates.forEach((s) => emitSource(s.url, "queued", undefined, s.channel, s.relevance))
   emitProgress(`Queued ${scrapeCandidates.length} sources for crawling in ${depth.toUpperCase()} mode`)
 

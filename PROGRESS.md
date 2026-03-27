@@ -1048,6 +1048,11 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
   - Corrected scraping signal semantics so `scraped` now represents successful scrapes (not queued URLs), improving confidence telemetry in UI and reports.
   - Added source-level failure reason propagation through SSE (`error`) so frontend streams can surface why sources failed.
   - Updated market `sourceSignals` to use successful scrape counts and include attempted/failed counts for clearer confidence grading.
+  - Increased Reddit discovery and retention in the pipeline (`searchRedditTargeted` + global fallback) and raised deep-mode Reddit candidate capture.
+  - Kept production-safe Reddit scraping strategy (no Selenium dependency): Reddit JSON -> Reddit RSS -> `site:reddit.com` indexed fallback + old.reddit HTML extraction where available.
+  - Rebalanced source-mix targets in `src/lib/research.ts`:
+    - **Deep:** target ~50 Reddit + ~100 non-Reddit (bounded by availability and scrape eligibility)
+    - **Fast:** target ~10 Reddit + ~20 non-Reddit
 
 - **Performance & Navigation Upgrades**: Added extensive `Suspense` boundaries around server components (e.g., Explore Feed, Dashboard Stats) to ensure instant UI transitions without blocking page loads.
 - **Double Header Bug Fixed**: Resolved an issue where the `Navbar` was rendering twice by stripping it from the global `not-found.tsx` fallback page, ensuring route layouts act as the single source of truth for the app header.
