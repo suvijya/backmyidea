@@ -410,7 +410,14 @@ export async function generateResearch(
       channel: "forum" as const,
       relevance: scoreSearchRelevance(r, intent),
     })),
-  ]
+  ].map((candidate) => {
+    const resolvedChannel = resolveSourceChannel(candidate.url, candidate.channel)
+    return {
+      ...candidate,
+      channel: resolvedChannel,
+      url: normalizeSourceUrlForScrape(candidate.url, resolvedChannel),
+    }
+  })
 
   const dedupedCandidates: Array<{ url: string; channel: "reddit" | "news" | "web" | "x" | "forum"; relevance: number }> = []
   const seenCandidateUrls = new Set<string>()
@@ -467,7 +474,7 @@ export async function generateResearch(
         emitProgress(`Scraping source (${idx + 1}/${uniqueUrls.length}): ${url}`)
         emitSource(url, "scraping", undefined, channel, relevance)
 
-        const result = await scrapeUrl(url)
+        const result = await scrapeSource(url, channel)
         scraped.push(result)
         if (result.success) {
           emitProgress(`Scraped successfully: ${url}`)
@@ -587,6 +594,74 @@ function getHostFromUrl(url: string): string {
   } catch {
     return "unknown"
   }
+}
+
+function isRedditUrl(url: string): boolean {
+  const host = getHostFromUrl(url)
+  return host === "reddit.com" || host.endsWith(".reddit.com")
+}
+
+function toOldRedditUrl(url: string): string {
+  return url
+    .replace("https://www.reddit.com", "https://old.reddit.com")
+    .replace("https://reddit.com", "https://old.reddit.com")
+}
+
+function toCanonicalRedditUrl(url: string): string {
+  return url
+    .replace("https://old.reddit.com", "https://www.reddit.com")
+    .replace("https://reddit.com", "https://www.reddit.com")
+}
+
+function resolveSourceChannel(
+  url: string,
+  channel: "reddit" | "news" | "web" | "x" | "forum"
+): "reddit" | "news" | "web" | "x" | "forum" {
+  if (isRedditUrl(url)) {
+    return "reddit"
+  }
+  return channel
+}
+
+function normalizeSourceUrlForScrape(
+  url: string,
+  channel: "reddit" | "news" | "web" | "x" | "forum"
+): string {
+  if (channel === "reddit" || isRedditUrl(url)) {
+    return toOldRedditUrl(url)
+  }
+  return url
+}
+
+async function scrapeSource(
+  url: string,
+  channel: "reddit" | "news" | "web" | "x" | "forum"
+): Promise<{ success: boolean; url: string; markdown?: string; error?: string }> {
+  if (channel === "reddit" || isRedditUrl(url)) {
+    const canonicalUrl = toCanonicalRedditUrl(url)
+    const thread = await getRedditThreadContext(canonicalUrl)
+    if (thread) {
+      const combined = [
+        thread.body ? `Thread body: ${thread.body}` : "",
+        thread.topComments.length > 0 ? `Top comments:\n${thread.topComments.map((c) => `- ${c}`).join("\n")}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n")
+        .trim()
+
+      if (combined.length >= 120) {
+        return {
+          success: true,
+          url,
+          markdown: combined.slice(0, 16000),
+        }
+      }
+    }
+
+    return await scrapeUrl(toOldRedditUrl(url))
+  }
+
+  return await scrapeUrl(url)
 }
 
 function isScrapeEligible(url: string, channel: "reddit" | "news" | "web" | "x" | "forum"): boolean {

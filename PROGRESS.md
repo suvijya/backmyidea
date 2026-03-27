@@ -1050,6 +1050,9 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
   - Updated market `sourceSignals` to use successful scrape counts and include attempted/failed counts for clearer confidence grading.
   - Increased Reddit discovery and retention in the pipeline (`searchRedditTargeted` + global fallback) and raised deep-mode Reddit candidate capture.
   - Kept production-safe Reddit scraping strategy (no Selenium dependency): Reddit JSON -> Reddit RSS -> `site:reddit.com` indexed fallback + old.reddit HTML extraction where available.
+  - Added Reddit-specific scraping route in `src/lib/research.ts`: any reddit.com URL is force-routed through `getRedditThreadContext()` + old.reddit fallback instead of generic fetch to avoid repeated 403 failures from `www.reddit.com` thread URLs.
+  - Added channel correction so reddit.com links discovered in `web/forum/news` pools are reclassified to `reddit` before scraping and receive Reddit-specific extraction logic.
+  - Added queue-time normalization for Reddit sources: all Reddit candidates are rewritten to `old.reddit.com` for scrape execution, while thread-context extraction still resolves canonical Reddit URLs. This reduces direct `www.reddit.com` 403 scrape failures in production.
   - Rebalanced source-mix targets in `src/lib/research.ts`:
     - **Deep:** target ~50 Reddit + ~100 non-Reddit (bounded by availability and scrape eligibility)
     - **Fast:** target ~10 Reddit + ~20 non-Reddit
