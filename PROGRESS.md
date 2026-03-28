@@ -1087,6 +1087,17 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
   - Improved search keyword quality controls:
     - Reworked query construction to be intent-driven across category/problem terms instead of hardcoded meeting-assistant keywords.
     - Added keyword sanitization and garbage filters for primary + related queries to remove noisy/non-business terms.
+  - Removed vertical-specific hardcoding from research core:
+    - Deleted meeting-tool and B2B-SaaS-specific fallback assumptions in `src/lib/research.ts` (hardcoded competitors, TAM/SAM bands, and fixed query terms).
+    - Replaced with generic token/tag/category intent derivation so queries and fallbacks adapt to the actual idea content.
+    - Narrowed subreddit allow-list to general startup/business communities instead of product-specific tool communities.
+  - Aligned orchestration to explicit 4-stage flow:
+    1) idea understanding + query planning,
+    2) evidence collection,
+    3) evidence analysis,
+    4) final report synthesis.
+  - Added `createSearchPlan()` in `src/lib/research.ts` as the dedicated stage-1 contract that returns intent + search query set before any scraping starts.
+  - Updated progress stream messages to reflect stage boundaries clearly for easier debugging and user trust.
   - Cleaned Reddit Pulse data rendering:
     - Sanitized low-quality pain point/praise entries and fixed concern ratio to use cleaned arrays for accurate labels and metrics.
   - Rebalanced source-mix targets in `src/lib/research.ts`:

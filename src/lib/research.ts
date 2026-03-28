@@ -67,6 +67,14 @@ interface IdeaIntent {
   coreSearchPhrases: string[]
 }
 
+interface SearchQuerySet {
+  reddit: string
+  competitors: string
+  competitorDirect: string
+  news: string
+  trends: string
+}
+
 export type ResearchProgressEvent =
   | { type: "progress"; message: string }
   | {
@@ -216,13 +224,12 @@ export async function generateResearch(
       }
 
   emitProgress(`Research mode: ${depth.toUpperCase()}`)
-
-  emitProgress("Analyzing idea intent and semantic scope...")
-  const intent = await deriveIdeaIntent(input)
+  emitProgress("Stage 1/4: Understanding idea and building search plan...")
+  const { intent, searchQueries } = await createSearchPlan(input)
   emitProgress(`Intent identified: ${intent.problemDomain}`)
+  emitProgress(`Generated search plan with ${intent.coreSearchPhrases.length} core phrases`)
 
-  emitProgress("Formulating search queries...")
-  const searchQueries = buildSearchQueries(input, intent)
+  emitProgress("Stage 2/4: Collecting evidence from web, news, forums, and Reddit...")
 
   emitProgress("Searching Reddit posts...")
   emitProgress(`Query: ${searchQueries.reddit}`)
@@ -287,24 +294,18 @@ export async function generateResearch(
   const allowSubreddits = [
     "r/startups",
     "r/entrepreneur",
-    "r/productivity",
-    "r/saas",
-    "r/jira",
-    "r/asana",
-    "r/remotework",
-    "r/projectmanagement",
     "r/smallbusiness",
     "r/technology",
-    "r/artificial",
-    "r/chatgpt",
-    "r/askmanagers",
+    "r/business",
+    "r/india",
+    "r/startupindia",
   ]
   const filteredReddit = enrichedReddit.filter((post) => {
     const sub = post.subreddit.toLowerCase()
     const topicText = `${post.title} ${post.selftext || ""}`.toLowerCase()
-    const topicRelevant = intent.includeKeywords.some((kw) => topicText.includes(kw.toLowerCase()))
+    const topicRelevant = intent.includeKeywords.some((kw: string) => topicText.includes(kw.toLowerCase()))
     const subAllowed = allowSubreddits.some((s) => sub.includes(s.replace("r/", "")))
-    const clearIrrelevant = intent.excludeKeywords.some((kw) => topicText.includes(kw.toLowerCase()))
+    const clearIrrelevant = intent.excludeKeywords.some((kw: string) => topicText.includes(kw.toLowerCase()))
     return (topicRelevant || subAllowed) && !clearIrrelevant
   })
   const minFilteredThreshold = Math.max(6, Math.floor(config.redditFinalLimit * 0.4))
@@ -320,14 +321,14 @@ export async function generateResearch(
     searchQueries.competitorDirect,
     `${intent.problemDomain} startups India landscape`,
     `${intent.problemDomain} alternatives app platform India`,
-    ...intent.coreSearchPhrases.slice(0, 2).map((phrase) => `${phrase} tools competitors`),
+    ...intent.coreSearchPhrases.slice(0, 2).map((phrase: string) => `${phrase} tools competitors`),
   ]
   const newsQueries = [
     searchQueries.news,
     `${intent.problemDomain} India funding news`,
     `${intent.problemDomain} India market trend report`,
     `${intent.problemDomain} India enterprise adoption`,
-    ...intent.coreSearchPhrases.slice(0, 2).map((phrase) => `${phrase} market India`),
+    ...intent.coreSearchPhrases.slice(0, 2).map((phrase: string) => `${phrase} market India`),
   ]
 
   emitProgress("Searching X/Twitter discussions...")
@@ -523,6 +524,7 @@ export async function generateResearch(
     }
   }
 
+  emitProgress("Stage 3/4: Analyzing collected evidence...")
   // Call 1: Competitor + Market Analysis
   emitProgress("Analyzing market and top competitors...")
   const competitorMarketAnalysis = await analyzeCompetitorsAndMarket(input, compRes, webRes, newsRes, scrapedContext, intent)
@@ -541,6 +543,7 @@ export async function generateResearch(
   const redditAnalysis = await analyzeRedditSentiment(input, finalReddit, scrapedContext)
   
   // Call 3: Search Demand + News + Final Verdict
+  emitProgress("Stage 4/4: Generating final report and verdict...")
   emitProgress("Synthesizing search demand, news, and generating final verdict...")
   const verdictAnalysis = await generateVerdict(
     input,
@@ -805,19 +808,8 @@ function buildSearchQueries(input: ResearchInput, intent: IdeaIntent) {
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter((w) => w.length >= 4 && !["india", "startup", "using", "with", "that", "from", "this", "into"].includes(w))
-  const dominantTopic = topicTokens[0] || "meeting assistant"
-  const phraseCandidates = [
-    /meeting assistant/i,
-    /meeting transcription/i,
-    /action items?/i,
-    /jira/i,
-    /asana/i,
-    /transcrib/i,
-  ]
-  const phraseMatch = phraseCandidates
-    .map((rx) => fullText.match(rx)?.[0])
-    .find(Boolean)
-  const semanticTopic = (intent.problemDomain || phraseMatch || dominantTopic).toLowerCase()
+  const dominantTopic = topicTokens[0] || input.category.toLowerCase().replace("_", " ")
+  const semanticTopic = (intent.problemDomain || dominantTopic).toLowerCase()
   const includeTerms = intent.includeKeywords
     .map((k) => k.toLowerCase().trim())
     .filter((k) => k.length > 3)
@@ -835,57 +827,65 @@ function buildSearchQueries(input: ResearchInput, intent: IdeaIntent) {
 
   // Use domain-specific keywords rather than broad category keyword only
   const categoryKeywords = category.toLowerCase().replace('_', ' ')
-  const redditQuery = `${redditTerms.join(" ")} reddit discussion user pain points`.slice(0, 120).trim()
-  const trendsKeyword = trendCandidates.find((k) => !isGarbageKeyword(k)) || "startup validation"
+  const redditQuery = `${redditTerms.join(" ")} india user discussion pain points`.slice(0, 120).trim()
+  const trendsKeyword = trendCandidates.find((k) => !isGarbageKeyword(k)) || input.category.toLowerCase().replace("_", " ")
   
   return {
     reddit: redditQuery,
     competitors: `${semanticTopic} competitors alternatives ${intent.coreSearchPhrases.slice(0, 2).join(" ")}`,
     competitorDirect: `"${semanticTopic}" "${intent.customerProfile}" ${tagString}`,
-    news: `${categoryKeywords} ${semanticTopic} b2b productivity india market trend funding`,
+    news: `${categoryKeywords} ${semanticTopic} india market trend funding adoption`,
     trends: trendsKeyword,
   }
 }
 
+async function createSearchPlan(input: ResearchInput): Promise<{ intent: IdeaIntent; searchQueries: SearchQuerySet }> {
+  const intent = await deriveIdeaIntent(input)
+  const searchQueries = buildSearchQueries(input, intent)
+  return {
+    intent,
+    searchQueries,
+  }
+}
+
 async function deriveIdeaIntent(input: ResearchInput): Promise<IdeaIntent> {
-  const text = `${input.title} ${input.pitch} ${input.problem} ${input.solution}`.toLowerCase()
+  const full = `${input.title} ${input.pitch} ${input.problem} ${input.solution} ${input.tags.join(" ")}`.toLowerCase()
+  const tokens = full
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 4)
 
-  const base: IdeaIntent = {
-    problemDomain: input.category.toLowerCase().replace("_", " "),
-    customerProfile: "business teams",
-    includeKeywords: ["startup", "saas", "workflow", "automation"],
-    excludeKeywords: ["nft", "crypto", "airdrop", "gaming", "politics", "riot", "hospital", "share price", "serial", "tv show"],
-    coreSearchPhrases: [input.category.toLowerCase().replace("_", " "), "b2b saas"],
+  const stopwords = new Set([
+    "startup", "india", "build", "building", "users", "using", "platform", "solution", "problem", "idea",
+    "that", "this", "with", "from", "into", "their", "your", "have", "will", "should", "could", "would",
+  ])
+
+  const keywordCounts = new Map<string, number>()
+  for (const token of tokens) {
+    if (stopwords.has(token)) continue
+    keywordCounts.set(token, (keywordCounts.get(token) || 0) + 1)
   }
 
-  if (/(meeting|transcrib|action item|jira|asana|notes|notetaker|call summary)/.test(text)) {
-    return {
-      problemDomain: "ai meeting productivity automation",
-      customerProfile: "product and engineering teams using project management tools",
-      includeKeywords: [
-        "meeting",
-        "transcript",
-        "transcription",
-        "action items",
-        "jira",
-        "asana",
-        "meeting notes",
-        "meeting assistant",
-        "productivity",
-        "workflow",
-        "project management",
-      ],
-      excludeKeywords: base.excludeKeywords,
-      coreSearchPhrases: [
-        "ai meeting assistant",
-        "meeting transcription",
-        "action item automation",
-        "jira asana integration",
-      ],
-    }
-  }
+  const rankedKeywords = Array.from(keywordCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([token]) => token)
 
-  return base
+  const categoryTerm = input.category.toLowerCase().replace(/_/g, " ")
+  const coreSearchPhrases = [
+    ...input.tags.map((t) => t.toLowerCase().trim()).filter((t) => t.length > 2),
+    ...rankedKeywords.slice(0, 4),
+    categoryTerm,
+  ]
+
+  const uniquePhrases = Array.from(new Set(coreSearchPhrases)).slice(0, 6)
+
+  return {
+    problemDomain: uniquePhrases[0] || categoryTerm,
+    customerProfile: "target users in this problem space",
+    includeKeywords: uniquePhrases,
+    excludeKeywords: ["nft", "crypto", "airdrop", "politics", "riot", "share price", "serial", "tv show", "movie", "lyrics"],
+    coreSearchPhrases: uniquePhrases,
+  }
 }
 
 async function analyzeCompetitorsAndMarket(
@@ -913,7 +913,7 @@ async function analyzeCompetitorsAndMarket(
   
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!)
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite",
     generationConfig: {
       temperature: 0.3,
       maxOutputTokens: 8192,
@@ -1015,68 +1015,10 @@ RULES:
 }
 
 function getCompetitorFallback(input: ResearchInput): CompetitorData[] {
-  const titleText = `${input.title} ${input.problem} ${input.solution}`.toLowerCase()
-  const isMeetingTool = /(meeting|transcrib|action item|jira|asana|note taker)/.test(titleText)
-
-  if (isMeetingTool) {
-    return [
-      {
-        name: "Otter.ai",
-        description: "AI meeting transcription and summaries for teams.",
-        status: "active",
-        fundingStage: "Series B",
-        similarity: "high",
-        differentiator: "Stronger Jira/Asana action assignment automation can be your edge.",
-        url: "https://otter.ai",
-      },
-      {
-        name: "Fireflies.ai",
-        description: "AI notetaker for meetings with integrations and recap workflows.",
-        status: "active",
-        fundingStage: "Series A",
-        similarity: "high",
-        differentiator: "Position around workflow-native PM integrations and reliability.",
-        url: "https://fireflies.ai",
-      },
-      {
-        name: "Fathom",
-        description: "AI meeting assistant with summaries and highlights.",
-        status: "active",
-        similarity: "medium",
-        differentiator: "Differentiate by project task sync depth and team handoff automation.",
-        url: "https://fathom.video",
-      },
-    ]
-  }
-
   return []
 }
 
 function getMarketFallback(input: ResearchInput): MarketData {
-  const text = `${input.title} ${input.problem} ${input.solution}`.toLowerCase()
-  const isB2BSaaS = /(saas|team|workflow|automation|assistant|platform)/.test(text)
-  if (isB2BSaaS) {
-    return {
-      estimatedTAM: "$15B - $25B (India + global accessible SaaS productivity market)",
-      estimatedSAM: "$1B - $4B (SMB-mid market teams using PM tools)",
-      growthRate: "20-35% CAGR",
-      marketMaturity: "growing",
-      keyTrends: [
-        "AI copilot adoption in daily team workflows",
-        "Meeting-to-task automation demand",
-        "Tool consolidation in project collaboration stacks",
-      ],
-      targetDemographic: "PMs, founders, engineering and product teams",
-      geographicFocus: "India-first with global remote-team expansion",
-      sourceSignals: {
-        newsCount: 0,
-        scrapedCount: 0,
-        xCount: 0,
-        confidence: "medium",
-      },
-    }
-  }
-
   return getDefaultMarketData()
 }
 
@@ -1096,7 +1038,7 @@ async function analyzeRedditSentiment(
   
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!)
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite",
     generationConfig: {
       temperature: 0.3,
       maxOutputTokens: 8192,
@@ -1188,7 +1130,7 @@ async function generateVerdict(
   
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!)
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite",
     generationConfig: {
       temperature: 0.4,
       maxOutputTokens: 8192,
