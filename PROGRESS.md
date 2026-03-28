@@ -1067,6 +1067,12 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
   - Fixed dashboard stale-state lock for research cards:
     - `getIdeaById` now auto-recovers stale `GENERATING` records to `FAILED`, so server-rendered dashboard state does not remain permanently stuck.
     - `ResearchTrigger` now detects stale `GENERATING` states client-side and shows a direct "Retry Research" action instead of indefinite "check back" messaging.
+  - Added reload resilience for in-progress research cards:
+    - While status is `GENERATING`, the trigger now auto-refreshes every 15s so users returning/reloading can see completion without manual polling confusion.
+  - Tightened stale-generation timeout from 20m -> 10m across API/action/dashboard checks to recover faster after worker crashes.
+  - Reduced remote-worker memory pressure risk in deep mode:
+    - Deep scrape worker concurrency is lowered when `RENDER_SCRAPER_URL` is enabled (2 for deep, 1 for fast) to avoid Render memory spikes.
+    - Render scraper now reuses a single Selenium driver with periodic recycling (`MAX_DRIVER_USES`) instead of opening a fresh browser per request.
   - Restored progress visualization in streaming UI while keeping compact layout:
     - Added a clear multi-step progress lane (intent -> discover -> collect -> synthesize -> finalize) above live updates.
   - Improved search keyword quality controls:

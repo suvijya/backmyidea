@@ -16,7 +16,7 @@ import type { Idea, IdeaStatus, Prisma, VoteType } from "@prisma/client";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { FEED_PAGE_SIZE } from "@/lib/constants";
 
-const STALE_RESEARCH_GENERATION_MS = 20 * 60 * 1000;
+const STALE_RESEARCH_GENERATION_MS = 10 * 60 * 1000;
 
 // ═══════════════════════════════
 // CREATE IDEA

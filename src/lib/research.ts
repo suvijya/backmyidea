@@ -471,7 +471,10 @@ export async function generateResearch(
     const channelByUrl = new Map(scrapeCandidates.map((s) => [s.url, s.channel]))
     const relevanceByUrl = new Map(scrapeCandidates.map((s) => [s.url, s.relevance]))
 
-    const workerCount = depth === "deep" ? 6 : 4
+    const remoteWorkerEnabled = Boolean(process.env.RENDER_SCRAPER_URL)
+    const workerCount = remoteWorkerEnabled
+      ? (depth === "deep" ? 2 : 1)
+      : (depth === "deep" ? 6 : 4)
     let cursor = 0
     const workers = Array.from({ length: workerCount }, async () => {
       while (cursor < uniqueUrls.length) {

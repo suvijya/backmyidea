@@ -10,6 +10,61 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 
 
 app = Flask(__name__)
+_driver = None
+_driver_uses = 0
+MAX_DRIVER_USES = int(os.getenv("MAX_DRIVER_USES", "25"))
+
+
+def _get_driver():
+    global _driver
+    if _driver is not None:
+        try:
+            _ = _driver.title
+            return _driver
+        except Exception:
+            try:
+                _driver.quit()
+            except Exception:
+                pass
+            _driver = None
+
+    options = ChromeOptions()
+    options.add_argument("--headless=new")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1366,1900")
+    options.add_argument("--lang=en-US")
+    options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36")
+
+    chrome_bin = os.getenv("CHROME_BIN")
+    if chrome_bin:
+        options.binary_location = chrome_bin
+
+    chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
+    if chromedriver_path:
+        service = ChromeService(executable_path=chromedriver_path)
+        _driver = webdriver.Chrome(service=service, options=options)
+    else:
+        _driver = webdriver.Chrome(options=options)
+
+    _driver.set_page_load_timeout(20)
+    return _driver
+
+
+def _recycle_driver_if_needed():
+    global _driver
+    global _driver_uses
+    if _driver is None:
+        return
+    if _driver_uses < MAX_DRIVER_USES:
+        return
+    try:
+        _driver.quit()
+    except Exception:
+        pass
+    _driver = None
+    _driver_uses = 0
 
 
 def _extract_text(html_text: str, url: str) -> str:
@@ -54,28 +109,9 @@ def _extract_text(html_text: str, url: str) -> str:
 
 
 def _scrape_with_selenium(url: str) -> tuple[bool, str]:
-    options = ChromeOptions()
-    options.add_argument("--headless=new")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1366,1900")
-    options.add_argument("--lang=en-US")
-    options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36")
-
-    chrome_bin = os.getenv("CHROME_BIN")
-    if chrome_bin:
-        options.binary_location = chrome_bin
-
-    driver = None
+    global _driver_uses
     try:
-        chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
-        if chromedriver_path:
-            service = ChromeService(executable_path=chromedriver_path)
-            driver = webdriver.Chrome(service=service, options=options)
-        else:
-            driver = webdriver.Chrome(options=options)
-        driver.set_page_load_timeout(20)
+        driver = _get_driver()
         driver.get(url)
         html = driver.page_source or ""
         if len(html) < 300:
@@ -85,15 +121,18 @@ def _scrape_with_selenium(url: str) -> tuple[bool, str]:
         if len(extracted) < 120:
             return False, "Insufficient extracted text"
 
+        _driver_uses += 1
+        _recycle_driver_if_needed()
         return True, extracted[:16000]
     except Exception as exc:
-        return False, str(exc)
-    finally:
-        if driver is not None:
+        global _driver
+        if _driver is not None:
             try:
-                driver.quit()
+                _driver.quit()
             except Exception:
                 pass
+            _driver = None
+        return False, str(exc)
 
 
 @app.post("/scrape")

@@ -7,7 +7,7 @@ import { Loader2, RefreshCw } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 interface ResearchTriggerProps {
   ideaId: string
@@ -22,6 +22,8 @@ const PROGRESS_STEPS = [
   { id: "synthesize", label: "Synthesize insights", matches: ["analyzing market", "reddit sentiment", "generating final verdict", "synthesizing"] },
   { id: "finalize", label: "Finalize report", matches: ["saving results", "research complete"] },
 ]
+
+const STALE_GENERATING_MS = 10 * 60 * 1000
 
 function formatSourceLabel(url: string): string {
   try {
@@ -143,7 +145,7 @@ export function ResearchTrigger({ ideaId, existingResearch, isOwner }: ResearchT
   const staleGenerating = Boolean(
     existingResearch?.status === "GENERATING" &&
       existingResearch?.generatedAt &&
-      Date.now() - new Date(existingResearch.generatedAt).getTime() > 20 * 60 * 1000
+      Date.now() - new Date(existingResearch.generatedAt).getTime() > STALE_GENERATING_MS
   )
   
   const { generate, isGenerating, progress, progressFeed, sourcesFeed } = useResearch({ 
@@ -152,6 +154,16 @@ export function ResearchTrigger({ ideaId, existingResearch, isOwner }: ResearchT
       router.refresh()
     }
   })
+
+  useEffect(() => {
+    if (existingResearch?.status !== "GENERATING") return
+
+    const interval = setInterval(() => {
+      router.refresh()
+    }, 15000)
+
+    return () => clearInterval(interval)
+  }, [existingResearch?.status, router])
 
   if (isGenerating) {
     return <ResearchProgress progress={progress} progressFeed={progressFeed} sourcesFeed={sourcesFeed} />

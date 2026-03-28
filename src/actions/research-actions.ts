@@ -7,7 +7,7 @@ import { researchLimiter } from "@/lib/redis"
 import { revalidatePath } from "next/cache"
 import { IdeaResearch } from "@prisma/client"
 
-const STALE_GENERATION_MS = 20 * 60 * 1000
+const STALE_GENERATION_MS = 10 * 60 * 1000
 
 export async function requestResearch(ideaId: string) {
   const user = await requireUser()

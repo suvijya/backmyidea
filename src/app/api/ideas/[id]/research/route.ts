@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { researchLimiter } from "@/lib/redis"
 import { generateResearch, type ResearchInput, type ResearchProgressEvent } from "@/lib/research"
 
-const STALE_GENERATION_MS = 20 * 60 * 1000
+const STALE_GENERATION_MS = 10 * 60 * 1000
 
 export async function GET(
   req: NextRequest,
