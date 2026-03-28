@@ -16,6 +16,8 @@ import type { Idea, IdeaStatus, Prisma, VoteType } from "@prisma/client";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { FEED_PAGE_SIZE } from "@/lib/constants";
 
+const STALE_RESEARCH_GENERATION_MS = 20 * 60 * 1000;
+
 // ═══════════════════════════════
 // CREATE IDEA
 // ═══════════════════════════════
@@ -359,6 +361,27 @@ export async function getIdeaById(
 
   if (idea.founderId !== user.id && !user.isAdmin) {
     return { success: false, error: "Not authorized" };
+  }
+
+  if (idea.research?.status === "GENERATING") {
+    const isStale = Date.now() - new Date(idea.research.generatedAt).getTime() > STALE_RESEARCH_GENERATION_MS;
+    if (isStale) {
+      const recovered = await prisma.ideaResearch.update({
+        where: { id: idea.research.id },
+        data: {
+          status: "FAILED",
+          error: "Auto-marked stale generation after timeout",
+        },
+      });
+
+      return {
+        success: true,
+        data: {
+          ...idea,
+          research: recovered,
+        },
+      };
+    }
   }
 
   return { success: true, data: idea };

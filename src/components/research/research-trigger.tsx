@@ -119,6 +119,11 @@ export function ResearchTrigger({ ideaId, existingResearch, isOwner }: ResearchT
   const { userId } = useAuth()
   const router = useRouter()
   const [depth, setDepth] = useState<"fast" | "deep">("deep")
+  const staleGenerating = Boolean(
+    existingResearch?.status === "GENERATING" &&
+      existingResearch?.generatedAt &&
+      Date.now() - new Date(existingResearch.generatedAt).getTime() > 20 * 60 * 1000
+  )
   
   const { generate, isGenerating, progress, progressFeed, sourcesFeed } = useResearch({ 
     ideaId,
@@ -145,12 +150,24 @@ export function ResearchTrigger({ ideaId, existingResearch, isOwner }: ResearchT
     )
   }
 
-  if (existingResearch?.status === "GENERATING") {
+  if (existingResearch?.status === "GENERATING" && !staleGenerating) {
     return (
       <div className="flex flex-col items-center justify-center p-8 border border-dashed rounded-xl bg-gray-50/50">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500 mb-4" />
         <p className="font-medium text-gray-900">Research is being generated...</p>
         <p className="text-sm text-gray-500 mt-2">Check back in a minute.</p>
+      </div>
+    )
+  }
+
+  if (staleGenerating && isOwner) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 border rounded-xl bg-gray-50 text-center">
+        <p className="text-gray-600 mb-4">Previous generation appears stuck. You can safely retry now.</p>
+        <Button onClick={() => generate(true, depth)} variant="outline">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Retry Research
+        </Button>
       </div>
     )
   }
