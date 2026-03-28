@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma"
 import { researchLimiter } from "@/lib/redis"
 import { generateResearch, type ResearchInput, type ResearchProgressEvent } from "@/lib/research"
 
+const STALE_GENERATION_MS = 20 * 60 * 1000
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -59,10 +61,21 @@ export async function POST(
   }
 
   if (!force && existing && existing.status === "GENERATING") {
-    return NextResponse.json(
-      { error: "Research is already being generated. Please wait." },
-      { status: 400 }
-    )
+    const isStale = Date.now() - existing.generatedAt.getTime() > STALE_GENERATION_MS
+    if (!isStale) {
+      return NextResponse.json(
+        { error: "Research is already being generated. Please wait." },
+        { status: 400 }
+      )
+    }
+
+    await prisma.ideaResearch.update({
+      where: { id: existing.id },
+      data: {
+        status: "FAILED",
+        error: "Auto-marked stale generation after timeout",
+      },
+    })
   }
   
   if (force && existing) {
@@ -117,6 +130,8 @@ export async function POST(
             status: "GENERATING",
             requestedById: user.id,
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            generatedAt: new Date(),
+            error: null,
           },
         })
 

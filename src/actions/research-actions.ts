@@ -7,6 +7,8 @@ import { researchLimiter } from "@/lib/redis"
 import { revalidatePath } from "next/cache"
 import { IdeaResearch } from "@prisma/client"
 
+const STALE_GENERATION_MS = 20 * 60 * 1000
+
 export async function requestResearch(ideaId: string) {
   const user = await requireUser()
 
@@ -31,7 +33,18 @@ export async function requestResearch(ideaId: string) {
   }
 
   if (existing && existing.status === "GENERATING") {
-    return { error: "Research is already being generated. Please wait." }
+    const isStale = Date.now() - existing.generatedAt.getTime() > STALE_GENERATION_MS
+    if (!isStale) {
+      return { error: "Research is already being generated. Please wait." }
+    }
+
+    await prisma.ideaResearch.update({
+      where: { id: existing.id },
+      data: {
+        status: "FAILED",
+        error: "Auto-marked stale generation after timeout",
+      },
+    })
   }
 
   // Fetch idea with all needed data
@@ -75,6 +88,8 @@ export async function requestResearch(ideaId: string) {
       status: "GENERATING",
       requestedById: user.id,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      generatedAt: new Date(),
+      error: null,
     },
   })
 

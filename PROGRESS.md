@@ -1061,6 +1061,9 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
     - Retry logic for transient worker/network failures (`aborted`, timeout, 429/5xx).
     - Reddit-specific multi-URL attempts (canonical + old.reddit variants).
     - Bot-wall/challenge detection (`prove your humanity`, `blocked by network security`, Cloudflare challenge) so challenge pages are treated as failures instead of false-positive success.
+  - Added stale generation recovery for research jobs:
+    - If an `IdeaResearch` record is stuck in `GENERATING` longer than 20 minutes, API/action paths auto-mark it `FAILED` and allow a fresh run.
+    - `generatedAt` is refreshed on each new generation start, and previous `error` is cleared on retry.
   - Rebalanced source-mix targets in `src/lib/research.ts`:
     - **Deep:** target ~50 Reddit + ~100 non-Reddit (bounded by availability and scrape eligibility)
     - **Fast:** target ~10 Reddit + ~20 non-Reddit
