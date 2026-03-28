@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: piqd-scraper-worker
+    env: docker
+    plan: starter
+    autoDeploy: true
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: SCRAPER_TOKEN
+        sync: false

@@ -9,6 +9,11 @@ export interface ScrapeResult {
 }
 
 export async function scrapeUrl(url: string): Promise<ScrapeResult> {
+  const remote = await scrapeWithRemoteWorker(url)
+  if (remote.success) {
+    return remote
+  }
+
   const direct = await scrapeWithFetch(url)
   if (direct.success) {
     return direct
@@ -22,7 +27,62 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
   return {
     success: false,
     url,
-    error: direct.error || python.error || "Scrape failed",
+    error: remote.error || direct.error || python.error || "Scrape failed",
+  }
+}
+
+async function scrapeWithRemoteWorker(url: string): Promise<ScrapeResult> {
+  const endpoint = process.env.RENDER_SCRAPER_URL
+  if (!endpoint) {
+    return { success: false, url, error: "Remote scraper not configured" }
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 20000)
+  try {
+    const token = process.env.RENDER_SCRAPER_TOKEN
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ url }),
+      signal: controller.signal,
+      cache: "no-store",
+    })
+
+    if (!res.ok) {
+      return { success: false, url, error: `Remote scraper HTTP ${res.status}` }
+    }
+
+    const payload: unknown = await res.json()
+    if (!payload || typeof payload !== "object") {
+      return { success: false, url, error: "Remote scraper invalid response" }
+    }
+
+    const parsed = payload as { success?: unknown; markdown?: unknown; error?: unknown }
+    if (parsed.success === true && typeof parsed.markdown === "string" && parsed.markdown.length >= 120) {
+      return {
+        success: true,
+        url,
+        markdown: parsed.markdown.slice(0, 16000),
+      }
+    }
+
+    return {
+      success: false,
+      url,
+      error: typeof parsed.error === "string" ? parsed.error : "Remote scraper failed",
+    }
+  } catch (error) {
+    return {
+      success: false,
+      url,
+      error: error instanceof Error ? `Remote scraper error: ${error.message}` : "Remote scraper failed",
+    }
+  } finally {
+    clearTimeout(timeout)
   }
 }
 

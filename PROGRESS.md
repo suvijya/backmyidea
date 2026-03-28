@@ -1053,6 +1053,10 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
   - Added Reddit-specific scraping route in `src/lib/research.ts`: any reddit.com URL is force-routed through `getRedditThreadContext()` + old.reddit fallback instead of generic fetch to avoid repeated 403 failures from `www.reddit.com` thread URLs.
   - Added channel correction so reddit.com links discovered in `web/forum/news` pools are reclassified to `reddit` before scraping and receive Reddit-specific extraction logic.
   - Added queue-time normalization for Reddit sources: all Reddit candidates are rewritten to `old.reddit.com` for scrape execution, while thread-context extraction still resolves canonical Reddit URLs. This reduces direct `www.reddit.com` 403 scrape failures in production.
+  - Added optional dedicated Render Selenium worker integration:
+    - `src/lib/scraper.ts` now attempts `RENDER_SCRAPER_URL` first (Bearer token via `RENDER_SCRAPER_TOKEN`) before local fallbacks.
+    - Added deployable worker scaffold at `scripts/render-scraper/` (Flask + Selenium + BeautifulSoup) with Dockerized Render config and health/scrape endpoints.
+    - This allows Vercel API routes to remain orchestrators while heavy anti-bot scraping runs in a Chrome-capable worker runtime.
   - Rebalanced source-mix targets in `src/lib/research.ts`:
     - **Deep:** target ~50 Reddit + ~100 non-Reddit (bounded by availability and scrape eligibility)
     - **Fast:** target ~10 Reddit + ~20 non-Reddit

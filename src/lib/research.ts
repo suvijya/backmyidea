@@ -637,7 +637,8 @@ function normalizeSourceUrlForScrape(
   url: string,
   channel: "reddit" | "news" | "web" | "x" | "forum"
 ): string {
-  if (channel === "reddit" || isRedditUrl(url)) {
+  const useRemoteWorker = Boolean(process.env.RENDER_SCRAPER_URL)
+  if (!useRemoteWorker && (channel === "reddit" || isRedditUrl(url))) {
     return toOldRedditUrl(url)
   }
   return url
