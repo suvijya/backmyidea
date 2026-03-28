@@ -1098,6 +1098,14 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
     4) final report synthesis.
   - Added `createSearchPlan()` in `src/lib/research.ts` as the dedicated stage-1 contract that returns intent + search query set before any scraping starts.
   - Updated progress stream messages to reflect stage boundaries clearly for easier debugging and user trust.
+  - Improved non-AI fallback completeness for report reliability:
+    - Competitor fallback now derives candidates from discovered search/news evidence instead of returning empty arrays.
+    - Market fallback now returns structured, non-empty fields with explicit fallback-mode labels and trend hints from collected evidence.
+    - Verdict/search fallback now guarantees non-empty related keywords and existing solutions where evidence is present.
+  - Added Gemini-path diagnostics hardening in research pipeline:
+    - Explicit runtime detection for missing `GOOGLE_GEMINI_API_KEY` with progress signal to avoid silent fallback confusion.
+    - `gemini` is now added to `dataSourcesUsed` only when AI analysis path is actually exercised.
+    - Added optional env `BYPASS_AI_LIMITER_FOR_RESEARCH=true` (debug only) so research can call Gemini even when Upstash limiter gating would otherwise prevent calls.
   - Cleaned Reddit Pulse data rendering:
     - Sanitized low-quality pain point/praise entries and fixed concern ratio to use cleaned arrays for accurate labels and metrics.
   - Rebalanced source-mix targets in `src/lib/research.ts`:

@@ -187,7 +187,7 @@ export async function generateResearch(
   onProgress?: (event: ResearchProgressEvent) => void
 ): Promise<ResearchOutput> {
   const startTime = Date.now()
-  const dataSourcesUsed: string[] = ["gemini", "piqd_crowd"]
+  const dataSourcesUsed: string[] = ["piqd_crowd"]
   
   const emitProgress = (message: string) => onProgress?.({ type: "progress", message })
   const emitSource = (
@@ -224,6 +224,9 @@ export async function generateResearch(
       }
 
   emitProgress(`Research mode: ${depth.toUpperCase()}`)
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    emitProgress("Gemini API key not configured. Running fallback analysis mode.")
+  }
   emitProgress("Stage 1/4: Understanding idea and building search plan...")
   const { intent, searchQueries } = await createSearchPlan(input)
   emitProgress(`Intent identified: ${intent.problemDomain}`)
@@ -559,6 +562,13 @@ export async function generateResearch(
   
   emitProgress("Research complete!")
   const generationTime = Date.now() - startTime
+
+  if (
+    process.env.GOOGLE_GEMINI_API_KEY &&
+    (competitorMarketAnalysis.competitors.length > 0 || redditAnalysis.totalPostsFound > 0 || verdictAnalysis.verdict.overallScore !== 50)
+  ) {
+    dataSourcesUsed.push("gemini")
+  }
   
   return {
     competitors: competitorMarketAnalysis.competitors,
@@ -896,18 +906,38 @@ async function analyzeCompetitorsAndMarket(
   scrapedContext: string,
   intent: IdeaIntent
 ): Promise<{ competitors: CompetitorData[], market: MarketData }> {
-  if (webResults.length === 0 && competitorSearchResults.length === 0) {
-    return {
-      competitors: getCompetitorFallback(input),
-      market: getMarketFallback(input),
+  const passAiGate = async (key: string): Promise<boolean> => {
+    const bypass = process.env.BYPASS_AI_LIMITER_FOR_RESEARCH === "true"
+    if (bypass) {
+      return true
+    }
+    try {
+      const { success } = await aiLimiter.limit(key)
+      return success
+    } catch {
+      return true
     }
   }
 
-  const { success } = await aiLimiter.limit("research-competitor")
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    return {
+      competitors: getCompetitorFallback(input, [...competitorSearchResults, ...webResults]),
+      market: getMarketFallback(input, newsResults, scrapedContext),
+    }
+  }
+
+  if (webResults.length === 0 && competitorSearchResults.length === 0) {
+    return {
+      competitors: getCompetitorFallback(input, []),
+      market: getMarketFallback(input, newsResults, scrapedContext),
+    }
+  }
+
+  const success = await passAiGate("research-competitor")
   if (!success) {
     return {
-      competitors: getCompetitorFallback(input),
-      market: getMarketFallback(input),
+      competitors: getCompetitorFallback(input, [...competitorSearchResults, ...webResults]),
+      market: getMarketFallback(input, newsResults, scrapedContext),
     }
   }
   
@@ -1008,18 +1038,77 @@ RULES:
   } catch (error) {
     console.error("Competitor analysis failed:", error)
     return {
-      competitors: getCompetitorFallback(input),
-      market: getMarketFallback(input),
+      competitors: getCompetitorFallback(input, [...competitorSearchResults, ...webResults]),
+      market: getMarketFallback(input, newsResults, scrapedContext),
     }
   }
 }
 
-function getCompetitorFallback(input: ResearchInput): CompetitorData[] {
-  return []
+function getCompetitorFallback(input: ResearchInput, searchResults: SearchResult[]): CompetitorData[] {
+  if (!Array.isArray(searchResults) || searchResults.length === 0) {
+    return []
+  }
+
+  const seen = new Set<string>()
+  const competitors: CompetitorData[] = []
+
+  for (const item of searchResults) {
+    const url = item.url || ""
+    const host = getHostFromUrl(url)
+    if (!host || host === "unknown") continue
+
+    const nameFromTitle = (item.title || "").split(/[|:\-]/)[0]?.trim()
+    const fallbackName = host.split(".")[0]?.replace(/[-_]/g, " ") || "Unknown"
+    const name = (nameFromTitle && nameFromTitle.length <= 40 ? nameFromTitle : fallbackName)
+      .replace(/\s+/g, " ")
+      .trim()
+
+    const key = `${name.toLowerCase()}::${host}`
+    if (!name || seen.has(key)) continue
+    seen.add(key)
+
+    competitors.push({
+      name,
+      description: item.snippet?.slice(0, 180) || `Mentioned as a potential alternative in ${input.category.toLowerCase().replace(/_/g, " ")}.`,
+      url: item.url,
+      status: "unknown",
+      similarity: "medium",
+      differentiator: `Differentiate through tighter focus on ${input.problem.slice(0, 90)}.`,
+    })
+
+    if (competitors.length >= 6) break
+  }
+
+  return competitors
 }
 
-function getMarketFallback(input: ResearchInput): MarketData {
-  return getDefaultMarketData()
+function getMarketFallback(input: ResearchInput, newsResults: SearchResult[], scrapedContext: string): MarketData {
+  const categoryLabel = input.category.toLowerCase().replace(/_/g, " ")
+  const evidenceCount = newsResults.length
+  const contextStrength = scrapedContext.length
+
+  const trendHints = newsResults
+    .slice(0, 6)
+    .map((n) => n.title)
+    .filter(Boolean)
+    .map((title) => title.replace(/\s+/g, " ").trim())
+    .slice(0, 3)
+
+  return {
+    estimatedTAM: "Estimate unavailable (fallback mode)",
+    estimatedSAM: "Estimate unavailable (fallback mode)",
+    growthRate: evidenceCount > 10 ? "Moderate to high growth signals" : "Limited growth evidence",
+    marketMaturity: evidenceCount > 20 ? "growing" : evidenceCount > 8 ? "nascent" : "declining",
+    keyTrends: trendHints.length > 0 ? trendHints : [`Emerging movement in ${categoryLabel}`, "Need stronger evidence coverage"],
+    targetDemographic: "Users experiencing the stated problem",
+    geographicFocus: "India (fallback inference)",
+    sourceSignals: {
+      newsCount: evidenceCount,
+      scrapedCount: contextStrength > 0 ? 1 : 0,
+      xCount: 0,
+      confidence: evidenceCount > 15 ? "medium" : "low",
+    },
+  }
 }
 
 async function analyzeRedditSentiment(
@@ -1027,11 +1116,28 @@ async function analyzeRedditSentiment(
   posts: RedditPost[],
   scrapedContext: string
 ): Promise<RedditData> {
+  const passAiGate = async (key: string): Promise<boolean> => {
+    const bypass = process.env.BYPASS_AI_LIMITER_FOR_RESEARCH === "true"
+    if (bypass) {
+      return true
+    }
+    try {
+      const { success } = await aiLimiter.limit(key)
+      return success
+    } catch {
+      return true
+    }
+  }
+
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    return deriveRedditDataFallback(posts)
+  }
+
   if (posts.length === 0 && !scrapedContext.includes("reddit.com")) {
     return getDefaultRedditData()
   }
   
-  const { success } = await aiLimiter.limit("research-reddit")
+  const success = await passAiGate("research-reddit")
   if (!success) {
     return deriveRedditDataFallback(posts)
   }
@@ -1125,7 +1231,24 @@ async function generateVerdict(
   newsQuery: string,
   intent: IdeaIntent
 ): Promise<{ searchData: SearchDemandData, newsData: NewsData, verdict: VerdictData }> {
-  const { success } = await aiLimiter.limit("research-verdict")
+  const passAiGate = async (key: string): Promise<boolean> => {
+    const bypass = process.env.BYPASS_AI_LIMITER_FOR_RESEARCH === "true"
+    if (bypass) {
+      return true
+    }
+    try {
+      const { success } = await aiLimiter.limit(key)
+      return success
+    } catch {
+      return true
+    }
+  }
+
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    return getVerdictFallbackOutput(input, newsResults, realTrends, trendKeyword)
+  }
+
+  const success = await passAiGate("research-verdict")
   if (!success) return getVerdictFallbackOutput(input, newsResults, realTrends, trendKeyword)
   
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!)
@@ -1260,9 +1383,9 @@ CROSS-VALIDATION RULES:
         trendKeyword.trim().split(" ").slice(0, 3).join(" "),
         sanitizePrimaryKeyword(intent.problemDomain, input.category.toLowerCase().replace("_", " "))
       )
-  const fallbackRelatedKeywords = realTrends.relatedQueries.slice(0, 6).map((q) => ({
+      const fallbackRelatedKeywords = realTrends.relatedQueries.slice(0, 6).map((q) => ({
         keyword: q,
-        volume: "medium" as const,
+        volume: "medium" as "high" | "medium" | "low",
         trend: realTrends.trendDirection,
       }))
       const sanitizedFallbackRelated = sanitizeRelatedKeywords(fallbackRelatedKeywords, fallbackRelatedKeywords)
@@ -1272,6 +1395,21 @@ CROSS-VALIDATION RULES:
         url: n.url,
         date: n.date || "",
         relevance: "Recent coverage in this problem space",
+      }))
+
+      const fallbackRelated = sanitizeRelatedKeywords(
+        fallbackRelatedKeywords,
+        [{ keyword: fallbackPrimaryKeyword, volume: "medium" as "high" | "medium" | "low", trend: realTrends.trendDirection }]
+      )
+
+      const fallbackCompetitors = getCompetitorFallback(input, newsResults)
+
+      const fallbackSolutions = fallbackCompetitors.slice(0, 4).map((c) => ({
+        name: c.name,
+        type: "product" as const,
+        description: c.description,
+        url: c.url,
+        limitation: c.differentiator,
       }))
 
       const defaultOutput = getDefaultVerdictOutput()
@@ -1287,7 +1425,7 @@ CROSS-VALIDATION RULES:
                   trend: k.trend === "rising" || k.trend === "declining" || k.trend === "stable" ? k.trend : realTrends.trendDirection,
                 }))
               : [],
-            sanitizedFallbackRelated
+            fallbackRelated
           ),
           trendDirection: parsed?.searchData?.trendDirection || realTrends.trendDirection,
           trendSummary: parsed?.searchData?.trendSummary || `Search interest appears ${realTrends.trendDirection} over the past 12 months in India.`,
@@ -1298,7 +1436,9 @@ CROSS-VALIDATION RULES:
           articles: Array.isArray(parsed?.newsData?.articles) && parsed.newsData.articles.length > 0
             ? parsed.newsData.articles
             : fallbackArticles,
-          existingSolutions: Array.isArray(parsed?.newsData?.existingSolutions) ? parsed.newsData.existingSolutions : [],
+          existingSolutions: Array.isArray(parsed?.newsData?.existingSolutions) && parsed.newsData.existingSolutions.length > 0
+            ? parsed.newsData.existingSolutions
+            : fallbackSolutions,
           industryNews: parsed?.newsData?.industryNews || `Recent category coverage for ${input.category.toLowerCase().replace("_", " ")} indicates active movement in this segment.`,
         },
         verdict: parsed?.verdict || defaultOutput.verdict,
@@ -1364,7 +1504,7 @@ function getVerdictFallbackOutput(
 
   const relatedKeywords = sanitizeRelatedKeywords(realTrends.relatedQueries.slice(0, 8).map((query) => ({
     keyword: query,
-    volume: "medium" as const,
+    volume: "medium" as "high" | "medium" | "low",
     trend: realTrends.trendDirection,
   })), [])
 
@@ -1379,7 +1519,9 @@ function getVerdictFallbackOutput(
   return {
     searchData: {
       primaryKeyword,
-      relatedKeywords,
+      relatedKeywords: relatedKeywords.length > 0
+        ? relatedKeywords
+        : [{ keyword: primaryKeyword, volume: "medium" as "high" | "medium" | "low", trend: realTrends.trendDirection }],
       trendDirection: realTrends.trendDirection,
       trendSummary: `Search demand in India appears ${realTrends.trendDirection} for ${primaryKeyword} over the last 12 months.`,
       searchIntent: "Users are actively evaluating options, comparing alternatives, and validating practical ROI.",
@@ -1387,7 +1529,13 @@ function getVerdictFallbackOutput(
     },
     newsData: {
       articles,
-      existingSolutions: [],
+      existingSolutions: getCompetitorFallback(input, newsResults).slice(0, 4).map((c) => ({
+        name: c.name,
+        type: "product" as const,
+        description: c.description,
+        url: c.url,
+        limitation: c.differentiator,
+      })),
       industryNews: `Category-level coverage for ${input.category.toLowerCase().replace("_", " ")} remains active with sustained startup and funding interest.`,
     },
     verdict: base.verdict,
@@ -1396,11 +1544,11 @@ function getVerdictFallbackOutput(
 
 function getDefaultMarketData(): MarketData {
   return {
-    estimatedTAM: "Unable to estimate",
-    estimatedSAM: "Unable to estimate",
+    estimatedTAM: "Estimate unavailable (insufficient evidence)",
+    estimatedSAM: "Estimate unavailable (insufficient evidence)",
     growthRate: "Unknown",
     marketMaturity: "nascent",
-    keyTrends: [],
+    keyTrends: ["No high-confidence market trends extracted"],
     targetDemographic: "Not analyzed",
     geographicFocus: "India",
     sourceSignals: {
