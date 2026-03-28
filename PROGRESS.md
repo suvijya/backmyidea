@@ -1057,6 +1057,10 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
     - `src/lib/scraper.ts` now attempts `RENDER_SCRAPER_URL` first (Bearer token via `RENDER_SCRAPER_TOKEN`) before local fallbacks.
     - Added deployable worker scaffold at `scripts/render-scraper/` (Flask + Selenium + BeautifulSoup) with Dockerized Render config and health/scrape endpoints.
     - This allows Vercel API routes to remain orchestrators while heavy anti-bot scraping runs in a Chrome-capable worker runtime.
+  - Added remote-scraper resiliency in `src/lib/scraper.ts`:
+    - Retry logic for transient worker/network failures (`aborted`, timeout, 429/5xx).
+    - Reddit-specific multi-URL attempts (canonical + old.reddit variants).
+    - Bot-wall/challenge detection (`prove your humanity`, `blocked by network security`, Cloudflare challenge) so challenge pages are treated as failures instead of false-positive success.
   - Rebalanced source-mix targets in `src/lib/research.ts`:
     - **Deep:** target ~50 Reddit + ~100 non-Reddit (bounded by availability and scrape eligibility)
     - **Fast:** target ~10 Reddit + ~20 non-Reddit

@@ -37,10 +37,38 @@ async function scrapeWithRemoteWorker(url: string): Promise<ScrapeResult> {
     return { success: false, url, error: "Remote scraper not configured" }
   }
 
+  const reddit = isRedditUrl(url)
+  const candidateUrls = reddit ? Array.from(new Set([url, toOldRedditUrl(url), toCanonicalRedditUrl(url)])) : [url]
+  const maxAttempts = reddit ? 3 : 2
+  const timeoutMs = reddit ? 45000 : 30000
+  let lastError = "Remote scraper failed"
+
+  for (const candidateUrl of candidateUrls) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const result = await doRemoteScrape(endpoint, candidateUrl, timeoutMs)
+      if (result.success) {
+        return { ...result, url }
+      }
+
+      lastError = result.error || lastError
+      const shouldRetry = shouldRetryRemote(lastError)
+      if (!shouldRetry || attempt === maxAttempts) {
+        break
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 400 * attempt))
+    }
+  }
+
+  return { success: false, url, error: lastError }
+}
+
+async function doRemoteScrape(endpoint: string, url: string, timeoutMs: number): Promise<ScrapeResult> {
+  const token = process.env.RENDER_SCRAPER_TOKEN
+
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 20000)
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const token = process.env.RENDER_SCRAPER_TOKEN
     const res = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -63,6 +91,15 @@ async function scrapeWithRemoteWorker(url: string): Promise<ScrapeResult> {
 
     const parsed = payload as { success?: unknown; markdown?: unknown; error?: unknown }
     if (parsed.success === true && typeof parsed.markdown === "string" && parsed.markdown.length >= 120) {
+      const blockedReason = detectBotBlock(parsed.markdown)
+      if (blockedReason) {
+        return {
+          success: false,
+          url,
+          error: blockedReason,
+        }
+      }
+
       return {
         success: true,
         url,
@@ -84,6 +121,19 @@ async function scrapeWithRemoteWorker(url: string): Promise<ScrapeResult> {
   } finally {
     clearTimeout(timeout)
   }
+}
+
+function shouldRetryRemote(errorMessage: string): boolean {
+  const normalized = errorMessage.toLowerCase()
+  return (
+    normalized.includes("aborted") ||
+    normalized.includes("timeout") ||
+    normalized.includes("http 429") ||
+    normalized.includes("http 500") ||
+    normalized.includes("http 502") ||
+    normalized.includes("http 503") ||
+    normalized.includes("http 504")
+  )
 }
 
 async function scrapeWithFetch(url: string): Promise<ScrapeResult> {
@@ -127,6 +177,11 @@ async function scrapeWithFetch(url: string): Promise<ScrapeResult> {
       .replace(/\s+/g, " ")
       .trim()
 
+    const blockedReason = detectBotBlock(cleaned)
+    if (blockedReason) {
+      return { success: false, url, error: blockedReason }
+    }
+
     if (cleaned.length < 120) {
       return { success: false, url, error: "Insufficient extracted text" }
     }
@@ -145,6 +200,41 @@ async function scrapeWithFetch(url: string): Promise<ScrapeResult> {
   } finally {
     clearTimeout(timeout)
   }
+}
+
+function isRedditUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    return host === "reddit.com" || host.endsWith(".reddit.com")
+  } catch {
+    return /reddit\.com/i.test(url)
+  }
+}
+
+function toOldRedditUrl(url: string): string {
+  return url
+    .replace("https://www.reddit.com", "https://old.reddit.com")
+    .replace("https://reddit.com", "https://old.reddit.com")
+}
+
+function toCanonicalRedditUrl(url: string): string {
+  return url
+    .replace("https://old.reddit.com", "https://www.reddit.com")
+    .replace("https://reddit.com", "https://www.reddit.com")
+}
+
+function detectBotBlock(text: string): string | null {
+  const normalized = text.toLowerCase()
+  if (normalized.includes("prove your humanity")) {
+    return "Blocked by bot challenge"
+  }
+  if (normalized.includes("blocked by network security")) {
+    return "Blocked by network security"
+  }
+  if (normalized.includes("cloudflare") && normalized.includes("attention required")) {
+    return "Blocked by anti-bot protection"
+  }
+  return null
 }
 
 async function scrapeWithPython(url: string): Promise<ScrapeResult> {
