@@ -1078,6 +1078,10 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
     - Remote retries/timeout reduced to lower concurrent heavy browser load.
     - App-side remote scrape concurrency forced to 1 when remote worker is enabled.
     - Render worker now enforces single in-flight request gate with `429 Scraper busy` for overlap, preventing memory blowups from concurrent browser commands.
+  - Added keep-alive cron for Render scraper uptime:
+    - New Vercel cron endpoint `GET /api/cron/ping-scraper` pings scraper `/healthz` every 2 minutes via `vercel.json`.
+    - Supports explicit `RENDER_SCRAPER_HEALTHCHECK_URL` or auto-derives from `RENDER_SCRAPER_URL`.
+    - Optional `CRON_SECRET` guard added for secure cron access.
   - Restored progress visualization in streaming UI while keeping compact layout:
     - Added a clear multi-step progress lane (intent -> discover -> collect -> synthesize -> finalize) above live updates.
   - Improved search keyword quality controls:
