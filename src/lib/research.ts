@@ -523,6 +523,11 @@ export async function generateResearch(
 
     if (successfulScrapes.length > 0) {
       dataSourcesUsed.push("crawl4ai_deep_scrape")
+      if (Boolean(process.env.RENDER_SCRAPER_URL) && successfulScrapes.some((s) => channelByUrl.get(s.url) === "reddit" || isRedditUrl(s.url))) {
+        if (!dataSourcesUsed.includes("render_selenium_worker")) {
+          dataSourcesUsed.push("render_selenium_worker")
+        }
+      }
       scrapedContext = successfulScrapes.map(s => `\n--- SOURCE: ${s.url} ---\n${s.markdown?.slice(0, 6000)}`).join("\n\n")
     }
   }
@@ -728,6 +733,15 @@ async function scrapeSource(
   channel: "reddit" | "news" | "web" | "x" | "forum"
 ): Promise<{ success: boolean; url: string; markdown?: string; error?: string }> {
   if (channel === "reddit" || isRedditUrl(url)) {
+    const remoteWorkerEnabled = Boolean(process.env.RENDER_SCRAPER_URL)
+
+    if (remoteWorkerEnabled) {
+      const remoteFirst = await scrapeUrl(url)
+      if (remoteFirst.success) {
+        return remoteFirst
+      }
+    }
+
     const canonicalUrl = toCanonicalRedditUrl(url)
     const thread = await getRedditThreadContext(canonicalUrl)
     if (thread) {
@@ -761,6 +775,8 @@ function isScrapeEligible(url: string, channel: "reddit" | "news" | "web" | "x" 
     return false
   }
 
+  const remoteWorkerEnabled = Boolean(process.env.RENDER_SCRAPER_URL)
+
   const blockedHosts = [
     "linkedin.com",
     "facebook.com",
@@ -777,7 +793,7 @@ function isScrapeEligible(url: string, channel: "reddit" | "news" | "web" | "x" 
     // NOTE: Reddit blocks unauthenticated server-side access (403).
     // Only block Reddit scraping if OAuth is NOT configured.
     // With OAuth, getRedditThreadContext will use the authenticated API.
-    ...(!isRedditOAuthConfigured() ? ["reddit.com", "old.reddit.com"] : []),
+    ...(!isRedditOAuthConfigured() && !remoteWorkerEnabled ? ["reddit.com", "old.reddit.com"] : []),
   ]
 
   if (blockedHosts.some((blocked) => host === blocked || host.endsWith(`.${blocked}`))) {

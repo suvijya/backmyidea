@@ -1106,6 +1106,10 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
     - Explicit runtime detection for missing `GOOGLE_GEMINI_API_KEY` with progress signal to avoid silent fallback confusion.
     - `gemini` is now added to `dataSourcesUsed` only when AI analysis path is actually exercised.
     - Added optional env `BYPASS_AI_LIMITER_FOR_RESEARCH=true` (debug only) so research can call Gemini even when Upstash limiter gating would otherwise prevent calls.
+  - Fixed Reddit scraping path to actually use Render worker when configured:
+    - `scrapeSource()` now tries remote worker first for Reddit URLs (before thread-context fallback), so Render traffic is observable and used intentionally.
+    - Reddit domains are no longer blocked by eligibility filter when remote worker is configured (even without Reddit OAuth).
+    - Added `render_selenium_worker` marker to `dataSourcesUsed` when Reddit deep-scrape successes come through remote worker.
   - Cleaned Reddit Pulse data rendering:
     - Sanitized low-quality pain point/praise entries and fixed concern ratio to use cleaned arrays for accurate labels and metrics.
   - Rebalanced source-mix targets in `src/lib/research.ts`:
