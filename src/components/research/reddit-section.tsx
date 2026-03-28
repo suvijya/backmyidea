@@ -32,10 +32,17 @@ export function RedditSection({ redditData }: RedditSectionProps) {
     return "😐"
   }
 
+  const cleanList = (items: string[]) => items
+    .map((item) => item.replace(/\s+/g, " ").trim())
+    .filter((item) => item.length >= 12 && !/^(n\/a|none|unknown|null)$/i.test(item))
+
+  const painPoints = cleanList(redditData.commonPainPoints || [])
+  const praises = cleanList(redditData.commonPraises || [])
+
   const communityDemandScore = Math.max(0, Math.min(100, Math.round(((redditData.sentimentScore + 100) / 2) * 0.6 + Math.min(redditData.totalPostsFound, 20) * 2)))
   const engagementIntensity = redditData.topPosts.reduce((sum, post) => sum + post.upvotes + post.commentCount * 2, 0)
-  const concernRatio = redditData.commonPainPoints.length + redditData.commonPraises.length > 0
-    ? Math.round((redditData.commonPainPoints.length / (redditData.commonPainPoints.length + redditData.commonPraises.length)) * 100)
+  const concernRatio = painPoints.length + praises.length > 0
+    ? Math.round((painPoints.length / (painPoints.length + praises.length)) * 100)
     : 50
 
   return (
@@ -99,13 +106,13 @@ export function RedditSection({ redditData }: RedditSectionProps) {
 
       {/* Pain Points vs Praises */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {redditData.commonPainPoints.length > 0 && (
+        {painPoints.length > 0 && (
           <div>
             <h4 className="font-semibold text-red-800 mb-3 flex items-center gap-2">
               <span className="bg-red-100 p-1 rounded">🔴</span> Common Pain Points
             </h4>
             <ul className="space-y-2 bg-red-50/30 p-4 rounded-lg border border-red-100 h-full">
-              {redditData.commonPainPoints.map((point, i) => (
+              {painPoints.map((point, i) => (
                 <li key={i} className="text-sm text-gray-700 flex items-start">
                   <span className="text-red-500 mr-2 mt-0.5">•</span>
                   {point}
@@ -115,13 +122,13 @@ export function RedditSection({ redditData }: RedditSectionProps) {
           </div>
         )}
 
-        {redditData.commonPraises.length > 0 && (
+        {praises.length > 0 && (
           <div>
             <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
               <span className="bg-green-100 p-1 rounded">🟢</span> What People Love
             </h4>
             <ul className="space-y-2 bg-green-50/30 p-4 rounded-lg border border-green-100 h-full">
-              {redditData.commonPraises.map((praise, i) => (
+              {praises.map((praise, i) => (
                 <li key={i} className="text-sm text-gray-700 flex items-start">
                   <span className="text-green-500 mr-2 mt-0.5">•</span>
                   {praise}

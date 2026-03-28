@@ -598,6 +598,69 @@ function scoreSearchRelevance(item: SearchResult, intent: IdeaIntent): number {
   return scoreTextRelevance(`${item.title} ${item.snippet} ${item.url}`, intent)
 }
 
+function isGarbageKeyword(keyword: string): boolean {
+  const normalized = keyword.toLowerCase().trim()
+  if (!normalized) return true
+
+  if (normalized.length < 3) return true
+  if (/[^a-z0-9\s-]/i.test(normalized)) return true
+  if (/([a-z])\1{3,}/i.test(normalized)) return true
+  if (/^[a-z]{1,2}\d{3,}$/.test(normalized)) return true
+
+  const banned = [
+    "saas bahu",
+    "kyunki saas",
+    "tv show",
+    "serial",
+    "share price",
+    "hospital",
+    "movie",
+    "song",
+    "lyrics",
+  ]
+  return banned.some((term) => normalized.includes(term))
+}
+
+function sanitizePrimaryKeyword(raw: string, fallback: string): string {
+  const cleaned = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .slice(0, 3)
+    .join(" ")
+
+  if (!cleaned || isGarbageKeyword(cleaned)) {
+    return fallback
+  }
+
+  return cleaned
+}
+
+function sanitizeRelatedKeywords(
+  related: Array<{ keyword: string; volume: "high" | "medium" | "low"; trend: "rising" | "stable" | "declining" }>,
+  fallback: Array<{ keyword: string; volume: "high" | "medium" | "low"; trend: "rising" | "stable" | "declining" }>
+): Array<{ keyword: string; volume: "high" | "medium" | "low"; trend: "rising" | "stable" | "declining" }> {
+  const deduped = new Map<string, { keyword: string; volume: "high" | "medium" | "low"; trend: "rising" | "stable" | "declining" }>()
+  for (const item of related) {
+    const keyword = (item.keyword || "").toLowerCase().replace(/\s+/g, " ").trim()
+    if (!keyword || isGarbageKeyword(keyword) || deduped.has(keyword)) continue
+    deduped.set(keyword, {
+      keyword,
+      volume: item.volume,
+      trend: item.trend,
+    })
+  }
+
+  const cleaned = Array.from(deduped.values()).slice(0, 10)
+  if (cleaned.length >= 3) {
+    return cleaned
+  }
+
+  return fallback.filter((item) => !isGarbageKeyword(item.keyword)).slice(0, 8)
+}
+
 function getHostFromUrl(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "")
@@ -752,13 +815,25 @@ function buildSearchQueries(input: ResearchInput, intent: IdeaIntent) {
     .map((rx) => fullText.match(rx)?.[0])
     .find(Boolean)
   const semanticTopic = (intent.problemDomain || phraseMatch || dominantTopic).toLowerCase()
+  const includeTerms = intent.includeKeywords
+    .map((k) => k.toLowerCase().trim())
+    .filter((k) => k.length > 3)
+    .slice(0, 4)
+  const problemTerms = `${problem} ${solution}`
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 4 && !["startup", "india", "using", "build", "users", "teams"].includes(w))
+    .slice(0, 3)
+  const redditTerms = Array.from(new Set([semanticTopic, ...includeTerms, ...problemTerms])).slice(0, 5)
+  const trendCandidates = [semanticTopic, ...intent.coreSearchPhrases, ...includeTerms, ...problemTerms]
+    .map((k) => k.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").replace(/\s+/g, " ").trim())
+    .filter((k) => k.length > 2 && k.split(" ").length <= 3)
 
   // Use domain-specific keywords rather than broad category keyword only
   const categoryKeywords = category.toLowerCase().replace('_', ' ')
-  const redditQuery = `${semanticTopic} meeting transcription action items jira asana b2b saas`.slice(0, 90).trim()
-  const trendsKeyword = [semanticTopic, "meeting assistant", "meeting transcription", "ai note taker"]
-    .map((k) => k.trim())
-    .find((k) => k.split(" ").length <= 3 && k.length > 2 && !/\bzenith\b/i.test(k)) || "meeting assistant"
+  const redditQuery = `${redditTerms.join(" ")} reddit discussion user pain points`.slice(0, 120).trim()
+  const trendsKeyword = trendCandidates.find((k) => !isGarbageKeyword(k)) || "startup validation"
   
   return {
     reddit: redditQuery,
@@ -1236,13 +1311,16 @@ CROSS-VALIDATION RULES:
     try {
       const parsed = JSON.parse(text)
 
-      const fallbackPrimaryKeyword = trendKeyword.trim().split(" ").slice(0, 3).join(" ") || input.category.toLowerCase().replace("_", " ")
+      const fallbackPrimaryKeyword = sanitizePrimaryKeyword(
+        trendKeyword.trim().split(" ").slice(0, 3).join(" "),
+        sanitizePrimaryKeyword(intent.problemDomain, input.category.toLowerCase().replace("_", " "))
+      )
   const fallbackRelatedKeywords = realTrends.relatedQueries.slice(0, 6).map((q) => ({
         keyword: q,
         volume: "medium" as const,
         trend: realTrends.trendDirection,
       }))
-      const sanitizedFallbackRelated = fallbackRelatedKeywords.filter((k) => !/(saas bahu|kyunki saas|serial|tv show|hospital|share price)/i.test(k.keyword))
+      const sanitizedFallbackRelated = sanitizeRelatedKeywords(fallbackRelatedKeywords, fallbackRelatedKeywords)
       const fallbackArticles = newsResults.slice(0, 5).map((n) => ({
         title: n.title,
         source: n.source || "Unknown",
@@ -1255,10 +1333,17 @@ CROSS-VALIDATION RULES:
 
       return {
         searchData: {
-          primaryKeyword: (parsed?.searchData?.primaryKeyword || fallbackPrimaryKeyword).toString().split(" ").slice(0, 3).join(" "),
-          relatedKeywords: Array.isArray(parsed?.searchData?.relatedKeywords) && parsed.searchData.relatedKeywords.length > 0
-            ? parsed.searchData.relatedKeywords.filter((k: { keyword: string }) => !/(saas bahu|kyunki saas|serial|tv show|hospital|share price)/i.test(k.keyword))
-            : sanitizedFallbackRelated,
+          primaryKeyword: sanitizePrimaryKeyword((parsed?.searchData?.primaryKeyword || fallbackPrimaryKeyword).toString(), fallbackPrimaryKeyword),
+          relatedKeywords: sanitizeRelatedKeywords(
+            Array.isArray(parsed?.searchData?.relatedKeywords) && parsed.searchData.relatedKeywords.length > 0
+              ? parsed.searchData.relatedKeywords.map((k: { keyword: string; volume?: string; trend?: string }) => ({
+                  keyword: k.keyword || "",
+                  volume: k.volume === "high" || k.volume === "medium" || k.volume === "low" ? k.volume : "medium",
+                  trend: k.trend === "rising" || k.trend === "declining" || k.trend === "stable" ? k.trend : realTrends.trendDirection,
+                }))
+              : [],
+            sanitizedFallbackRelated
+          ),
           trendDirection: parsed?.searchData?.trendDirection || realTrends.trendDirection,
           trendSummary: parsed?.searchData?.trendSummary || `Search interest appears ${realTrends.trendDirection} over the past 12 months in India.`,
           searchIntent: parsed?.searchData?.searchIntent || "Users are evaluating solutions for this problem and comparing available options.",
@@ -1327,13 +1412,16 @@ function getVerdictFallbackOutput(
   trendKeyword: string
 ) {
   const base = getDefaultVerdictOutput()
-  const primaryKeyword = trendKeyword.trim().split(" ").slice(0, 3).join(" ") || input.category.toLowerCase().replace("_", " ")
+  const primaryKeyword = sanitizePrimaryKeyword(
+    trendKeyword.trim().split(" ").slice(0, 3).join(" "),
+    sanitizePrimaryKeyword(input.category.toLowerCase().replace("_", " "), "startup idea")
+  )
 
-  const relatedKeywords = realTrends.relatedQueries.slice(0, 8).map((query) => ({
+  const relatedKeywords = sanitizeRelatedKeywords(realTrends.relatedQueries.slice(0, 8).map((query) => ({
     keyword: query,
     volume: "medium" as const,
     trend: realTrends.trendDirection,
-  }))
+  })), [])
 
   const articles = newsResults.slice(0, 8).map((item) => ({
     title: item.title,

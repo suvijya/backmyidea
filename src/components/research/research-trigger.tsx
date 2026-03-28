@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button"
 import { useResearch } from "@/hooks/use-research"
 import { useAuth } from "@clerk/nextjs"
-import { Loader2, RefreshCw, CheckCircle2, CircleDashed } from "lucide-react"
+import { Loader2, RefreshCw } from "lucide-react"
+import { AnimatePresence, motion } from "framer-motion"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -14,19 +15,31 @@ interface ResearchTriggerProps {
   isOwner: boolean
 }
 
-export const RESEARCH_STEPS = [
-  "Initializing research pipeline...",
-  "Formulating search queries...",
-  "Searching Reddit posts...",
-  "Crawling top Reddit threads for comment-level context...",
-  "Searching the web for competitors, news, and Reddit discussions...",
-  "Performing deep scraping on News results...",
-  "Analyzing market and top competitors...",
-  "Analyzing Reddit sentiment and user pain points...",
-  "Synthesizing search demand, news, and generating final verdict...",
-  "Saving results...",
-  "Research complete!"
+const PROGRESS_STEPS = [
+  { id: "intent", label: "Analyze idea intent", matches: ["intent", "semantic scope"] },
+  { id: "discover", label: "Discover sources", matches: ["searching reddit", "searching the web", "source universe", "found "] },
+  { id: "crawl", label: "Collect source evidence", matches: ["crawling", "scraping source", "queued", "captured", "scraped successfully"] },
+  { id: "synthesize", label: "Synthesize insights", matches: ["analyzing market", "reddit sentiment", "generating final verdict", "synthesizing"] },
+  { id: "finalize", label: "Finalize report", matches: ["saving results", "research complete"] },
 ]
+
+function formatSourceLabel(url: string): string {
+  try {
+    const parsed = new URL(url)
+    const host = parsed.hostname.replace(/^www\./, "")
+    const lastSegment = parsed.pathname.split("/").filter(Boolean).pop() || ""
+    const cleaned = lastSegment
+      .replace(/[-_]+/g, " ")
+      .replace(/\b(comments?|item|posts?|article|topic|tag|products?)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim()
+
+    if (!cleaned) return host
+    return `${host} • ${cleaned.slice(0, 42)}`
+  } catch {
+    return url.slice(0, 52)
+  }
+}
 
 export function ResearchProgress({
   progress,
@@ -37,77 +50,85 @@ export function ResearchProgress({
   progressFeed?: string[]
   sourcesFeed?: Array<{ url: string; status: "queued" | "scraping" | "done" | "failed"; chars?: number; channel?: "reddit" | "news" | "web" | "x" | "forum"; relevance?: number; error?: string }>
 }) {
-  const matchedStepIndex = RESEARCH_STEPS.indexOf(progress)
-  const currentStepIndex = matchedStepIndex >= 0 ? matchedStepIndex : 0
-  const hasCustomProgress = Boolean(progress) && matchedStepIndex === -1
+  const latestUpdates = (progressFeed.length > 0 ? progressFeed : [progress || "Starting analysis..."]).slice(-4)
+  const progressJoined = `${progressFeed.join(" ")} ${progress}`.toLowerCase()
+  const activeStepIndex = Math.max(
+    0,
+    PROGRESS_STEPS.reduce((last, step, index) => {
+      const hit = step.matches.some((term) => progressJoined.includes(term))
+      return hit ? index : last
+    }, 0)
+  )
+
+  const sourceCards = sourcesFeed
+    .map((item) => ({
+      key: item.url,
+      label: formatSourceLabel(item.url),
+    }))
+    .slice(-24)
   
   return (
-    <div className="flex flex-col p-6 sm:p-8 border border-dashed border-orange-200 rounded-xl bg-orange-50/10 max-w-2xl mx-auto w-full">
-      <div className="flex items-center gap-3 mb-6">
-        <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
-        <h3 className="font-semibold text-lg text-gray-900">Researching your idea...</h3>
-      </div>
-      
-      <div className="space-y-3">
-        {hasCustomProgress && (
-          <div className="flex items-start gap-3">
-            <Loader2 className="w-5 h-5 text-orange-500 animate-spin shrink-0 mt-0.5" />
-            <span className="text-sm text-gray-900 font-medium">{progress}</span>
-          </div>
-        )}
-        {RESEARCH_STEPS.map((step, index) => {
-          const isCompleted = index < currentStepIndex || progress === "Research complete!"
-          const isActive = index === currentStepIndex && progress !== "Research complete!"
-          const isPending = index > currentStepIndex && progress !== "Research complete!"
-          
-          return (
-            <div key={step} className={`flex items-start gap-3 transition-opacity duration-300 ${isPending ? 'opacity-40' : 'opacity-100'}`}>
-              {isCompleted ? (
-                <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-              ) : isActive ? (
-                <Loader2 className="w-5 h-5 text-orange-500 animate-spin shrink-0 mt-0.5" />
-              ) : (
-                <CircleDashed className="w-5 h-5 text-gray-300 shrink-0 mt-0.5" />
-              )}
-              <span className={`text-sm ${isActive ? 'text-gray-900 font-medium' : isCompleted ? 'text-gray-600' : 'text-gray-500'}`}>
-                {step}
-              </span>
-            </div>
-          )
-        })}
+    <div className="flex flex-col gap-4 p-4 sm:p-5 border border-orange-100 rounded-xl bg-gradient-to-b from-white to-orange-50/40 max-w-xl mx-auto w-full text-left overflow-hidden shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 h-6 w-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+          <Loader2 className="h-4 w-4 animate-spin text-orange-600" />
+        </div>
+        <div className="min-w-0">
+          <h3 className="font-semibold text-sm sm:text-base text-gray-900">Running AI deep dive...</h3>
+          <p className="text-xs sm:text-sm text-gray-600 mt-0.5 break-words">{progress || "Collecting market and discussion signals..."}</p>
+        </div>
       </div>
 
-      <div className="mt-6 pt-4 border-t border-orange-100">
-        <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Live Source Feed</div>
-        <div className="max-h-44 overflow-auto space-y-1 pr-1">
-          {(progressFeed.length > 0 ? progressFeed : [progress || "Waiting for first signal..."]).map((line, idx) => (
-            <p key={`${line}-${idx}`} className="text-sm text-gray-700 leading-relaxed break-words">- {line}</p>
+      <div className="rounded-lg border border-orange-100 bg-white/80 p-3">
+        <div className="text-[11px] uppercase tracking-[0.08em] text-gray-500 font-semibold mb-2">Progress</div>
+        <div className="mb-3 space-y-1.5">
+          {PROGRESS_STEPS.map((step, index) => {
+            const done = index < activeStepIndex
+            const active = index === activeStepIndex
+            return (
+              <div key={step.id} className="flex items-center gap-2">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${done ? "bg-emerald-500" : active ? "bg-orange-500" : "bg-gray-300"}`}
+                />
+                <span className={`text-xs ${done ? "text-gray-700" : active ? "text-gray-900 font-medium" : "text-gray-500"}`}>
+                  {step.label}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="text-[11px] uppercase tracking-[0.08em] text-gray-500 font-semibold mb-2">Live Updates</div>
+        <div className="space-y-1.5 max-h-20 overflow-auto pr-1">
+          {latestUpdates.map((line, idx) => (
+            <p key={`${line}-${idx}`} className="text-xs text-gray-700 leading-relaxed break-words">{line}</p>
           ))}
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-orange-100">
-        <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Tracked Sources</div>
-        <div className="max-h-48 overflow-auto space-y-1 pr-1">
-          {sourcesFeed.length === 0 ? (
-            <p className="text-sm text-gray-500">Waiting for discovered sources...</p>
+      <div className="rounded-lg border border-orange-100 bg-white/80 p-3">
+        <div className="text-[11px] uppercase tracking-[0.08em] text-gray-500 font-semibold mb-2">Live Source Feed</div>
+        <div className="max-h-36 overflow-auto pr-1">
+          {sourceCards.length === 0 ? (
+            <p className="text-xs text-gray-500">Discovering sources...</p>
           ) : (
-            sourcesFeed.map((source) => (
-              <div
-                key={source.url}
-                className={`text-xs break-all transition-all duration-300 ${
-                  source.status === "done"
-                    ? "text-emerald-700"
-                    : source.status === "failed"
-                      ? "text-red-600"
-                      : source.status === "scraping"
-                        ? "text-orange-700 animate-pulse"
-                        : "text-gray-700"
-                }`}
-              >
-                [{source.status.toUpperCase()}] [{source.channel?.toUpperCase() || "SRC"}] {source.url}{typeof source.chars === "number" ? ` (${source.chars} chars)` : ""}{typeof source.relevance === "number" ? ` [R:${source.relevance.toFixed(2)}]` : ""}{source.status === "failed" && source.error ? ` [E:${source.error}]` : ""}
-              </div>
-            ))
+            <motion.div layout className="flex flex-wrap gap-1.5">
+              <AnimatePresence initial={false}>
+                {sourceCards.map((source) => (
+                  <motion.span
+                    key={source.key}
+                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                    transition={{ duration: 0.22, ease: "easeOut" }}
+                    className="inline-flex max-w-full items-center rounded-md border border-orange-100 bg-orange-50/70 px-2 py-1 text-[11px] text-gray-700"
+                    title={source.label}
+                  >
+                    <span className="truncate">{source.label}</span>
+                  </motion.span>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
         </div>
       </div>

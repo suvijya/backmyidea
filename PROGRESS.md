@@ -1067,6 +1067,13 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
   - Fixed dashboard stale-state lock for research cards:
     - `getIdeaById` now auto-recovers stale `GENERATING` records to `FAILED`, so server-rendered dashboard state does not remain permanently stuck.
     - `ResearchTrigger` now detects stale `GENERATING` states client-side and shows a direct "Retry Research" action instead of indefinite "check back" messaging.
+  - Restored progress visualization in streaming UI while keeping compact layout:
+    - Added a clear multi-step progress lane (intent -> discover -> collect -> synthesize -> finalize) above live updates.
+  - Improved search keyword quality controls:
+    - Reworked query construction to be intent-driven across category/problem terms instead of hardcoded meeting-assistant keywords.
+    - Added keyword sanitization and garbage filters for primary + related queries to remove noisy/non-business terms.
+  - Cleaned Reddit Pulse data rendering:
+    - Sanitized low-quality pain point/praise entries and fixed concern ratio to use cleaned arrays for accurate labels and metrics.
   - Rebalanced source-mix targets in `src/lib/research.ts`:
     - **Deep:** target ~50 Reddit + ~100 non-Reddit (bounded by availability and scrape eligibility)
     - **Fast:** target ~10 Reddit + ~20 non-Reddit

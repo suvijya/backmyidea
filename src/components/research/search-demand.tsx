@@ -30,9 +30,14 @@ interface SearchDemandSectionProps {
 }
 
 export function SearchDemandSection({ searchData, title }: SearchDemandSectionProps) {
-  const cleanedKeywords = searchData.relatedKeywords.filter((kw) =>
-    !/(saas bahu|kyunki saas|serial|tv show|share price|hospital|bank)/i.test(kw.keyword)
-  )
+  const cleanedKeywords = searchData.relatedKeywords.filter((kw) => {
+    const keyword = kw.keyword.toLowerCase().trim()
+    if (/(saas bahu|kyunki saas|serial|tv show|share price|hospital|bank|movie|song|lyrics)/i.test(keyword)) return false
+    if (keyword.length < 3) return false
+    if (/[^a-z0-9\s-]/i.test(keyword)) return false
+    if (/([a-z])\1{3,}/i.test(keyword)) return false
+    return true
+  })
   const momentumScore = estimateMomentumScore(searchData)
   const competitionIndex = estimateCompetitionIndex({ ...searchData, relatedKeywords: cleanedKeywords })
 
