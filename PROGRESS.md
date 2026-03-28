@@ -1073,6 +1073,11 @@ These actions lack rate limiting but are lower risk due to auth requirements or 
   - Reduced remote-worker memory pressure risk in deep mode:
     - Deep scrape worker concurrency is lowered when `RENDER_SCRAPER_URL` is enabled (2 for deep, 1 for fast) to avoid Render memory spikes.
     - Render scraper now reuses a single Selenium driver with periodic recycling (`MAX_DRIVER_USES`) instead of opening a fresh browser per request.
+  - Additional Render OOM hardening:
+    - Remote Selenium worker is now used only for Reddit URLs; non-Reddit sources bypass Render and use local fetch/python fallback.
+    - Remote retries/timeout reduced to lower concurrent heavy browser load.
+    - App-side remote scrape concurrency forced to 1 when remote worker is enabled.
+    - Render worker now enforces single in-flight request gate with `429 Scraper busy` for overlap, preventing memory blowups from concurrent browser commands.
   - Restored progress visualization in streaming UI while keeping compact layout:
     - Added a clear multi-step progress lane (intent -> discover -> collect -> synthesize -> finalize) above live updates.
   - Improved search keyword quality controls:

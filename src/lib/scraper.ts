@@ -9,7 +9,8 @@ export interface ScrapeResult {
 }
 
 export async function scrapeUrl(url: string): Promise<ScrapeResult> {
-  const remote = await scrapeWithRemoteWorker(url)
+  const redditOnlyRemote = isRedditUrl(url)
+  const remote = redditOnlyRemote ? await scrapeWithRemoteWorker(url) : { success: false, url, error: "Remote scraper skipped for non-Reddit" }
   if (remote.success) {
     return remote
   }
@@ -39,8 +40,8 @@ async function scrapeWithRemoteWorker(url: string): Promise<ScrapeResult> {
 
   const reddit = isRedditUrl(url)
   const candidateUrls = reddit ? Array.from(new Set([url, toOldRedditUrl(url), toCanonicalRedditUrl(url)])) : [url]
-  const maxAttempts = reddit ? 3 : 2
-  const timeoutMs = reddit ? 45000 : 30000
+  const maxAttempts = reddit ? 2 : 1
+  const timeoutMs = reddit ? 30000 : 20000
   let lastError = "Remote scraper failed"
 
   for (const candidateUrl of candidateUrls) {

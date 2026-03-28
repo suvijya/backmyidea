@@ -1,4 +1,5 @@
 import os
+import threading
 from urllib.parse import urlparse
 
 from flask import Flask, jsonify, request
@@ -13,6 +14,23 @@ app = Flask(__name__)
 _driver = None
 _driver_uses = 0
 MAX_DRIVER_USES = int(os.getenv("MAX_DRIVER_USES", "25"))
+_driver_lock = threading.Lock()
+
+
+@app.before_request
+def _single_request_gate():
+    acquired = _driver_lock.acquire(blocking=False)
+    if not acquired:
+        return jsonify({"success": False, "error": "Scraper busy, retry shortly"}), 429
+    request._driver_lock_acquired = True
+
+
+@app.after_request
+def _release_request_gate(response):
+    acquired = getattr(request, "_driver_lock_acquired", False)
+    if acquired:
+        _driver_lock.release()
+    return response
 
 
 def _get_driver():
@@ -160,4 +178,4 @@ def healthz():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "8080")))
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "8080")), threaded=False)

@@ -473,7 +473,7 @@ export async function generateResearch(
 
     const remoteWorkerEnabled = Boolean(process.env.RENDER_SCRAPER_URL)
     const workerCount = remoteWorkerEnabled
-      ? (depth === "deep" ? 2 : 1)
+      ? 1
       : (depth === "deep" ? 6 : 4)
     let cursor = 0
     const workers = Array.from({ length: workerCount }, async () => {
